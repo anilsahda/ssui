@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { MdDashboard, MdHelpOutline } from "react-icons/md";
-import { FaUsers, FaUserEdit, FaSignOutAlt, FaUserCog, FaUserShield, FaBoxOpen, FaFileMedical, FaClipboardList, FaBuilding } from "react-icons/fa";
+import { FaUsers, FaUserEdit, FaSignOutAlt, FaUserCog, FaUserShield, FaUserCircle, FaHistory } from "react-icons/fa";
 import { FiSearch, FiBell, FiMoon, FiUserCheck } from "react-icons/fi";
 import { useEffect } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
+import { AiOutlineFileAdd } from "react-icons/ai";
+import { BsClockHistory, BsListCheck } from "react-icons/bs";
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+export default function CustomerLayout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     import("bootstrap/dist/js/bootstrap.bundle.min.js");
   }, []);
@@ -38,10 +40,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
             <ul className="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 p-0 overflow-hidden" aria-labelledby="dropdownUser" style={{ minWidth: "220px" }}>
               <li className="bg-light p-3 border-bottom text-center">
-                <small className="text-muted">Admin</small>
+                <small className="text-muted">Customer</small>
               </li>
               <li>
-                <Link className="dropdown-item d-flex align-items-center gap-2 py-2" href="/admin/adminprofile">
+                <Link className="dropdown-item d-flex align-items-center gap-2 py-2" href="/admin/customerprofile">
                   <FaUserEdit /> Edit Profile
                 </Link>
               </li>
@@ -61,39 +63,39 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <div className="d-flex flex-grow-1">
         <aside className="d-flex flex-column p-3 shadow-sm" style={{ width: 230, background: "linear-gradient(180deg, #1e293b, #0f172a)", color: "#f1f5f9" }}>
         <nav>
-          <ul className="nav nav-pills flex-column gap-1">
-            <li>
-              <Link href="/admin" className="nav-link d-flex align-items-center gap-2 sidebar-link active">
-                <MdDashboard size={18} className="text-info" /> Dashboard
-              </Link>
-            </li>
-            <li>
-              <Link href="/admin/users" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                <FaUsers size={16} className="text-primary" /> Manage Users
-              </Link>
-            </li>
-            <li>
-              <Link href="/admin/packages" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                <FaBoxOpen size={16} className="text-success" /> Manage Packages
-              </Link>
-            </li>
-            <li>
-              <Link href="/admin/claims" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                <FaFileMedical size={16} className="text-danger" /> Manage Claims
-              </Link>
-            </li>
-            <li>
-              <Link href="/admin/policies" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                <FaClipboardList size={16} className="text-warning" /> Manage Policies
-              </Link>
-            </li>
-            <li>
-              <Link href="/admin/providers" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                <FaBuilding size={16} className="text-secondary" /> Manage Providers
-              </Link>
-            </li>
-          </ul>
-        </nav>
+            <ul className="nav nav-pills flex-column gap-1">
+                <li>
+                <Link href="/customer" className="nav-link d-flex align-items-center gap-2 sidebar-link active">
+                    <MdDashboard size={18} className="text-info" /> Dashboard
+                </Link>
+                </li>
+                <li>
+                <Link href="/customer/customerprofile" className="nav-link d-flex align-items-center gap-2 sidebar-link">
+                    <FaUserCircle size={18} className="text-primary" /> My Profile
+                </Link>
+                </li>
+                <li>
+                <Link href="/customer/fileclaim" className="nav-link d-flex align-items-center gap-2 sidebar-link">
+                    <AiOutlineFileAdd size={18} className="text-success" /> File Claim
+                </Link>
+                </li>
+                <li>
+                <Link href="/customer/claimlist" className="nav-link d-flex align-items-center gap-2 sidebar-link">
+                    <BsListCheck size={18} className="text-warning" /> Claim List
+                </Link>
+                </li>
+                <li>
+                <Link href="/customer/pendinglist" className="nav-link d-flex align-items-center gap-2 sidebar-link">
+                    <BsClockHistory size={18} className="text-danger" /> Pending List
+                </Link>
+                </li>
+                <li>
+                <Link href="/customer/history" className="nav-link d-flex align-items-center gap-2 sidebar-link">
+                    <FaHistory size={18} className="text-secondary" /> History
+                </Link>
+                </li>
+            </ul>
+            </nav>
           <div className="mt-auto pt-3 border-top border-secondary text-center">
             <small style={{ color: "#94a3b8" }}>© 2025 SS App</small>
           </div>
