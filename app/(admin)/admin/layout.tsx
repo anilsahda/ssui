@@ -7,7 +7,7 @@ import { FiSearch, FiBell, FiMoon, FiUserCheck } from "react-icons/fi";
 import { useEffect } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 
-export default function SuperAdminLayout({ children }: { children: React.ReactNode }) {
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     import("bootstrap/dist/js/bootstrap.bundle.min.js");
   }, []);
@@ -38,8 +38,8 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
 
             <ul className="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 p-0 overflow-hidden" aria-labelledby="dropdownUser" style={{ minWidth: "220px" }}>
               <li className="bg-light p-3 border-bottom text-center">
-                <div className="fw-semibold"> Super Admin User</div>
-                <small className="text-muted">Super Administrator</small>
+                <div className="fw-semibold">Admin User</div>
+                <small className="text-muted">Administrator</small>
               </li>
               <li>
                 <Link className="dropdown-item d-flex align-items-center gap-2 py-2" href="/admin/profile">
@@ -74,18 +74,8 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
                 </Link>
               </li>
               <li>
-                <Link href="/superadmin/user" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                  <FaUsers size={16} className="text-warning" /> Users
-                </Link>
-              </li>
-              <li>
-                <Link href="/superadmin/role" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                  <FaUserShield size={16} className="text-success" /> Role
-                </Link>
-              </li>
-              <li>
-                <Link href="/superadmin/userrole" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                  <FiUserCheck size={16} className="text-primary" /> User Role
+                <Link href="/admin/item1" className="nav-link d-flex align-items-center gap-2 sidebar-link">
+                  <FaUsers size={16} className="text-warning" /> item 1
                 </Link>
               </li>
             </ul>

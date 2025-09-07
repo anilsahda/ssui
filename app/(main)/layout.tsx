@@ -11,8 +11,10 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           <button className="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-expanded="false" aria-controls="navbarNav" aria-label="Toggle navigation"><span className="navbar-toggler-icon"></span></button>
           <div className="collapse navbar-collapse" id="navbarNav">
             <ul className="navbar-nav me-auto mb-2 mb-lg-0">
-                <li className="nav-item"><Link href="/" className="nav-link px-3 fw-semibold">Home</Link></li>
-                <li className="nav-item"><Link href="/about" className="nav-link px-3 fw-semibold">About</Link></li>
+              <li className="nav-item"><Link href="/" className="nav-link px-3 fw-semibold">Home</Link></li>
+              <li className="nav-item"><Link href="/about" className="nav-link px-3 fw-semibold">About</Link></li>
+              <li className="nav-item"><Link href="/service" className="nav-link px-3 fw-semibold">Services</Link></li>
+              <li className="nav-item"><Link href="/contact" className="nav-link px-3 fw-semibold">Contact Us</Link></li>
             </ul>
 
             <div className="d-flex align-items-center gap-2">
