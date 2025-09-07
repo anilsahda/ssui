@@ -13,7 +13,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             <ul className="navbar-nav me-auto mb-2 mb-lg-0">
               <li className="nav-item"><Link href="/" className="nav-link px-3 fw-semibold">Home</Link></li>
               <li className="nav-item"><Link href="/about" className="nav-link px-3 fw-semibold">About</Link></li>
-              <li className="nav-item"><Link href="/service" className="nav-link px-3 fw-semibold">Services</Link></li>
+              <li className="nav-item"><Link href="/product" className="nav-link px-3 fw-semibold">Products</Link></li>
+              <li className="nav-item"><Link href="/feedback" className="nav-link px-3 fw-semibold">Feedback</Link></li>              
               <li className="nav-item"><Link href="/contact" className="nav-link px-3 fw-semibold">Contact Us</Link></li>
             </ul>
 

@@ -1,14 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { MdDashboard, MdHelpOutline, MdOutlineCategory, MdOutlineFeedback } from "react-icons/md";
-import { FaUsers, FaUserEdit, FaSignOutAlt, FaUserCog, FaUserShield, FaBox, FaBalanceScale, FaFileInvoiceDollar, FaChartBar } from "react-icons/fa";
+import { MdDashboard, MdHelpOutline } from "react-icons/md";
+import { FaUsers, FaUserEdit, FaSignOutAlt, FaUserCog, FaUserShield } from "react-icons/fa";
 import { FiSearch, FiBell, FiMoon, FiUserCheck } from "react-icons/fi";
 import { useEffect } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
-import { BsCartCheck } from "react-icons/bs";
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+export default function CustomerLayout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     import("bootstrap/dist/js/bootstrap.bundle.min.js");
   }, []);
@@ -39,10 +38,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
             <ul className="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 p-0 overflow-hidden" aria-labelledby="dropdownUser" style={{ minWidth: "220px" }}>
               <li className="bg-light p-3 border-bottom text-center">
-                <small className="text-muted">Admin</small>
+                <small className="text-muted">Super Administrator</small>
               </li>
               <li>
-                <Link className="dropdown-item d-flex align-items-center gap-2 py-2" href="/admin/adminprofile">
+                <Link className="dropdown-item d-flex align-items-center gap-2 py-2" href="/customer/customerprofile">
                   <FaUserEdit /> Edit Profile
                 </Link>
               </li>
@@ -64,43 +63,23 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <nav>
             <ul className="nav nav-pills flex-column gap-1">
               <li>
-                <Link href="/admin" className="nav-link d-flex align-items-center gap-2 sidebar-link active">
+                <Link href="/customer" className="nav-link d-flex align-items-center gap-2 sidebar-link active">
                   <MdDashboard size={18} className="text-info" /> Dashboard
                 </Link>
               </li>
               <li>
-                <Link href="/admin/category" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                  <MdOutlineCategory size={18} className="text-primary" /> Add Category
+                <Link href="/customer/order" className="nav-link d-flex align-items-center gap-2 sidebar-link">
+                  <FaUsers size={16} className="text-warning" /> My Order
                 </Link>
               </li>
               <li>
-                <Link href="/admin/item" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                  <FaBox size={16} className="text-success" /> Add Item
+                <Link href="/customer/payment" className="nav-link d-flex align-items-center gap-2 sidebar-link">
+                  <FiUserCheck size={16} className="text-primary" /> My Payment
                 </Link>
               </li>
               <li>
-                <Link href="/admin/quantity" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                  <FaBalanceScale size={16} className="text-warning" /> Add Quantity
-                </Link>
-              </li>
-              <li>
-                <Link href="/admin/vieworder" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                  <BsCartCheck size={16} className="text-danger" /> View Order
-                </Link>
-              </li>
-              <li>
-                <Link href="/admin/viewpayment" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                  <FaFileInvoiceDollar size={16} className="text-success" /> View Payment
-                </Link>
-              </li>
-              <li>
-                <Link href="/admin/reports" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                  <FaChartBar size={16} className="text-secondary" /> Reports
-                </Link>
-              </li>
-              <li>
-                <Link href="/admin/feedback" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                  <MdOutlineFeedback size={18} className="text-warning" /> Feedback
+                <Link href="/customer/cart" className="nav-link d-flex align-items-center gap-2 sidebar-link">
+                  <FaUserShield size={16} className="text-success" /> My Cart
                 </Link>
               </li>
             </ul>
