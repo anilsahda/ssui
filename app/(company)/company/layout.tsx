@@ -2,12 +2,15 @@
 
 import Link from "next/link";
 import { MdDashboard, MdHelpOutline, MdOutlineFeedback } from "react-icons/md";
-import { FaUsers, FaUserEdit, FaSignOutAlt, FaUserCog, FaUserShield, FaUserGraduate, FaBuilding } from "react-icons/fa";
-import { FiSearch, FiBell, FiMoon, FiUserCheck } from "react-icons/fi";
+import { FaUserEdit, FaSignOutAlt, FaUserCog, FaUserGraduate, FaBuilding, FaSuitcase } from "react-icons/fa";
+import { FiSearch, FiBell, FiMoon } from "react-icons/fi";
 import { useEffect } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
+import { HiOutlineClipboardList } from "react-icons/hi";
+import { RiProfileLine } from "react-icons/ri";
+import { TbChecklist } from "react-icons/tb";
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+export default function CompanyLayout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     import("bootstrap/dist/js/bootstrap.bundle.min.js");
   }, []);
@@ -38,16 +41,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
             <ul className="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 p-0 overflow-hidden" aria-labelledby="dropdownUser" style={{ minWidth: "220px" }}>
               <li className="bg-light p-3 border-bottom text-center">
-                <small className="text-muted">Admin</small>
+                <small className="text-muted">Company</small>
               </li>
               <li>
-                <Link className="dropdown-item d-flex align-items-center gap-2 py-2" href="/admin/profile">
+                <Link className="dropdown-item d-flex align-items-center gap-2 py-2" href="/company/companyprofile">
                   <FaUserEdit /> Edit Profile
-                </Link>
-              </li>
-              <li>
-                <Link className="dropdown-item d-flex align-items-center gap-2 py-2" href="/admin/account">
-                  <FaUserCog /> Account Settings
                 </Link>
               </li>
               <li>
@@ -65,30 +63,40 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       <div className="d-flex flex-grow-1">
         <aside className="d-flex flex-column p-3 shadow-sm" style={{ width: 230, background: "linear-gradient(180deg, #1e293b, #0f172a)", color: "#f1f5f9" }}>
-          <nav>
-            <ul className="nav nav-pills flex-column gap-1">
-              <li>
-                <Link href="/admin" className="nav-link d-flex align-items-center gap-2 sidebar-link active">
-                  <MdDashboard size={18} className="text-info" /> Dashboard
-                </Link>
-              </li>
-              <li>
-                <Link href="/admin/jobseekerreport" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                  <FaUserGraduate size={18} className="text-primary" /> Job Seeker Report
-                </Link>
-              </li>
-              <li>
-                <Link href="/admin/companyreport" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                  <FaBuilding size={18} className="text-success" /> Company Report
-                </Link>
-              </li>
-              <li>
-                <Link href="/admin/feedbackreport" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                  <MdOutlineFeedback size={18} className="text-warning" /> Feedback Report
-                </Link>
-              </li>
-            </ul>
-          </nav>
+        <nav>
+          <ul className="nav nav-pills flex-column gap-1">
+            <li>
+              <Link href="/company" className="nav-link d-flex align-items-center gap-2 sidebar-link active">
+                <MdDashboard size={18} className="text-info" /> Dashboard
+              </Link>
+            </li>
+            <li>
+              <Link href="/company/companyprofile" className="nav-link d-flex align-items-center gap-2 sidebar-link">
+                <FaBuilding size={18} className="text-primary" /> Company Profile
+              </Link>
+            </li>
+            <li>
+              <Link href="/company/postjob" className="nav-link d-flex align-items-center gap-2 sidebar-link">
+                <FaSuitcase size={18} className="text-success" /> Post Jobs
+              </Link>
+            </li>
+            <li>
+              <Link href="/company/postedjob" className="nav-link d-flex align-items-center gap-2 sidebar-link">
+                <HiOutlineClipboardList size={18} className="text-warning" /> Posted Jobs
+              </Link>
+            </li>
+            <li>
+              <Link href="/company/profilematch" className="nav-link d-flex align-items-center gap-2 sidebar-link">
+                <RiProfileLine size={18} className="text-danger" /> Profile Match
+              </Link>
+            </li>
+            <li>
+              <Link href="/company/appliedjob" className="nav-link d-flex align-items-center gap-2 sidebar-link">
+                <TbChecklist size={18} className="text-secondary" /> Applied Jobs
+              </Link>
+            </li>
+          </ul>
+        </nav>
           <div className="mt-auto pt-3 border-top border-secondary text-center">
             <small style={{ color: "#94a3b8" }}>© 2025 SS App</small>
           </div>
