@@ -3,7 +3,7 @@ import React from 'react'
 function page() {
   return (
     <div>
-      <h1>Service</h1>
+      <h2>Welcome to Customer Dashboard</h2>
     </div>
   )
 }

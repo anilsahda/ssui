@@ -7,7 +7,7 @@ import { FiSearch, FiBell, FiMoon, FiUserCheck } from "react-icons/fi";
 import { useEffect } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+export default function CustomerLayout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     import("bootstrap/dist/js/bootstrap.bundle.min.js");
   }, []);
@@ -38,10 +38,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
             <ul className="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 p-0 overflow-hidden" aria-labelledby="dropdownUser" style={{ minWidth: "220px" }}>
               <li className="bg-light p-3 border-bottom text-center">
-                <small className="text-muted">Admin</small>
+                <small className="text-muted">Customer</small>
               </li>
               <li>
-                <Link className="dropdown-item d-flex align-items-center gap-2 py-2" href="/admin/adminprofile">
+                <Link className="dropdown-item d-flex align-items-center gap-2 py-2" href="/customer/customerprofile">
                   <FaUserEdit /> Edit Profile
                 </Link>
               </li>
@@ -63,7 +63,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <nav>
             <ul className="nav nav-pills flex-column gap-1">
               <li>
-                <Link href="/admin" className="nav-link d-flex align-items-center gap-2 sidebar-link active">
+                <Link href="/customer" className="nav-link d-flex align-items-center gap-2 sidebar-link active">
                   <MdDashboard size={18} className="text-info" /> Dashboard
                 </Link>
               </li>
