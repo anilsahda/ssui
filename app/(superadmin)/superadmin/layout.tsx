@@ -15,7 +15,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
   return (
     <div className="d-flex flex-column min-vh-100 bg-light" style={{ fontFamily: "Inter, sans-serif" }}>
       <header className="d-flex justify-content-between align-items-center px-4 py-2 shadow-sm bg-white border-bottom">
-        <h1 className="m-0 text-primary" style={{ fontSize: "1.6rem", fontWeight: 600 }}>SS Admin</h1>
+        <h1 className="m-0 text-primary" style={{ fontSize: "1.6rem", fontWeight: 600 }}>SS App</h1>
         <div className="flex-grow-1 px-4 d-none d-md-block">
           <div className="position-relative mx-auto" style={{ width: "50%" }}>
             <FiSearch size={18} className="position-absolute top-50 start-0 translate-middle-y ms-3 text-muted" />
@@ -38,16 +38,15 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
 
             <ul className="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 p-0 overflow-hidden" aria-labelledby="dropdownUser" style={{ minWidth: "220px" }}>
               <li className="bg-light p-3 border-bottom text-center">
-                <div className="fw-semibold"> Super Admin User</div>
                 <small className="text-muted">Super Administrator</small>
               </li>
               <li>
-                <Link className="dropdown-item d-flex align-items-center gap-2 py-2" href="/admin/profile">
+                <Link className="dropdown-item d-flex align-items-center gap-2 py-2" href="/superadmin/profile">
                   <FaUserEdit /> Edit Profile
                 </Link>
               </li>
               <li>
-                <Link className="dropdown-item d-flex align-items-center gap-2 py-2" href="/admin/account">
+                <Link className="dropdown-item d-flex align-items-center gap-2 py-2" href="/superadmin/account">
                   <FaUserCog /> Account Settings
                 </Link>
               </li>
@@ -69,7 +68,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
           <nav>
             <ul className="nav nav-pills flex-column gap-1">
               <li>
-                <Link href="/admin" className="nav-link d-flex align-items-center gap-2 sidebar-link active">
+                <Link href="/superadmin" className="nav-link d-flex align-items-center gap-2 sidebar-link active">
                   <MdDashboard size={18} className="text-info" /> Dashboard
                 </Link>
               </li>
