@@ -2,15 +2,12 @@
 
 import Link from "next/link";
 import { MdDashboard, MdHelpOutline } from "react-icons/md";
-import { FaUsers, FaUserEdit, FaSignOutAlt, FaUserCog, FaUserShield, FaBook, FaBuilding, FaUserGraduate, FaClipboardList, FaUndo, FaMoneyBillWave } from "react-icons/fa";
+import { FaUsers, FaUserEdit, FaSignOutAlt, FaUserCog, FaUserShield } from "react-icons/fa";
 import { FiSearch, FiBell, FiMoon, FiUserCheck } from "react-icons/fi";
 import { useEffect } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
-import { BsFileEarmarkPlus, BsFileEarmarkText } from "react-icons/bs";
-import { TbReportAnalytics } from "react-icons/tb";
-import { RiBookOpenLine } from "react-icons/ri";
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+export default function StudentLayout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     import("bootstrap/dist/js/bootstrap.bundle.min.js");
   }, []);
@@ -41,16 +38,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
             <ul className="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 p-0 overflow-hidden" aria-labelledby="dropdownUser" style={{ minWidth: "220px" }}>
               <li className="bg-light p-3 border-bottom text-center">
-                <div className="fw-semibold">Admin User</div>
-                <small className="text-muted">Administrator</small>
+                <small className="text-muted">Student</small>
               </li>
               <li>
-                <Link className="dropdown-item d-flex align-items-center gap-2 py-2" href="/admin/profile">
+                <Link className="dropdown-item d-flex align-items-center gap-2 py-2" href="/student/profile">
                   <FaUserEdit /> Edit Profile
                 </Link>
               </li>
               <li>
-                <Link className="dropdown-item d-flex align-items-center gap-2 py-2" href="/admin/account">
+                <Link className="dropdown-item d-flex align-items-center gap-2 py-2" href="/student/account">
                   <FaUserCog /> Account Settings
                 </Link>
               </li>
@@ -69,65 +65,30 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       <div className="d-flex flex-grow-1">
         <aside className="d-flex flex-column p-3 shadow-sm" style={{ width: 230, background: "linear-gradient(180deg, #1e293b, #0f172a)", color: "#f1f5f9" }}>
-        <nav>
+          <nav>
             <ul className="nav nav-pills flex-column gap-1">
-                <li>
+              <li>
                 <Link href="/admin" className="nav-link d-flex align-items-center gap-2 sidebar-link active">
-                    <MdDashboard size={18} className="text-info" /> Dashboard
+                  <MdDashboard size={18} className="text-info" /> Dashboard
                 </Link>
-                </li>
-                <li>
-                <Link href="/admin/publication" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                    <BsFileEarmarkPlus size={16} className="text-primary" /> Add Publication
+              </li>
+              <li>
+                <Link href="/student/studentprofile" className="nav-link d-flex align-items-center gap-2 sidebar-link">
+                  <FaUsers size={16} className="text-warning" /> My Account
                 </Link>
-                </li>
-                <li>
-                <Link href="/admin/book" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                    <FaBook size={16} className="text-success" /> Add Book
+              </li>
+              <li>
+                <Link href="/student/bookreport" className="nav-link d-flex align-items-center gap-2 sidebar-link">
+                  <FaUserShield size={16} className="text-success" /> Book Report
                 </Link>
-                </li>
-                <li>
-                <Link href="/admin/bookreport" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                    <TbReportAnalytics size={16} className="text-warning" /> Book Report
+              </li>
+              <li>
+                <Link href="/student/penaltyreport" className="nav-link d-flex align-items-center gap-2 sidebar-link">
+                  <FiUserCheck size={16} className="text-primary" /> Penalty Report
                 </Link>
-                </li>
-                <li>
-                <Link href="/admin/branch" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                    <FaBuilding size={16} className="text-danger" /> Add Branch
-                </Link>
-                </li>
-                <li>
-                <Link href="/admin/student" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                    <FaUserGraduate size={16} className="text-info" /> Add Student
-                </Link>
-                </li>
-                <li>
-                <Link href="/admin/studentreport" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                    <FaClipboardList size={16} className="text-secondary" /> Student Report
-                </Link>
-                </li>
-                <li>
-                <Link href="/admin/issuebook" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                    <RiBookOpenLine size={16} className="text-success" /> Issue Book
-                </Link>
-                </li>
-                <li>
-                <Link href="/admin/issuereport" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                    <BsFileEarmarkText size={16} className="text-warning" /> Issue Report
-                </Link>
-                </li>
-                <li>
-                <Link href="/admin/returnbook" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                    <FaUndo size={16} className="text-primary" /> Return Book
-                </Link>
-                </li>
-                <li>
-                <Link href="/admin/penalty" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                    <FaMoneyBillWave size={16} className="text-danger" /> Penalty
-                </Link>
-                </li>
+              </li>
             </ul>
-            </nav>
+          </nav>
           <div className="mt-auto pt-3 border-top border-secondary text-center">
             <small style={{ color: "#94a3b8" }}>© 2025 SS App</small>
           </div>

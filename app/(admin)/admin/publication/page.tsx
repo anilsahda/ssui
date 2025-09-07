@@ -2,8 +2,8 @@ import React from 'react'
 
 function page() {
   return (
-    <div>
-      <h2>Welcome to Admin Dashboard</h2>
+    <div className='container'>
+      <h1>Manage Publication</h1>
     </div>
   )
 }

@@ -38,16 +38,15 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
 
             <ul className="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 p-0 overflow-hidden" aria-labelledby="dropdownUser" style={{ minWidth: "220px" }}>
               <li className="bg-light p-3 border-bottom text-center">
-                <div className="fw-semibold"> Super Admin User</div>
-                <small className="text-muted">Super Administrator</small>
+                <small className="text-muted">Super User</small>
               </li>
               <li>
-                <Link className="dropdown-item d-flex align-items-center gap-2 py-2" href="/admin/profile">
+                <Link className="dropdown-item d-flex align-items-center gap-2 py-2" href="/superadmin/profile">
                   <FaUserEdit /> Edit Profile
                 </Link>
               </li>
               <li>
-                <Link className="dropdown-item d-flex align-items-center gap-2 py-2" href="/admin/account">
+                <Link className="dropdown-item d-flex align-items-center gap-2 py-2" href="/superadmin/account">
                   <FaUserCog /> Account Settings
                 </Link>
               </li>
