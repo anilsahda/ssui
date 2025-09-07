@@ -3,7 +3,7 @@ import React from 'react'
 function page() {
   return (
     <div>
-      <h2>This is my Admin Dashboard</h2>
+      <h2>Manage Advance Attendance Reports</h2>
     </div>
   )
 }

@@ -9,7 +9,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import { HiOutlineViewGridAdd } from "react-icons/hi";
 import { BiCommentDetail } from "react-icons/bi";
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+export default function StudentLayout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     import("bootstrap/dist/js/bootstrap.bundle.min.js");
   }, []);
@@ -40,10 +40,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
             <ul className="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 p-0 overflow-hidden" aria-labelledby="dropdownUser" style={{ minWidth: "220px" }}>
               <li className="bg-light p-3 border-bottom text-center">
-                <small className="text-muted">Admin</small>
+                <small className="text-muted">Student</small>
               </li>
               <li>
-                <Link className="dropdown-item d-flex align-items-center gap-2 py-2" href="/admin/profile">
+                <Link className="dropdown-item d-flex align-items-center gap-2 py-2" href="/student/studentprofile">
                   <FaUserEdit /> Edit Profile
                 </Link>
               </li>
@@ -65,48 +65,28 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <nav>
           <ul className="nav nav-pills flex-column gap-1">
             <li>
-              <Link href="/admin" className="nav-link d-flex align-items-center gap-2 sidebar-link active">
+              <Link href="/student" className="nav-link d-flex align-items-center gap-2 sidebar-link active">
                 <MdDashboard size={18} className="text-info" /> Dashboard
               </Link>
             </li>
             <li>
-              <Link href="/admin/standard" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                <MdOutlineClass size={18} className="text-primary" /> Add Standard
+              <Link href="/student/studentprofile" className="nav-link d-flex align-items-center gap-2 sidebar-link">
+                <HiOutlineViewGridAdd size={18} className="text-success" /> My Profile
               </Link>
             </li>
             <li>
-              <Link href="/admin/division" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                <HiOutlineViewGridAdd size={18} className="text-success" /> Add Division
+              <Link href="/student/leave" className="nav-link d-flex align-items-center gap-2 sidebar-link">
+                <FaUserTie size={18} className="text-warning" /> Leave
               </Link>
             </li>
             <li>
-              <Link href="/admin/staff" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                <FaUserTie size={18} className="text-warning" /> Add Staff
+              <Link href="/student/complain" className="nav-link d-flex align-items-center gap-2 sidebar-link">
+                <FaRegFileAlt size={18} className="text-secondary" /> Complain
               </Link>
             </li>
             <li>
-              <Link href="/admin/staffreport" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                <FaRegFileAlt size={18} className="text-secondary" /> Staff Report
-              </Link>
-            </li>
-            <li>
-              <Link href="/admin/complain" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                <BiCommentDetail size={18} className="text-danger" /> Complain
-              </Link>
-            </li>
-            <li>
-              <Link href="/admin/leave" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                <MdOutlineCalendarMonth size={18} className="text-success" /> Leave
-              </Link>
-            </li>
-            <li>
-              <Link href="/admin/studentreport" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                <FaUsers size={18} className="text-info" /> Student Report
-              </Link>
-            </li>
-            <li>
-              <Link href="/admin/feedback" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                <MdOutlineFeedback size={18} className="text-secondary" /> Feedback
+              <Link href="/student/attendancereport" className="nav-link d-flex align-items-center gap-2 sidebar-link">
+                <BiCommentDetail size={18} className="text-danger" /> Attendance Report
               </Link>
             </li>
           </ul>
