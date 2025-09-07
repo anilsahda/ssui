@@ -2,16 +2,15 @@
 
 import Link from "next/link";
 import { MdDashboard, MdHelpOutline } from "react-icons/md";
-import { FaUsers, FaUserEdit, FaSignOutAlt, FaUserCog, FaUserShield, FaHome } from "react-icons/fa";
-import { FiSearch, FiBell, FiMoon, FiUserCheck } from "react-icons/fi";
+import { FaUsers, FaUserEdit, FaSignOutAlt, FaUserCog, FaUserShield } from "react-icons/fa";
+import { FiSearch, FiBell, FiMoon, FiUserCheck, FiMessageSquare } from "react-icons/fi";
 import { useEffect } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
-import { HiOutlineClipboardList } from "react-icons/hi";
-import { RiUserSettingsLine } from "react-icons/ri";
+import { RiHomeHeartLine } from "react-icons/ri";
+import { TbHomeDollar } from "react-icons/tb";
 import { BiCommentError } from "react-icons/bi";
-import { TbHomeDollar, TbHomeHeart } from "react-icons/tb";
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+export default function OwnerLayout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     import("bootstrap/dist/js/bootstrap.bundle.min.js");
   }, []);
@@ -42,10 +41,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
             <ul className="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 p-0 overflow-hidden" aria-labelledby="dropdownUser" style={{ minWidth: "220px" }}>
               <li className="bg-light p-3 border-bottom text-center">
-                <small className="text-muted">Admin</small>
+                <small className="text-muted">Owner</small>
               </li>
               <li>
-                <Link className="dropdown-item d-flex align-items-center gap-2 py-2" href="/admin/adminprofile">
+                <Link className="dropdown-item d-flex align-items-center gap-2 py-2" href="/owner/ownerprofile">
                   <FaUserEdit /> Edit Profile
                 </Link>
               </li>
@@ -65,53 +64,38 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <div className="d-flex flex-grow-1">
         <aside className="d-flex flex-column p-3 shadow-sm" style={{ width: 230, background: "linear-gradient(180deg, #1e293b, #0f172a)", color: "#f1f5f9" }}>
         <nav>
-          <ul className="nav nav-pills flex-column gap-1">
-            <li>
-              <Link href="/admin" className="nav-link d-flex align-items-center gap-2 sidebar-link active">
-                <MdDashboard size={18} className="text-info" /> Dashboard
-              </Link>
-            </li>
-            <li>
-              <Link href="/admin/society" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                <FaUsers size={18} className="text-warning" /> Add Society
-              </Link>
-            </li>
-            <li>
-              <Link href="/admin/house" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                <FaHome size={18} className="text-success" /> Add House
-              </Link>
-            </li>
-            <li>
-              <Link href="/admin/housereport" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                <HiOutlineClipboardList size={18} className="text-primary" /> House Report
-              </Link>
-            </li>
-            <li>
-              <Link href="/admin/allocatehouse" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                <RiUserSettingsLine size={18} className="text-secondary" /> Allocate House
-              </Link>
-            </li>
-            <li>
-              <Link href="/admin/memberreport" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                <HiOutlineClipboardList size={18} className="text-dark" /> Member Report
-              </Link>
-            </li>
-            <li>
-              <Link href="/admin/complain" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                <BiCommentError size={18} className="text-danger" /> Complain
-              </Link>
-            </li>
-            <li>
-              <Link href="/admin/sellhousereport" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                <TbHomeDollar size={18} className="text-success" /> Sell House Report
-              </Link>
-            </li>
-            <li>
-              <Link href="/admin/renthousereport" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                <TbHomeHeart size={18} className="text-pink-600" /> Rent House Report
-              </Link>
-            </li>
-          </ul>
+            <ul className="nav nav-pills flex-column gap-1">
+                <li>
+                    <Link href="/owner" className="nav-link d-flex align-items-center gap-2 sidebar-link active">
+                        <MdDashboard size={18} className="text-info" /> Dashboard
+                    </Link>
+                </li>
+                <li>
+                    <Link href="/owner/societylist" className="nav-link d-flex align-items-center gap-2 sidebar-link">
+                        <FaUsers size={18} className="text-warning" /> Society List
+                    </Link>
+                </li>
+                <li>
+                    <Link href="/owner/rentnow" className="nav-link d-flex align-items-center gap-2 sidebar-link">
+                        <RiHomeHeartLine size={18} className="text-success" /> Rent Now
+                    </Link>
+                </li>
+                <li>
+                    <Link href="/owner/sellnow" className="nav-link d-flex align-items-center gap-2 sidebar-link">
+                        <TbHomeDollar size={18} className="text-primary" /> Sell Now
+                    </Link>
+                </li>
+                <li>
+                    <Link href="/owner/message" className="nav-link d-flex align-items-center gap-2 sidebar-link">
+                        <FiMessageSquare size={18} className="text-secondary" /> Message
+                    </Link>
+                </li>
+                <li>
+                    <Link href="/owner/complain" className="nav-link d-flex align-items-center gap-2 sidebar-link">
+                        <BiCommentError size={18} className="text-danger" /> Complain
+                    </Link>
+                </li>
+            </ul>
         </nav>
           <div className="mt-auto pt-3 border-top border-secondary text-center">
             <small style={{ color: "#94a3b8" }}>© 2025 SS App</small>
