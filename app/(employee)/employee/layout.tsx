@@ -1,14 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { MdDashboard, MdHelpOutline, MdOutlineCalendarMonth, MdOutlineClass, MdOutlinePayments } from "react-icons/md";
-import { FaUsers, FaUserEdit, FaSignOutAlt, FaUserCog, FaUserShield, FaUserTie, FaClipboardList, FaRegChartBar } from "react-icons/fa";
+import { MdDashboard, MdHelpOutline } from "react-icons/md";
+import { FaUsers, FaUserEdit, FaSignOutAlt, FaUserCog, FaUserShield } from "react-icons/fa";
 import { FiSearch, FiBell, FiMoon, FiUserCheck } from "react-icons/fi";
 import { useEffect } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
-import { RiMoneyDollarCircleLine } from "react-icons/ri";
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+export default function EmployeeLayout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     import("bootstrap/dist/js/bootstrap.bundle.min.js");
   }, []);
@@ -39,16 +38,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
             <ul className="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 p-0 overflow-hidden" aria-labelledby="dropdownUser" style={{ minWidth: "220px" }}>
               <li className="bg-light p-3 border-bottom text-center">
-                <div className="fw-semibold">Admin User</div>
-                <small className="text-muted">Administrator</small>
+                <small className="text-muted">Employee</small>
               </li>
               <li>
-                <Link className="dropdown-item d-flex align-items-center gap-2 py-2" href="/admin/profile">
+                <Link className="dropdown-item d-flex align-items-center gap-2 py-2" href="/employee/profile">
                   <FaUserEdit /> Edit Profile
                 </Link>
               </li>
               <li>
-                <Link className="dropdown-item d-flex align-items-center gap-2 py-2" href="/admin/account">
+                <Link className="dropdown-item d-flex align-items-center gap-2 py-2" href="/employee/account">
                   <FaUserCog /> Account Settings
                 </Link>
               </li>
@@ -70,43 +68,23 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <nav>
             <ul className="nav nav-pills flex-column gap-1">
               <li>
-                <Link href="/admin" className="nav-link d-flex align-items-center gap-2 sidebar-link active">
-                  <MdDashboard size={18} className="text-info" /> Dashboard
+                <Link href="/employee" className="nav-link d-flex align-items-center gap-2 sidebar-link active">
+                  <MdDashboard size={18} className="text-info" /> My Account
                 </Link>
               </li>
               <li>
-                <Link href="/admin/class" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                  <MdOutlineClass size={18} className="text-primary" /> Add Class
+                <Link href="/employee/leave" className="nav-link d-flex align-items-center gap-2 sidebar-link">
+                  <FaUsers size={16} className="text-warning" /> Leave
                 </Link>
               </li>
               <li>
-                <Link href="/admin/employee" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                  <FaUserTie size={18} className="text-success" /> Add Employee
+                <Link href="/employee/leavereport" className="nav-link d-flex align-items-center gap-2 sidebar-link">
+                  <FaUserShield size={16} className="text-success" /> Leave Report
                 </Link>
               </li>
               <li>
-                <Link href="/admin/employeereport" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                  <FaClipboardList size={18} className="text-secondary" /> Employee Report
-                </Link>
-              </li>
-              <li>
-                <Link href="/admin/leave" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                  <MdOutlineCalendarMonth size={18} className="text-danger" /> Leave
-                </Link>
-              </li>
-              <li>
-                <Link href="/admin/salary" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                  <MdOutlinePayments size={18} className="text-warning" /> Salary
-                </Link>
-              </li>
-              <li>
-                <Link href="/admin/salaryreport" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                  <RiMoneyDollarCircleLine size={18} className="text-info" /> Salary Report
-                </Link>
-              </li>
-              <li>
-                <Link href="/admin/yearwisereport" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                  <FaRegChartBar size={18} className="text-secondary" /> Year Wise Report
+                <Link href="/employee/salaryreport" className="nav-link d-flex align-items-center gap-2 sidebar-link">
+                  <FiUserCheck size={16} className="text-primary" /> Salary Report
                 </Link>
               </li>
             </ul>
