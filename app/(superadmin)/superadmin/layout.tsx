@@ -87,6 +87,18 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
                   <FiUserCheck size={16} className="text-primary" /> User Role
                 </Link>
               </li>
+
+              <li>
+                <Link href="/superadmin/degree" className="nav-link d-flex align-items-center gap-2 sidebar-link">
+                  <FiUserCheck size={16} className="text-primary" /> Degree
+                </Link>
+              </li>
+
+              <li>
+                <Link href="/superadmin/designation" className="nav-link d-flex align-items-center gap-2 sidebar-link">
+                  <FiUserCheck size={16} className="text-primary" />Designation
+                </Link>
+              </li>
             </ul>
           </nav>
           <div className="mt-auto pt-3 border-top border-secondary text-center">
