@@ -44,37 +44,55 @@ function Employee() {
               <form>
                 <div className="row">
                   {/* Name */}
-                  <div className="col-md-6 mb-3">
+                  <div className="col-md-4 mb-3">
                     <label className="form-label">Name</label>
                     <input type="text" className="form-control" />
                   </div>
 
+                  {/* Email */}
+                  <div className="col-md-4 mb-3">
+                    <label className="form-label">Email</label>
+                    <input type="email" className="form-control" />
+                  </div>
+
+                  {/* Password */}
+                  <div className="col-md-4 mb-3">
+                    <label className="form-label">Password</label>
+                    <input type="password" className="form-control" />
+                  </div>
+
                   {/* Address */}
-                  <div className="col-md-6 mb-3">
+                  <div className="col-md-4 mb-3">
                     <label className="form-label">Address</label>
                     <input type="text" className="form-control" />
                   </div>
 
+                  {/* Country */}
+                  <div className="col-md-4 mb-3">
+                    <label className="form-label">Country</label>
+                    <input type="text" className="form-control" />
+                  </div>
+
                   {/* City */}
-                  <div className="col-md-6 mb-3">
+                  <div className="col-md-4 mb-3">
                     <label className="form-label">City</label>
                     <input type="text" className="form-control" />
                   </div>
 
                   {/* Pincode */}
-                  <div className="col-md-6 mb-3">
+                  <div className="col-md-4 mb-3">
                     <label className="form-label">Pincode</label>
                     <input type="number" className="form-control" />
                   </div>
 
                   {/* Phone Number */}
-                  <div className="col-md-6 mb-3">
+                  <div className="col-md-4 mb-3">
                     <label className="form-label">Mobile Number</label>
                     <input type="tel" className="form-control" />
                   </div>
 
                   {/* Degree */}
-                  <div className="col-md-6 mb-3">
+                  <div className="col-md-4 mb-3">
                     <label className="form-label">Degree</label>
                     <select className="form-select">
                       <option value="">Select Degree</option>
@@ -86,7 +104,7 @@ function Employee() {
                   </div>
 
                   {/* Designation */}
-                  <div className="col-md-6 mb-3">
+                  <div className="col-md-4 mb-3">
                     <label className="form-label">Designation</label>
                     <select className="form-select">
                       <option value="">Select Designation</option>
@@ -98,7 +116,7 @@ function Employee() {
                   </div>
 
                   {/* Branch */}
-                  <div className="col-md-6 mb-3">
+                  <div className="col-md-4 mb-3">
                     <label className="form-label">Branch</label>
                     <select className="form-select">
                       <option value="">Select Branch</option>
@@ -110,7 +128,7 @@ function Employee() {
                   </div>
 
                   {/* Class */}
-                  <div className="col-md-6 mb-3">
+                  <div className="col-md-4 mb-3">
                     <label className="form-label">Class</label>
                     <select className="form-select">
                       <option value="">Select Class</option>
@@ -121,39 +139,21 @@ function Employee() {
                   </div>
 
                   {/* Basic Pay */}
-                  <div className="col-md-6 mb-3">
+                  <div className="col-md-4 mb-3">
                     <label className="form-label">Basic Pay</label>
                     <input type="number" className="form-control" />
                   </div>
 
                   {/* Salary */}
-                  <div className="col-md-6 mb-3">
+                  <div className="col-md-4 mb-3">
                     <label className="form-label">Salary</label>
                     <input type="number" className="form-control" />
                   </div>
 
                   {/* Bank Account */}
-                  <div className="col-md-6 mb-3">
+                  <div className="col-md-4 mb-3">
                     <label className="form-label">Bank Account</label>
                     <input type="text" className="form-control" />
-                  </div>
-
-                  {/* Email */}
-                  <div className="col-md-6 mb-3">
-                    <label className="form-label">Email</label>
-                    <input type="email" className="form-control" />
-                  </div>
-
-                  {/* Password */}
-                  <div className="col-md-6 mb-3">
-                    <label className="form-label">Password</label>
-                    <input type="password" className="form-control" />
-                  </div>
-
-                  {/* Confirm Password */}
-                  <div className="col-md-6 mb-3">
-                    <label className="form-label">Confirm Password</label>
-                    <input type="password" className="form-control" />
                   </div>
                 </div>
 

@@ -95,7 +95,7 @@ function Page() {
           <table className="table table-bordered text-center align-middle">
             <thead className="table-dark">
               <tr>
-                <th>Sr.No.</th>
+                <th>#</th>
                 <th>Class Name</th>
                 <th>Basic Pay</th>
                 <th>Salary</th>

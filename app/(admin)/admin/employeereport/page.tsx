@@ -40,12 +40,8 @@ function EmployeeReport() {
         <thead className="table-primary text-center">
           <tr>
             <th>Name</th>
-            <th>Address</th>
             <th>City</th>
-            <th>Pincode</th>
             <th>Mobile</th>
-            <th>Degree</th>
-            <th>Designation</th>
             <th>Branch</th>
             <th>Class</th>
             <th>Basic Pay</th>
@@ -58,12 +54,8 @@ function EmployeeReport() {
         <tbody className="text-center">
           <tr>
             <td>Kapil</td>
-            <td>123 Street</td>
             <td>Lucknow</td>
-            <td>110001</td>
             <td>9876543210</td>
-            <td>B.Tech</td>
-            <td>Developer</td>
             <td>IT</td>
             <td>Class I</td>
             <td>40000</td>
