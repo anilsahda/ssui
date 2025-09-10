@@ -41,7 +41,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <small className="text-muted">Admin</small>
               </li>
               <li>
-                <Link className="dropdown-item d-flex align-items-center gap-2 py-2" href="/admin/profile">
+                <Link className="dropdown-item d-flex align-items-center gap-2 py-2" href="/admin/adminprofile">
                   <FaUserEdit /> Edit Profile
                 </Link>
               </li>

@@ -1,124 +1,158 @@
+"use client";
+
 import React from "react";
+import { Container, Row, Col, Form, Button, Card } from "react-bootstrap";
 
-function page() {
+const CompanyProfilePage: React.FC = () => {
   return (
-    <div className="container mt-4">
-      <h2>Manage Company Profile</h2>
+    <Container className="mt-4 mb-5">
+      <h2 className="mb-4">🏢 Company Profile</h2>
 
-      {/* Button to Open Popup */}
-      <div className="mb-3 text-end">
-        <button
-          className="btn btn-primary"
-          data-bs-toggle="modal"
-          data-bs-target="#companyModal"
-        >
-         + Add Company Profile
-        </button>
-      </div>
+      {/* 🏢 Basic Info */}
+      <Card className="p-4 mb-4 shadow-sm">
+        <h4>🏢 Basic Info</h4>
+        <Row>
+          <Col md={6}>
+            <Form.Group className="mb-3">
+              <Form.Label>Company Name</Form.Label>
+              <Form.Control type="text" placeholder="Enter company name" />
+            </Form.Group>
+          </Col>
+          <Col md={6}>
+            <Form.Group className="mb-3">
+              <Form.Label>Industry</Form.Label>
+              <Form.Select>
+                <option value="">Select Industry</option>
+                <option>IT Services</option>
+                <option>Software Development</option>
+                <option>Healthcare</option>
+                <option>Education</option>
+                <option>Finance</option>
+                <option>Manufacturing</option>
+              </Form.Select>
+            </Form.Group>
+          </Col>
+          <Col md={6}>
+            <Form.Group className="mb-3">
+              <Form.Label>Company Size</Form.Label>
+              <Form.Select>
+                <option value="">Select Size</option>
+                <option>1 - 10</option>
+                <option>11 - 50</option>
+                <option>51 - 200</option>
+                <option>201 - 500</option>
+                <option>500+</option>
+              </Form.Select>
+            </Form.Group>
+          </Col>
+          <Col md={6}>
+            <Form.Group className="mb-3">
+              <Form.Label>Founded Year</Form.Label>
+              <Form.Control type="number" placeholder="e.g. 2005" />
+            </Form.Group>
+          </Col>
+        </Row>
+      </Card>
 
-      {/* Popup Modal */}
-      <div
-        className="modal fade"
-        id="companyModal"
-        tabIndex={-1}
-        aria-labelledby="companyModalLabel"
-        aria-hidden="true"
-      >
-        <div className="modal-dialog modal-lg">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h5 className="modal-title" id="companyModalLabel">
-                + Add Company Profile
-              </h5>
-              <button
-                type="button"
-                className="btn-close"
-                data-bs-dismiss="modal"
-                aria-label="Close"
-              ></button>
-            </div>
-            <div className="modal-body">
-              {/* Company Profile Form */}
-              <div className="mb-3">
-                <label className="form-label">Select Job</label>
-                <select className="form-select">
-                  <option>-- Select --</option>
-                  <option>Software Engineer</option>
-                  <option>HR Manager</option>
-                  <option>Data Analyst</option>
-                  <option>Project Manager</option>
-                </select>
-              </div>
+      {/* 📍 Contact Info */}
+      <Card className="p-4 mb-4 shadow-sm">
+        <h4>📍 Contact Info</h4>
+        <Row>
+          <Col md={6}>
+            <Form.Group className="mb-3">
+              <Form.Label>Email</Form.Label>
+              <Form.Control type="email" placeholder="Enter official email" />
+            </Form.Group>
+          </Col>
+          <Col md={6}>
+            <Form.Group className="mb-3">
+              <Form.Label>Phone Number</Form.Label>
+              <Form.Control type="text" placeholder="Enter contact number" />
+            </Form.Group>
+          </Col>
+        </Row>
+        <Form.Group className="mb-3">
+          <Form.Label>Company Address</Form.Label>
+          <Form.Control
+            as="textarea"
+            rows={2}
+            placeholder="Enter company address"
+          />
+        </Form.Group>
+        <Form.Group className="mb-3">
+          <Form.Label>Website</Form.Label>
+          <Form.Control type="url" placeholder="https://example.com" />
+        </Form.Group>
+      </Card>
 
-              <div className="mb-3">
-                <label className="form-label">Degree</label>
-                <input type="text" className="form-control" placeholder="Enter Degree" />
-              </div>
+      {/* 💼 Job Openings */}
+      <Card className="p-4 mb-4 shadow-sm">
+        <h4>💼 Job Openings</h4>
+        <Row>
+          <Col md={6}>
+            <Form.Group className="mb-3">
+              <Form.Label>Job Title</Form.Label>
+              <Form.Control type="text" placeholder="Enter job title" />
+            </Form.Group>
+          </Col>
+          <Col md={6}>
+            <Form.Group className="mb-3">
+              <Form.Label>Required Degree</Form.Label>
+              <Form.Control type="text" placeholder="Enter degree" />
+            </Form.Group>
+          </Col>
+          <Col md={6}>
+            <Form.Group className="mb-3">
+              <Form.Label>Experience</Form.Label>
+              <Form.Control
+                type="text"
+                placeholder="e.g. 2 Years, 5+ Years"
+              />
+            </Form.Group>
+          </Col>
+          <Col md={6}>
+            <Form.Group className="mb-3">
+              <Form.Label>Salary</Form.Label>
+              <Form.Control type="text" placeholder="Enter salary details" />
+            </Form.Group>
+          </Col>
+        </Row>
+        <Form.Group className="mb-3">
+          <Form.Label>Job Description</Form.Label>
+          <Form.Control
+            as="textarea"
+            rows={3}
+            placeholder="Enter job description"
+          />
+        </Form.Group>
+      </Card>
 
-              <div className="mb-3">
-                <label className="form-label">Experience</label>
-                <input type="text" className="form-control" placeholder="Enter Experience (e.g. 2 Years)" />
-              </div>
+      {/* 🌟 About Company */}
+      <Card className="p-4 mb-4 shadow-sm">
+        <h4>🌟 About Company</h4>
+        <Form.Group className="mb-3">
+          <Form.Label>Mission & Vision</Form.Label>
+          <Form.Control
+            as="textarea"
+            rows={3}
+            placeholder="Write about your company's mission & vision"
+          />
+        </Form.Group>
+        <Form.Group className="mb-3">
+          <Form.Label>Company Highlights</Form.Label>
+          <Form.Control
+            as="textarea"
+            rows={3}
+            placeholder="Mention achievements, culture, and benefits"
+          />
+        </Form.Group>
+      </Card>
 
-              <div className="mb-3">
-                <label className="form-label">Salary</label>
-                <input type="text" className="form-control" placeholder="Enter Salary" />
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button
-                type="button"
-                className="btn btn-secondary"
-                data-bs-dismiss="modal"
-              >
-                Close
-              </button>
-              <button type="button" className="btn btn-primary">
-                Save Profile
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Company Profile Table */}
-      <table className="table table-bordered mt-4">
-        <thead className="table-dark">
-          <tr>
-            <th>Job</th>
-            <th>Degree</th>
-            <th>Experience</th>
-            <th>Salary</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>Software Engineer</td>
-            <td>B.Tech</td>
-            <td>2 Years</td>
-            <td>6 LPA</td>
-            <td>
-              <button className="btn btn-sm btn-info me-2">View</button>
-              <button className="btn btn-sm btn-warning me-2">Edit</button>
-              <button className="btn btn-sm btn-danger">Delete</button>
-            </td>
-          </tr>
-          <tr>
-            <td>HR Manager</td>
-            <td>MBA</td>
-            <td>5 Years</td>
-            <td>10 LPA</td>
-            <td>
-              <button className="btn btn-sm btn-info me-2">View</button>
-              <button className="btn btn-sm btn-warning me-2">Edit</button>
-              <button className="btn btn-sm btn-danger">Delete</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+      <Button variant="primary" size="lg" className="mt-3">
+        Save Company Profile
+      </Button>
+    </Container>
   );
-}
+};
 
-export default page;
+export default CompanyProfilePage;
