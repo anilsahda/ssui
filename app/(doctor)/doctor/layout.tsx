@@ -5,11 +5,11 @@ import { MdDashboard, MdHelpOutline } from "react-icons/md";
 import { FaUsers, FaUserEdit, FaSignOutAlt, FaUserCog } from "react-icons/fa";
 import { FiSearch, FiBell, FiMoon } from "react-icons/fi";
 import { useEffect } from "react";
-import useAuthStore from "store/useAuthStore";
+// import useAuthStore from "store/useAuthStore";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 export default function DoctorLayout({ children }: { children: React.ReactNode }) {
-  const { user, logout } = useAuthStore();
+  // const { user, logout } = useAuthStore();
 
   useEffect(() => {
     import("bootstrap/dist/js/bootstrap.bundle.min.js");
@@ -46,26 +46,14 @@ export default function DoctorLayout({ children }: { children: React.ReactNode }
 
           {/* Profile dropdown */}
           <div className="dropdown">
-            <button
-              id="dropdownUser"
-              className="btn p-0 d-flex align-items-center gap-2 dropdown-toggle"
-              data-bs-toggle="dropdown"
-              aria-expanded="false"
-              type="button"
-            >
-              <img
-                src={`https://ui-avatars.com/api/?name=${user?.name || "User"}&background=0d6efd&color=fff&rounded=true`}
-                alt="profile"
-                className="rounded-circle shadow-sm border border-2 border-light"
-                width="38"
-                height="38"
-              />
+            <button id="dropdownUser" className="btn p-0 d-flex align-items-center gap-2 dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" type="button">
+              <img src="https://ui-avatars.com/api/?name=Admin+User&background=0d6efd&color=fff&rounded=true" alt="profile" className="rounded-circle shadow-sm border border-2 border-light" width="40" height="40" />
             </button>
 
             <ul className="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 p-0 overflow-hidden" aria-labelledby="dropdownUser" style={{ minWidth: "220px" }}>
               <li className="bg-light p-3 border-bottom text-center">
-                <div className="fw-semibold">{user?.name || "Guest User"}</div>
-                <small className="text-muted">{user?.role || "No Role"}</small>
+              <div className="fw-semibold">Doctor User</div>
+                <small className="text-muted">Doctor</small>
               </li>
               <li>
                 <Link className="dropdown-item d-flex align-items-center gap-2 py-2" href="/doctor/profile">
@@ -79,13 +67,9 @@ export default function DoctorLayout({ children }: { children: React.ReactNode }
               </li>
               <li><hr className="dropdown-divider m-0" /></li>
               <li>
-                <button
-                  className="dropdown-item d-flex align-items-center gap-2 py-2 text-danger"
-                  type="button"
-                  onClick={logout}
-                >
+               <a href="/" className="dropdown-item d-flex align-items-center gap-2 py-2 text-danger" type="button">
                   <FaSignOutAlt /> Logout
-                </button>
+                </a>
               </li>
             </ul>
           </div>
