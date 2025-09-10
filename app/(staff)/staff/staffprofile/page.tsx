@@ -2,11 +2,11 @@
 
 import React, { useState } from "react";
 
-const StudentProfileForm: React.FC = () => {
+const StaffProfileForm: React.FC = () => {
   const [formData, setFormData] = useState({
     // Basic Info
     name: "",
-    rollNo: "",
+    employeeId: "",
     email: "",
     phone: "",
     dob: "",
@@ -22,35 +22,30 @@ const StudentProfileForm: React.FC = () => {
     linkedin: "",
     website: "",
 
-    // Academic Info
-    course: "",
-    branch: "",
-    year: "",
-    section: "",
-    studentId: "",
-    enrollmentDate: "",
-    attendancePercentage: "",
-
-    // Guardian Info
-    guardianName: "",
-    guardianRelation: "",
-    guardianMobile: "",
-    guardianEmail: "",
+    // Employment Info
+    department: "",
+    designation: "",
+    dateOfJoining: "",
+    employmentType: "",
+    reportingManager: "",
+    salary: "",
+    shiftTiming: "",
 
     // Attendance Details
-    totalClasses: "",
-    classesAttended: "",
+    totalWorkingDays: "",
+    daysPresent: "",
     leavesTaken: "",
     leaveReason: "",
+    lateArrivals: "",
+    earlyDepartures: "",
 
-    // Additional
+    // Additional Info
     skills: "",
+    certifications: "",
+    projectsHandled: "",
     achievements: "",
-    extracurricularActivities: "",
     notes: "",
     hobbies: "",
-    projects: "",
-    certifications: "",
     languages: "",
   });
 
@@ -62,13 +57,13 @@ const StudentProfileForm: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Student Profile Submitted:", formData);
-    alert("Student profile submitted ✅. Check console for values.");
+    console.log("Staff Profile Submitted:", formData);
+    alert("Staff profile submitted ✅. Check console for values.");
   };
 
   return (
     <div className="container mt-4">
-      <h2 className="text-center mb-4">📚 Student Profile & Attendance Form</h2>
+      <h2 className="text-center mb-4">👔 Staff Profile & Attendance Form</h2>
       <form onSubmit={handleSubmit}>
 
         {/* Basic Info */}
@@ -89,9 +84,9 @@ const StudentProfileForm: React.FC = () => {
               <input
                 type="text"
                 className="form-control"
-                placeholder="Roll No"
-                name="rollNo"
-                value={formData.rollNo}
+                placeholder="Employee ID"
+                name="employeeId"
+                value={formData.employeeId}
                 onChange={handleChange}
               />
             </div>
@@ -227,94 +222,70 @@ const StudentProfileForm: React.FC = () => {
           </div>
         </div>
 
-        {/* Academic Info */}
+        {/* Employment Info */}
         <div className="card shadow-sm mb-4">
-          <div className="card-header bg-primary text-white">Academic Information</div>
+          <div className="card-header bg-primary text-white">Employment Information</div>
           <div className="card-body row g-3">
-            <div className="col-md-3">
+            <div className="col-md-4">
               <input
                 type="text"
                 className="form-control"
-                placeholder="Course"
-                name="course"
-                value={formData.course}
+                placeholder="Department"
+                name="department"
+                value={formData.department}
                 onChange={handleChange}
               />
             </div>
-            <div className="col-md-3">
+            <div className="col-md-4">
               <input
                 type="text"
                 className="form-control"
-                placeholder="Branch"
-                name="branch"
-                value={formData.branch}
+                placeholder="Designation"
+                name="designation"
+                value={formData.designation}
                 onChange={handleChange}
               />
             </div>
-            <div className="col-md-2">
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Year"
-                name="year"
-                value={formData.year}
-                onChange={handleChange}
-              />
-            </div>
-            <div className="col-md-2">
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Section"
-                name="section"
-                value={formData.section}
-                onChange={handleChange}
-              />
-            </div>
-            <div className="col-md-2">
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Student ID"
-                name="studentId"
-                value={formData.studentId}
-                onChange={handleChange}
-              />
-            </div>
-            <div className="col-md-6">
+            <div className="col-md-4">
               <input
                 type="date"
                 className="form-control"
-                placeholder="Enrollment Date"
-                name="enrollmentDate"
-                value={formData.enrollmentDate}
+                placeholder="Date of Joining"
+                name="dateOfJoining"
+                value={formData.dateOfJoining}
                 onChange={handleChange}
               />
             </div>
-            <div className="col-md-6">
+            <div className="col-md-4">
+              <select
+                className="form-select"
+                name="employmentType"
+                value={formData.employmentType}
+                onChange={handleChange}
+              >
+                <option value="">Employment Type</option>
+                <option>Full-Time</option>
+                <option>Part-Time</option>
+                <option>Contract</option>
+              </select>
+            </div>
+            <div className="col-md-4">
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Reporting Manager"
+                name="reportingManager"
+                value={formData.reportingManager}
+                onChange={handleChange}
+              />
+            </div>
+            <div className="col-md-4">
               <input
                 type="number"
                 className="form-control"
-                placeholder="Attendance %"
-                name="attendancePercentage"
-                value={formData.attendancePercentage}
-                onChange={handleChange}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Guardian Info */}
-        <div className="card shadow-sm mb-4">
-          <div className="card-header bg-primary text-white">Guardian Information</div>
-          <div className="card-body row g-3">
-            <div className="col-md-4">
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Guardian Name"
-                name="guardianName"
-                value={formData.guardianName}
+                placeholder="Salary"
+                name="salary"
+                value={formData.salary}
                 onChange={handleChange}
               />
             </div>
@@ -322,29 +293,9 @@ const StudentProfileForm: React.FC = () => {
               <input
                 type="text"
                 className="form-control"
-                placeholder="Relation"
-                name="guardianRelation"
-                value={formData.guardianRelation}
-                onChange={handleChange}
-              />
-            </div>
-            <div className="col-md-4">
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Mobile"
-                name="guardianMobile"
-                value={formData.guardianMobile}
-                onChange={handleChange}
-              />
-            </div>
-            <div className="col-md-6">
-              <input
-                type="email"
-                className="form-control"
-                placeholder="Guardian Email"
-                name="guardianEmail"
-                value={formData.guardianEmail}
+                placeholder="Shift Timing"
+                name="shiftTiming"
+                value={formData.shiftTiming}
                 onChange={handleChange}
               />
             </div>
@@ -359,9 +310,9 @@ const StudentProfileForm: React.FC = () => {
               <input
                 type="number"
                 className="form-control"
-                placeholder="Total Classes"
-                name="totalClasses"
-                value={formData.totalClasses}
+                placeholder="Total Working Days"
+                name="totalWorkingDays"
+                value={formData.totalWorkingDays}
                 onChange={handleChange}
               />
             </div>
@@ -369,9 +320,9 @@ const StudentProfileForm: React.FC = () => {
               <input
                 type="number"
                 className="form-control"
-                placeholder="Classes Attended"
-                name="classesAttended"
-                value={formData.classesAttended}
+                placeholder="Days Present"
+                name="daysPresent"
+                value={formData.daysPresent}
                 onChange={handleChange}
               />
             </div>
@@ -392,6 +343,26 @@ const StudentProfileForm: React.FC = () => {
                 placeholder="Leave Reason"
                 name="leaveReason"
                 value={formData.leaveReason}
+                onChange={handleChange}
+              />
+            </div>
+            <div className="col-md-3">
+              <input
+                type="number"
+                className="form-control"
+                placeholder="Late Arrivals"
+                name="lateArrivals"
+                value={formData.lateArrivals}
+                onChange={handleChange}
+              />
+            </div>
+            <div className="col-md-3">
+              <input
+                type="number"
+                className="form-control"
+                placeholder="Early Departures"
+                name="earlyDepartures"
+                value={formData.earlyDepartures}
                 onChange={handleChange}
               />
             </div>
@@ -426,9 +397,9 @@ const StudentProfileForm: React.FC = () => {
               <input
                 type="text"
                 className="form-control"
-                placeholder="Projects"
-                name="projects"
-                value={formData.projects}
+                placeholder="Projects Handled"
+                name="projectsHandled"
+                value={formData.projectsHandled}
                 onChange={handleChange}
               />
             </div>
@@ -465,16 +436,6 @@ const StudentProfileForm: React.FC = () => {
             <div className="col-md-6">
               <textarea
                 className="form-control"
-                placeholder="Extracurricular Activities"
-                name="extracurricularActivities"
-                value={formData.extracurricularActivities}
-                onChange={handleChange}
-                rows={2}
-              ></textarea>
-            </div>
-            <div className="col-md-6">
-              <textarea
-                className="form-control"
                 placeholder="Notes"
                 name="notes"
                 value={formData.notes}
@@ -496,4 +457,4 @@ const StudentProfileForm: React.FC = () => {
   );
 };
 
-export default StudentProfileForm;
+export default StaffProfileForm;

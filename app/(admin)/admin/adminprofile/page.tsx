@@ -2,11 +2,11 @@
 
 import React, { useState } from "react";
 
-const StudentProfileForm: React.FC = () => {
+const AdminProfileForm: React.FC = () => {
   const [formData, setFormData] = useState({
     // Basic Info
     name: "",
-    rollNo: "",
+    adminId: "",
     email: "",
     phone: "",
     dob: "",
@@ -22,35 +22,28 @@ const StudentProfileForm: React.FC = () => {
     linkedin: "",
     website: "",
 
-    // Academic Info
-    course: "",
-    branch: "",
-    year: "",
-    section: "",
-    studentId: "",
-    enrollmentDate: "",
-    attendancePercentage: "",
+    // Admin Info
+    role: "",
+    accessLevel: "",
+    dateOfJoining: "",
+    lastLogin: "",
+    managedDepartments: "",
+    permissions: "",
 
-    // Guardian Info
-    guardianName: "",
-    guardianRelation: "",
-    guardianMobile: "",
-    guardianEmail: "",
+    // Attendance Portal Settings
+    portalAccess: "",
+    canEditRecords: "",
+    canApproveLeaves: "",
+    canManageStaff: "",
+    canManageStudents: "",
 
-    // Attendance Details
-    totalClasses: "",
-    classesAttended: "",
-    leavesTaken: "",
-    leaveReason: "",
-
-    // Additional
+    // Additional Info
     skills: "",
+    certifications: "",
+    projectsHandled: "",
     achievements: "",
-    extracurricularActivities: "",
     notes: "",
     hobbies: "",
-    projects: "",
-    certifications: "",
     languages: "",
   });
 
@@ -62,13 +55,13 @@ const StudentProfileForm: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Student Profile Submitted:", formData);
-    alert("Student profile submitted ✅. Check console for values.");
+    console.log("Admin Profile Submitted:", formData);
+    alert("Admin profile submitted ✅. Check console for values.");
   };
 
   return (
     <div className="container mt-4">
-      <h2 className="text-center mb-4">📚 Student Profile & Attendance Form</h2>
+      <h2 className="text-center mb-4">🛡️ Admin Profile & Portal Access</h2>
       <form onSubmit={handleSubmit}>
 
         {/* Basic Info */}
@@ -89,9 +82,9 @@ const StudentProfileForm: React.FC = () => {
               <input
                 type="text"
                 className="form-control"
-                placeholder="Roll No"
-                name="rollNo"
-                value={formData.rollNo}
+                placeholder="Admin ID"
+                name="adminId"
+                value={formData.adminId}
                 onChange={handleChange}
               />
             </div>
@@ -227,173 +220,140 @@ const StudentProfileForm: React.FC = () => {
           </div>
         </div>
 
-        {/* Academic Info */}
+        {/* Admin Info */}
         <div className="card shadow-sm mb-4">
-          <div className="card-header bg-primary text-white">Academic Information</div>
+          <div className="card-header bg-primary text-white">Admin Information</div>
           <div className="card-body row g-3">
-            <div className="col-md-3">
+            <div className="col-md-4">
               <input
                 type="text"
                 className="form-control"
-                placeholder="Course"
-                name="course"
-                value={formData.course}
+                placeholder="Role"
+                name="role"
+                value={formData.role}
                 onChange={handleChange}
               />
             </div>
-            <div className="col-md-3">
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Branch"
-                name="branch"
-                value={formData.branch}
+            <div className="col-md-4">
+              <select
+                className="form-select"
+                name="accessLevel"
+                value={formData.accessLevel}
                 onChange={handleChange}
-              />
+              >
+                <option value="">Access Level</option>
+                <option>Super Admin</option>
+                <option>Admin</option>
+                <option>Moderator</option>
+              </select>
             </div>
-            <div className="col-md-2">
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Year"
-                name="year"
-                value={formData.year}
-                onChange={handleChange}
-              />
-            </div>
-            <div className="col-md-2">
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Section"
-                name="section"
-                value={formData.section}
-                onChange={handleChange}
-              />
-            </div>
-            <div className="col-md-2">
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Student ID"
-                name="studentId"
-                value={formData.studentId}
-                onChange={handleChange}
-              />
-            </div>
-            <div className="col-md-6">
+            <div className="col-md-4">
               <input
                 type="date"
                 className="form-control"
-                placeholder="Enrollment Date"
-                name="enrollmentDate"
-                value={formData.enrollmentDate}
+                placeholder="Date of Joining"
+                name="dateOfJoining"
+                value={formData.dateOfJoining}
                 onChange={handleChange}
               />
             </div>
-            <div className="col-md-6">
+            <div className="col-md-4">
               <input
-                type="number"
+                type="text"
                 className="form-control"
-                placeholder="Attendance %"
-                name="attendancePercentage"
-                value={formData.attendancePercentage}
+                placeholder="Last Login"
+                name="lastLogin"
+                value={formData.lastLogin}
                 onChange={handleChange}
               />
+            </div>
+            <div className="col-md-4">
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Managed Departments"
+                name="managedDepartments"
+                value={formData.managedDepartments}
+                onChange={handleChange}
+              />
+            </div>
+            <div className="col-md-4">
+              <textarea
+                className="form-control"
+                placeholder="Permissions"
+                name="permissions"
+                value={formData.permissions}
+                onChange={handleChange}
+                rows={1}
+              ></textarea>
             </div>
           </div>
         </div>
 
-        {/* Guardian Info */}
+        {/* Portal Access */}
         <div className="card shadow-sm mb-4">
-          <div className="card-header bg-primary text-white">Guardian Information</div>
-          <div className="card-body row g-3">
-            <div className="col-md-4">
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Guardian Name"
-                name="guardianName"
-                value={formData.guardianName}
-                onChange={handleChange}
-              />
-            </div>
-            <div className="col-md-4">
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Relation"
-                name="guardianRelation"
-                value={formData.guardianRelation}
-                onChange={handleChange}
-              />
-            </div>
-            <div className="col-md-4">
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Mobile"
-                name="guardianMobile"
-                value={formData.guardianMobile}
-                onChange={handleChange}
-              />
-            </div>
-            <div className="col-md-6">
-              <input
-                type="email"
-                className="form-control"
-                placeholder="Guardian Email"
-                name="guardianEmail"
-                value={formData.guardianEmail}
-                onChange={handleChange}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Attendance Details */}
-        <div className="card shadow-sm mb-4">
-          <div className="card-header bg-primary text-white">Attendance Details</div>
+          <div className="card-header bg-primary text-white">Attendance Portal Access</div>
           <div className="card-body row g-3">
             <div className="col-md-3">
-              <input
-                type="number"
-                className="form-control"
-                placeholder="Total Classes"
-                name="totalClasses"
-                value={formData.totalClasses}
+              <select
+                className="form-select"
+                name="portalAccess"
+                value={formData.portalAccess}
                 onChange={handleChange}
-              />
+              >
+                <option value="">Portal Access</option>
+                <option>Full</option>
+                <option>Limited</option>
+                <option>None</option>
+              </select>
             </div>
             <div className="col-md-3">
-              <input
-                type="number"
-                className="form-control"
-                placeholder="Classes Attended"
-                name="classesAttended"
-                value={formData.classesAttended}
+              <select
+                className="form-select"
+                name="canEditRecords"
+                value={formData.canEditRecords}
                 onChange={handleChange}
-              />
+              >
+                <option value="">Edit Records</option>
+                <option>Yes</option>
+                <option>No</option>
+              </select>
             </div>
             <div className="col-md-3">
-              <input
-                type="number"
-                className="form-control"
-                placeholder="Leaves Taken"
-                name="leavesTaken"
-                value={formData.leavesTaken}
+              <select
+                className="form-select"
+                name="canApproveLeaves"
+                value={formData.canApproveLeaves}
                 onChange={handleChange}
-              />
+              >
+                <option value="">Approve Leaves</option>
+                <option>Yes</option>
+                <option>No</option>
+              </select>
             </div>
             <div className="col-md-3">
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Leave Reason"
-                name="leaveReason"
-                value={formData.leaveReason}
+              <select
+                className="form-select"
+                name="canManageStaff"
+                value={formData.canManageStaff}
                 onChange={handleChange}
-              />
+              >
+                <option value="">Manage Staff</option>
+                <option>Yes</option>
+                <option>No</option>
+              </select>
+            </div>
+            <div className="col-md-3">
+              <select
+                className="form-select"
+                name="canManageStudents"
+                value={formData.canManageStudents}
+                onChange={handleChange}
+              >
+                <option value="">Manage Students</option>
+                <option>Yes</option>
+                <option>No</option>
+              </select>
             </div>
           </div>
         </div>
@@ -426,9 +386,9 @@ const StudentProfileForm: React.FC = () => {
               <input
                 type="text"
                 className="form-control"
-                placeholder="Projects"
-                name="projects"
-                value={formData.projects}
+                placeholder="Projects Handled"
+                name="projectsHandled"
+                value={formData.projectsHandled}
                 onChange={handleChange}
               />
             </div>
@@ -465,16 +425,6 @@ const StudentProfileForm: React.FC = () => {
             <div className="col-md-6">
               <textarea
                 className="form-control"
-                placeholder="Extracurricular Activities"
-                name="extracurricularActivities"
-                value={formData.extracurricularActivities}
-                onChange={handleChange}
-                rows={2}
-              ></textarea>
-            </div>
-            <div className="col-md-6">
-              <textarea
-                className="form-control"
                 placeholder="Notes"
                 name="notes"
                 value={formData.notes}
@@ -496,4 +446,4 @@ const StudentProfileForm: React.FC = () => {
   );
 };
 
-export default StudentProfileForm;
+export default AdminProfileForm;
