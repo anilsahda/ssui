@@ -74,8 +74,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 </Link>
               </li>
               <li>
-                <Link href="/admin/patient" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                  <FaUsers size={16} className="text-warning" /> Add Patients
+                <Link href="/admin/item1" className="nav-link d-flex align-items-center gap-2 sidebar-link">
+                  <FaUsers size={16} className="text-warning" /> item 1
                 </Link>
               </li>
             </ul>
