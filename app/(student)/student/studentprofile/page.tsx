@@ -1,143 +1,192 @@
 "use client";
-import React, { useState } from "react";
-import { Eye, Pencil, Key, Trash, EyeSlash } from "react-bootstrap-icons";
 
-function MyProfilePage() {
-  const [showPassword, setShowPassword] = useState(false);
-  const [modal, setModal] = useState(""); // "view" | "edit" | "changePass" | "delete" | "deleteSuccess"
-  const [profile, setProfile] = useState({
-    name: "Kapil Yadav",
-    mobile: "9876543210",
-    address: "123, MG Road",
-    city: "New Delhi",
-    pincode: "110001",
-    email: "kapil@example.com",
-    password: "password123",
-  });
+import React from "react";
+import { Container, Row, Col, Form, Button, Card } from "react-bootstrap";
 
-  const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setProfile({ ...profile, [e.target.name]: e.target.value });
-  };
-
+const LibraryStudentProfile: React.FC = () => {
   return (
-    <div className="container-fluid vh-200 bg-light d-flex flex-column justify-content-center align-items-center">
-      <div className="card shadow-sm p-4 w-50">
-        <h2 className="text-center mb-4">My Profile</h2>
+    <Container className="mt-4 mb-5">
+      <h2 className="mb-4 text-center">📚 Library Student Profile</h2>
 
-        <div className="mb-4 d-flex justify-content-around">
-          <button className="btn btn-info" onClick={() => setModal("view")}><Eye /> View</button>
-          <button className="btn btn-warning" onClick={() => setModal("edit")}><Pencil /> Edit</button>
-          <button className="btn btn-secondary" onClick={() => setModal("changePass")}><Key /> Change Password</button>
-          <button className="btn btn-danger" onClick={() => setModal("delete")}><Trash /> Delete</button>
-        </div>
+      {/* 👤 Personal Info */}
+      <Card className="p-4 mb-4 shadow-sm">
+        <h4>👤 Personal Information</h4>
+        <Row>
+          <Col md={6}>
+            <Form.Group className="mb-3">
+              <Form.Label>Full Name</Form.Label>
+              <Form.Control type="text" placeholder="Enter full name" />
+            </Form.Group>
+          </Col>
+          <Col md={3}>
+            <Form.Group className="mb-3">
+              <Form.Label>Date of Birth</Form.Label>
+              <Form.Control type="date" />
+            </Form.Group>
+          </Col>
+          <Col md={3}>
+            <Form.Group className="mb-3">
+              <Form.Label>Gender</Form.Label>
+              <Form.Select>
+                <option value="">Select</option>
+                <option>Male</option>
+                <option>Female</option>
+                <option>Other</option>
+              </Form.Select>
+            </Form.Group>
+          </Col>
+          <Col md={6}>
+            <Form.Group className="mb-3">
+              <Form.Label>Email</Form.Label>
+              <Form.Control type="email" placeholder="Enter email" />
+            </Form.Group>
+          </Col>
+          <Col md={6}>
+            <Form.Group className="mb-3">
+              <Form.Label>Mobile Number</Form.Label>
+              <Form.Control type="text" placeholder="Enter mobile number" />
+            </Form.Group>
+          </Col>
+          <Col md={8}>
+            <Form.Group className="mb-3">
+              <Form.Label>Address</Form.Label>
+              <Form.Control type="text" placeholder="Enter address" />
+            </Form.Group>
+          </Col>
+          <Col md={2}>
+            <Form.Group className="mb-3">
+              <Form.Label>City</Form.Label>
+              <Form.Control type="text" placeholder="City" />
+            </Form.Group>
+          </Col>
+          <Col md={2}>
+            <Form.Group className="mb-3">
+              <Form.Label>Pincode</Form.Label>
+              <Form.Control type="text" placeholder="Pincode" />
+            </Form.Group>
+          </Col>
+        </Row>
+      </Card>
 
-        {/* Profile Table */}
-        <table className="table table-bordered">
-          <tbody>
-            <tr><th>Name</th><td>{profile.name}</td></tr>
-            <tr><th>Mobile</th><td>{profile.mobile}</td></tr>
-            <tr><th>Address</th><td>{profile.address}</td></tr>
-            <tr><th>City</th><td>{profile.city}</td></tr>
-            <tr><th>Pincode</th><td>{profile.pincode}</td></tr>
-            <tr><th>Email</th><td>{profile.email}</td></tr>
-            <tr>
-              <th>Password</th>
-              <td>
-                <div className="input-group">
-                  <input type={showPassword ? "text" : "password"} className="form-control" value={profile.password} disabled />
-                  <span className="input-group-text" style={{ cursor: "pointer" }} onClick={() => setShowPassword(!showPassword)}>
-                    {showPassword ? <EyeSlash /> : <Eye />}
-                  </span>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+      {/* 🎓 Academic Info */}
+      <Card className="p-4 mb-4 shadow-sm">
+        <h4>🎓 Academic Information</h4>
+        <Row>
+          <Col md={4}>
+            <Form.Group className="mb-3">
+              <Form.Label>Enrollment / Roll No</Form.Label>
+              <Form.Control type="text" placeholder="Enter Roll No" />
+            </Form.Group>
+          </Col>
+          <Col md={4}>
+            <Form.Group className="mb-3">
+              <Form.Label>Course / Program</Form.Label>
+              <Form.Control type="text" placeholder="e.g. B.Sc Computer Science" />
+            </Form.Group>
+          </Col>
+          <Col md={4}>
+            <Form.Group className="mb-3">
+              <Form.Label>Year / Semester</Form.Label>
+              <Form.Control type="text" placeholder="e.g. 3rd Year" />
+            </Form.Group>
+          </Col>
+          <Col md={6}>
+            <Form.Group className="mb-3">
+              <Form.Label>Department</Form.Label>
+              <Form.Control type="text" placeholder="e.g. Computer Science" />
+            </Form.Group>
+          </Col>
+          <Col md={6}>
+            <Form.Group className="mb-3">
+              <Form.Label>College / University</Form.Label>
+              <Form.Control type="text" placeholder="Enter College/University" />
+            </Form.Group>
+          </Col>
+        </Row>
+      </Card>
+
+      {/* 📖 Library Details */}
+      <Card className="p-4 mb-4 shadow-sm">
+        <h4>📖 Library Details</h4>
+        <Row>
+          <Col md={4}>
+            <Form.Group className="mb-3">
+              <Form.Label>Library Card No</Form.Label>
+              <Form.Control type="text" placeholder="Enter Library Card No" />
+            </Form.Group>
+          </Col>
+          <Col md={4}>
+            <Form.Group className="mb-3">
+              <Form.Label>Date of Issue</Form.Label>
+              <Form.Control type="date" />
+            </Form.Group>
+          </Col>
+          <Col md={4}>
+            <Form.Group className="mb-3">
+              <Form.Label>Expiry Date</Form.Label>
+              <Form.Control type="date" />
+            </Form.Group>
+          </Col>
+          <Col md={6}>
+            <Form.Group className="mb-3">
+              <Form.Label>Books Currently Issued</Form.Label>
+              <Form.Control type="number" placeholder="e.g. 2" />
+            </Form.Group>
+          </Col>
+          <Col md={6}>
+            <Form.Group className="mb-3">
+              <Form.Label>Pending Fines</Form.Label>
+              <Form.Control type="text" placeholder="e.g. ₹200" />
+            </Form.Group>
+          </Col>
+        </Row>
+      </Card>
+
+      {/* 👨‍👩‍👦 Guardian Info */}
+      <Card className="p-4 mb-4 shadow-sm">
+        <h4>👨‍👩‍👦 Guardian Information</h4>
+        <Row>
+          <Col md={6}>
+            <Form.Group className="mb-3">
+              <Form.Label>Guardian Name</Form.Label>
+              <Form.Control type="text" placeholder="Enter guardian name" />
+            </Form.Group>
+          </Col>
+          <Col md={6}>
+            <Form.Group className="mb-3">
+              <Form.Label>Guardian Contact</Form.Label>
+              <Form.Control type="text" placeholder="Enter contact number" />
+            </Form.Group>
+          </Col>
+        </Row>
+      </Card>
+
+      {/* 🔐 Account Info */}
+      <Card className="p-4 mb-4 shadow-sm">
+        <h4>🔐 Account Information</h4>
+        <Row>
+          <Col md={6}>
+            <Form.Group className="mb-3">
+              <Form.Label>Username</Form.Label>
+              <Form.Control type="text" placeholder="Enter username" />
+            </Form.Group>
+          </Col>
+          <Col md={6}>
+            <Form.Group className="mb-3">
+              <Form.Label>Password</Form.Label>
+              <Form.Control type="password" placeholder="Enter password" />
+            </Form.Group>
+          </Col>
+        </Row>
+      </Card>
+
+      <div className="text-center">
+        <Button variant="primary" size="lg">
+          Save Student Profile
+        </Button>
       </div>
-
-      {/* Centered Modal */}
-      {modal && (
-        <div className="modal fade show d-block" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">
-                  {modal === "view" && "View Profile"}
-                  {modal === "edit" && "Edit Profile"}
-                  {modal === "changePass" && "Change Password"}
-                  {modal === "delete" && "Delete Profile"}
-                  {modal === "deleteSuccess" && "Deleted Successfully"}
-                </h5>
-                <button type="button" className="btn-close" onClick={() => setModal("")}></button>
-              </div>
-              <div className="modal-body">
-                {modal === "view" && (
-                  <div>
-                    <p><b>Name:</b> {profile.name}</p>
-                    <p><b>Email:</b> {profile.email}</p>
-                    <p><b>Mobile:</b> {profile.mobile}</p>
-                    <p><b>Address:</b> {profile.address}</p>
-                    <p><b>City:</b> {profile.city}</p>
-                    <p><b>Pincode:</b> {profile.pincode}</p>
-                  </div>
-                )}
-
-                {modal === "edit" && (
-                  <form>
-                    <div className="mb-3">
-                      <label className="form-label">Name</label>
-                      <input type="text" className="form-control" name="name" value={profile.name} onChange={handleProfileChange} />
-                    </div>
-                    <div className="mb-3">
-                      <label className="form-label">Mobile</label>
-                      <input type="text" className="form-control" name="mobile" value={profile.mobile} onChange={handleProfileChange} />
-                    </div>
-                    <div className="mb-3">
-                      <label className="form-label">Address</label>
-                      <textarea className="form-control" rows={2} name="address" value={profile.address} onChange={handleProfileChange}></textarea>
-                    </div>
-                    <div className="mb-3">
-                      <label className="form-label">City</label>
-                      <input type="text" className="form-control" name="city" value={profile.city} onChange={handleProfileChange} />
-                    </div>
-                    <div className="mb-3">
-                      <label className="form-label">Pincode</label>
-                      <input type="text" className="form-control" name="pincode" value={profile.pincode} onChange={handleProfileChange} />
-                    </div>
-                  </form>
-                )}
-
-                {modal === "changePass" && (
-                  <form>
-                    <div className="mb-3">
-                      <label className="form-label">New Password</label>
-                      <input type="password" className="form-control" placeholder="Enter new password" />
-                    </div>
-                    <div className="mb-3">
-                      <label className="form-label">Confirm Password</label>
-                      <input type="password" className="form-control" placeholder="Confirm password" />
-                    </div>
-                  </form>
-                )}
-
-                {modal === "delete" && <p>Are you sure you want to delete this profile?</p>}
-                {modal === "deleteSuccess" && <p>Profile has been deleted successfully!</p>}
-              </div>
-
-              <div className="modal-footer">
-                <button className="btn btn-secondary" onClick={() => setModal("")}>Close</button>
-                {modal === "edit" || modal === "changePass" ? (
-                  <button className="btn btn-success">Save</button>
-                ) : modal === "delete" ? (
-                  <button className="btn btn-danger" onClick={() => setModal("deleteSuccess")}>Delete</button>
-                ) : null}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+    </Container>
   );
-}
+};
 
-export default MyProfilePage;
+export default LibraryStudentProfile;
