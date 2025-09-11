@@ -1,14 +1,14 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-interface User {
+interface User {  //class
   id: string;
   name: string;
   email: string;
   role: string;
 }
 
-interface AuthState {
+interface AuthState {  //interface
   user: User | null;
   token: string | null;
   isAuthenticated: boolean;
@@ -16,7 +16,7 @@ interface AuthState {
   logout: () => void;
 }
 
-const useAuthStore = create<AuthState>()(
+const useAuthStore = create<AuthState>()(  //repositories
   persist(
     (set) => ({
       user: null,

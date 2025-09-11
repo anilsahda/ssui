@@ -41,58 +41,22 @@ export default function Login() {
     <div className="d-flex justify-content-center align-items-center vh-100 bg-light">
       <div className="card shadow p-4" style={{ width: "350px", borderRadius: "12px" }}>
         <h3 className="text-center mb-4">Login</h3>
-
         <form onSubmit={handleSubmit}>
-          {/* Email */}
           <div className="mb-3">
             <label className="form-label">Email</label>
-            <input
-              type="email"
-              className="form-control"
-              placeholder="Enter your email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
+            <input type="email" className="form-control" placeholder="Enter your email" value={email} onChange={(e) => setEmail(e.target.value)} required />
           </div>
-
-          {/* Password */}
           <div className="mb-3">
             <label className="form-label">Password</label>
-            <input
-              type="password"
-              className="form-control"
-              placeholder="Enter your password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
+            <input type="password" className="form-control" placeholder="Enter your password" value={password} onChange={(e) => setPassword(e.target.value)} required />
           </div>
-
-          {/* Login Button */}
-          <button type="submit" className="btn btn-primary w-100 mb-3" disabled={loading}>
-            {loading ? "Logging in..." : "Login"}
-          </button>
+          <button type="submit" className="btn btn-primary w-100 mb-3" disabled={loading}>{loading ? "Logging in..." : "Login"}</button>
         </form>
 
-        {/* Divider */}
-        <div className="d-flex align-items-center mb-3">
-          <hr className="flex-grow-1" />
-          <span className="px-2 text-muted">or</span>
-          <hr className="flex-grow-1" />
-        </div>
-
-        {/* Social Login */}
         <div className="d-flex justify-content-center gap-3">
-          <button type="button" className="btn btn-outline-secondary rounded-circle">
-            <FaGoogle className="text-danger" />
-          </button>
-          <button type="button" className="btn btn-outline-secondary rounded-circle">
-            <FaFacebook className="text-primary" />
-          </button>
-          <button type="button" className="btn btn-outline-secondary rounded-circle">
-            <FaLinkedin className="text-info" />
-          </button>
+          <button type="button" className="btn btn-outline-secondary rounded-circle"><FaGoogle className="text-danger" /></button>
+          <button type="button" className="btn btn-outline-secondary rounded-circle"><FaFacebook className="text-primary" /></button>
+          <button type="button" className="btn btn-outline-secondary rounded-circle"><FaLinkedin className="text-info" /></button>
         </div>
       </div>
     </div>
