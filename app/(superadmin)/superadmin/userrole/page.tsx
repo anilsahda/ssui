@@ -1,76 +1,21 @@
-import React from 'react'
+"use client";
 
-function page() {
+import React from "react";
+import { FiUserCheck } from "react-icons/fi";
+
+export default function UserRolePage() {
   return (
-    <div className="container mt-4">
-      <h2>Manage User Role</h2>
-
-      <div className="mb-3">
-        <select className='form-control'>
-          <option>Select User</option>
-          <option>Philip</option>
-          <option>John</option>
-          <option>Paul</option>
-        </select>
-      </div>
-
-      <div className="mb-3">
-        <select className='form-control'>
-          <option>Select Role</option>
-          <option>Super Admin</option>
-          <option>Admin</option>
-          <option>User</option>
-        </select>
-      </div>
-
-      <div className="mb-4">
-        <button className="btn btn-primary me-2">Assing Role</button>
-      </div>
-
-      <table className="table table-bordered table-striped">
-        <thead className="table-light">
-          <tr>
-            <th>Id</th>
-            <th>User</th>
-            <th>Role</th>            
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>1</td>
-            <td>Philip</td>
-            <td>Super Admin</td>
-            <td>
-              <button className="btn btn-warning me-1">Edit</button>
-              <button className="btn btn-danger me-1">Delete</button>
-              <button className="btn btn-success">View</button>              
-            </td>
-          </tr>
-          <tr>
-            <td>2</td>
-            <td>John</td>
-            <td>Admin</td>
-            <td>
-              <button className="btn btn-warning me-1">Edit</button>
-              <button className="btn btn-danger me-1">Delete</button>
-              <button className="btn btn-success">View</button>              
-            </td>
-          </tr>
-          <tr>
-            <td>3</td>
-            <td>Paul</td>
-            <td>User</td>
-            <td>
-              <button className="btn btn-warning me-1">Edit</button>
-              <button className="btn btn-danger me-1">Delete</button>
-              <button className="btn btn-success">View</button>              
-            </td>
-          </tr>
-        </tbody>
-      </table>
+    <div className="d-flex flex-column justify-content-center align-items-center vh-100 bg-light px-4 text-center">
+      <FiUserCheck size={70} className="text-primary mb-4" />
+      <h1 className="mb-3 fw-bold">User Role Management</h1>
+      <p className="text-muted mb-4" style={{ maxWidth: 500 }}>
+        Assign and manage roles for users to control access and permissions
+        effectively. Ensure your application is secure and organized by
+        maintaining proper user roles.
+      </p>
+      <button className="btn btn-primary shadow-sm px-4 py-2">
+        Manage Roles
+      </button>
     </div>
-  )
+  );
 }
-
-export default page
