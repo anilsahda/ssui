@@ -28,7 +28,8 @@ export default function Login() {
       // Redirect based on role
       if (res.data.role === "Super Admin") router.push("/superadmin");
       else if (res.data.role === "Admin") router.push("/admin");
-      else if (res.data.role === "Doctor") router.push("/doctor");
+      else if (res.data.role === "Company") router.push("/company");
+      else if (res.data.role === "Job Seeker") router.push("/jobseeker");      
       else router.push("/student");
     } catch (err: any) {
       alert(err.response?.data?.error || "Login failed");
