@@ -21,7 +21,7 @@ const RoleManager = () => {
   const [message, setMessage] = useState<string>("");
   const [error, setError] = useState<string>("");
 
-  const API_BASE_URL = "http://localhost:5000/api/roles";
+  const API_BASE_URL = "https://localhost:7024/api/roles";
 
   useEffect(() => {
     fetchAllRoles();
@@ -30,7 +30,7 @@ const RoleManager = () => {
   const fetchAllRoles = () => {
     setLoading(true);
     axios
-      .get(`${API_BASE_URL}/GetAllRoles`)
+      .get(`${API_BASE_URL}/GetRoles`)
       .then((res) => setRoles(res.data))
       .catch(() => setError("Error fetching roles"))
       .finally(() => setLoading(false));
@@ -72,7 +72,7 @@ const RoleManager = () => {
   const deleteRole = (roleId: number) => {
     if (window.confirm("Are you sure you want to delete this role?")) {
       axios
-        .delete(`${API_BASE_URL}/DeleteRole/${roleId}`)
+        .delete(`${API_BASE_URL}/${roleId}`)
         .then(() => {
           setMessage("Role deleted successfully!");
           fetchAllRoles();

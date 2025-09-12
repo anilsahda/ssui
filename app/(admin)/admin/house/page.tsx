@@ -1,308 +1,281 @@
 "use client";
-import React, { useEffect, useState } from "react";
-import {
-  Container,
-  Table,
-  Button,
-  Form,
-  Modal,
-  Alert,
-  Spinner,
-  Row,
-  Col,
-} from "react-bootstrap";
+import React, { useEffect, useState, ChangeEvent, FormEvent } from "react";
+import "bootstrap/dist/css/bootstrap.min.css";
 
-interface Society {
+type House = {
   id: number;
-  name: string;
-}
-
-interface House {
-  id: number;
-  name: string;
-  address: string;
+  houseNumber: string;
   societyId: number;
-  society?: Society;
-}
+  address: string;
+  isAllocated: boolean;
+};
 
-export default function HousesPage() {
+const HousesPage: React.FC = () => {
   const [houses, setHouses] = useState<House[]>([]);
-  const [societies, setSocieties] = useState<Society[]>([]);
-
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
 
-  // Modal controls for Add/Edit
+  // Form state for Add/Edit
+  const [formData, setFormData] = useState<Partial<House>>({});
+  const [isEditing, setIsEditing] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  const [editingHouse, setEditingHouse] = useState<House | null>(null);
 
-  // Form fields
-  const [formName, setFormName] = useState("");
-  const [formAddress, setFormAddress] = useState("");
-  const [formSocietyId, setFormSocietyId] = useState<number | "">("");
-
-  useEffect(() => {
-    fetchHouses();
-    fetchSocieties();
-  }, []);
-
+  // Fetch houses
   const fetchHouses = async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("https://localhost:7255/api/Houses");
-      if (!res.ok) throw new Error("Failed to fetch houses.");
-      const data: House[] = await res.json();
+      const res = await fetch("https://localhost:7255/api/House");
+      if (!res.ok) throw new Error("Failed to fetch houses");
+      const data = await res.json();
       setHouses(data);
-    } catch (err) {
-      setError((err as Error).message);
-    } finally {
-      setLoading(false);
+    } catch (err: any) {
+      setError(err.message);
     }
+    setLoading(false);
   };
 
-  const fetchSocieties = async () => {
-    try {
-      const res = await fetch("https://localhost:7255/api/Societies");
-      if (!res.ok) throw new Error("Failed to fetch societies.");
-      const data: Society[] = await res.json();
-      setSocieties(data);
-    } catch (err) {
-      setError((err as Error).message);
-    }
+  useEffect(() => {
+    fetchHouses();
+  }, []);
+
+  // Handle input change
+  const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const { name, value, type, checked } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
   };
 
-  // Open modal for new house or edit
-  const openModal = (house?: House) => {
-    if (house) {
-      setEditingHouse(house);
-      setFormName(house.name);
-      setFormAddress(house.address);
-      setFormSocietyId(house.societyId);
-    } else {
-      setEditingHouse(null);
-      setFormName("");
-      setFormAddress("");
-      setFormSocietyId("");
-    }
+  // Open modal for Add
+  const openAddModal = () => {
+    setFormData({});
+    setIsEditing(false);
     setShowModal(true);
   };
 
-  const closeModal = () => {
-    setShowModal(false);
-    setError(null);
-    setSuccess(null);
+  // Open modal for Edit
+  const openEditModal = (house: House) => {
+    setFormData(house);
+    setIsEditing(true);
+    setShowModal(true);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Close modal
+  const closeModal = () => {
+    setShowModal(false);
+    setFormData({});
+  };
+
+  // Submit form handler (Create or Update)
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setError(null);
-    setSuccess(null);
 
-    if (!formName.trim() || !formAddress.trim() || !formSocietyId) {
-      setError("Please fill all fields.");
-      return;
-    }
-
-    setLoading(true);
+    const payload = {
+      houseNumber: formData.houseNumber || "",
+      societyId: formData.societyId || 0,
+      address: formData.address || "",
+      isAllocated: formData.isAllocated || false,
+    };
 
     try {
-      const body = {
-        id: editingHouse?.id,
-        name: formName,
-        address: formAddress,
-        societyId: formSocietyId,
-      };
-
-      const method = editingHouse ? "PUT" : "POST";
-      const url = editingHouse
-        ? `https://localhost:7255/api/Houses/${editingHouse.id}`
-        : "https://localhost:7255/api/Houses";
+      debugger;
+      const url = isEditing
+        ? `https://localhost:7255/api/House/${formData.id}`
+        : "https://localhost:7255/api/House";
+      const method = isEditing ? "PUT" : "POST";
 
       const res = await fetch(url, {
         method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
-        const msg = await res.text();
-        throw new Error(msg || "Failed to save house.");
+        throw new Error("Failed to save house");
       }
 
-      setSuccess(editingHouse ? "House updated." : "House added.");
-      fetchHouses();
+      await fetchHouses();
       closeModal();
-    } catch (err) {
-      setError((err as Error).message);
-    } finally {
-      setLoading(false);
+    } catch (err: any) {
+      alert(err.message);
     }
   };
 
+  // Delete house
   const handleDelete = async (id: number) => {
     if (!confirm("Are you sure you want to delete this house?")) return;
-    setLoading(true);
-    setError(null);
-    setSuccess(null);
 
     try {
-      const res = await fetch(`https://localhost:7255/api/Houses/${id}`, {
+      const res = await fetch(`https://localhost:7255/api/House/${id}`, {
         method: "DELETE",
       });
-      if (!res.ok) throw new Error("Failed to delete house.");
-      setSuccess("House deleted.");
-      fetchHouses();
-    } catch (err) {
-      setError((err as Error).message);
-    } finally {
-      setLoading(false);
+
+      if (!res.ok) throw new Error("Failed to delete house");
+
+      await fetchHouses();
+    } catch (err: any) {
+      alert(err.message);
     }
   };
 
   return (
-    <Container className="py-4">
-      <h2 className="mb-4">Houses Management</h2>
+    <div className="container mt-4">
+      <h1 className="mb-4">Houses Management</h1>
 
-      {error && <Alert variant="danger">{error}</Alert>}
-      {success && (
-        <Alert variant="success" dismissible onClose={() => setSuccess(null)}>
-          {success}
-        </Alert>
+      {error && <div className="alert alert-danger">{error}</div>}
+
+      <button className="btn btn-primary mb-3" onClick={openAddModal}>
+        Add New House
+      </button>
+
+      {loading ? (
+        <p>Loading...</p>
+      ) : houses.length === 0 ? (
+        <p>No houses found.</p>
+      ) : (
+        <table className="table table-striped table-bordered">
+          <thead className="table-dark">
+            <tr>
+              <th>ID</th>
+              <th>House Number</th>
+              <th>Society ID</th>
+              <th>Address</th>
+              <th>Allocated</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {houses.map((house) => (
+              <tr key={house.id}>
+                <td>{house.id}</td>
+                <td>{house.houseNumber}</td>
+                <td>{house.societyId}</td>
+                <td>{house.address}</td>
+                <td>{house.isAllocated ? "Yes" : "No"}</td>
+                <td>
+                  <button
+                    className="btn btn-sm btn-info me-2"
+                    onClick={() => openEditModal(house)}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    className="btn btn-sm btn-danger"
+                    onClick={() => handleDelete(house.id)}
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       )}
 
-      <Button className="mb-3" onClick={() => openModal()}>
-        + Add New House
-      </Button>
+      {/* Modal */}
+      {showModal && (
+        <div
+          className="modal show fade d-block"
+          tabIndex={-1}
+          role="dialog"
+          style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+        >
+          <div className="modal-dialog" role="document">
+            <form onSubmit={handleSubmit} className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">
+                  {isEditing ? "Edit House" : "Add New House"}
+                </h5>
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={closeModal}
+                  aria-label="Close"
+                />
+              </div>
+              <div className="modal-body">
+                <div className="mb-3">
+                  <label htmlFor="houseNumber" className="form-label">
+                    House Number
+                  </label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    id="houseNumber"
+                    name="houseNumber"
+                    value={formData.houseNumber || ""}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
 
-      {loading && (
-        <div className="text-center my-3">
-          <Spinner animation="border" />
+                <div className="mb-3">
+                  <label htmlFor="societyId" className="form-label">
+                    Society ID
+                  </label>
+                  <input
+                    type="number"
+                    className="form-control"
+                    id="societyId"
+                    name="societyId"
+                    value={formData.societyId || ""}
+                    onChange={handleInputChange}
+                    required
+                    min={1}
+                  />
+                </div>
+
+                <div className="mb-3">
+                  <label htmlFor="address" className="form-label">
+                    Address
+                  </label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    id="address"
+                    name="address"
+                    value={formData.address || ""}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+
+                <div className="form-check">
+                  <input
+                    className="form-check-input"
+                    type="checkbox"
+                    id="isAllocated"
+                    name="isAllocated"
+                    checked={formData.isAllocated || false}
+                    onChange={handleInputChange}
+                  />
+                  <label className="form-check-label" htmlFor="isAllocated">
+                    Allocated
+                  </label>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={closeModal}
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-primary">
+                  {isEditing ? "Update" : "Create"}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
-
-      <Table striped bordered hover responsive>
-        <thead className="table-dark">
-          <tr>
-            <th>#</th>
-            <th>Name</th>
-            <th>Address</th>
-            <th>Society</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {houses.length === 0 && (
-            <tr>
-              <td colSpan={5} className="text-center">
-                No houses found.
-              </td>
-            </tr>
-          )}
-          {houses.map((house) => (
-            <tr key={house.id}>
-              <td>{house.id}</td>
-              <td>{house.name}</td>
-              <td>{house.address}</td>
-              <td>{house.society?.name || "N/A"}</td>
-              <td>
-                <Button
-                  size="sm"
-                  variant="warning"
-                  className="me-2"
-                  onClick={() => openModal(house)}
-                >
-                  Edit
-                </Button>
-                <Button
-                  size="sm"
-                  variant="danger"
-                  onClick={() => handleDelete(house.id)}
-                >
-                  Delete
-                </Button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </Table>
-
-      {/* Modal for Add/Edit */}
-      <Modal show={showModal} onHide={closeModal} backdrop="static">
-        <Modal.Header closeButton>
-          <Modal.Title>
-            {editingHouse ? "Edit House" : "Add New House"}
-          </Modal.Title>
-        </Modal.Header>
-        <Form onSubmit={handleSubmit}>
-          <Modal.Body>
-            <Form.Group className="mb-3" controlId="houseName">
-              <Form.Label>House Name</Form.Label>
-              <Form.Control
-                type="text"
-                placeholder="Enter house name"
-                value={formName}
-                onChange={(e) => setFormName(e.target.value)}
-                disabled={loading}
-                required
-              />
-            </Form.Group>
-
-            <Form.Group className="mb-3" controlId="houseAddress">
-              <Form.Label>Address</Form.Label>
-              <Form.Control
-                type="text"
-                placeholder="Enter address"
-                value={formAddress}
-                onChange={(e) => setFormAddress(e.target.value)}
-                disabled={loading}
-                required
-              />
-            </Form.Group>
-
-            <Form.Group className="mb-3" controlId="houseSociety">
-              <Form.Label>Society</Form.Label>
-              <Form.Select
-                value={formSocietyId}
-                onChange={(e) => setFormSocietyId(Number(e.target.value))}
-                disabled={loading}
-                required
-              >
-                <option value="">Select Society</option>
-                {societies.map((soc) => (
-                  <option key={soc.id} value={soc.id}>
-                    {soc.name}
-                  </option>
-                ))}
-              </Form.Select>
-            </Form.Group>
-          </Modal.Body>
-          <Modal.Footer>
-            <Button variant="secondary" onClick={closeModal} disabled={loading}>
-              Cancel
-            </Button>
-            <Button type="submit" variant="primary" disabled={loading}>
-              {loading ? (
-                <>
-                  <Spinner
-                    animation="border"
-                    size="sm"
-                    role="status"
-                    aria-hidden="true"
-                    className="me-2"
-                  />
-                  Saving...
-                </>
-              ) : editingHouse ? (
-                "Update House"
-              ) : (
-                "Add House"
-              )}
-            </Button>
-          </Modal.Footer>
-        </Form>
-      </Modal>
-    </Container>
+    </div>
   );
-}
+};
+
+export default HousesPage;

@@ -28,7 +28,7 @@ const User = () => {
   const [error, setError] = useState<string>("");
   const [showPassword, setShowPassword] = useState<boolean>(false);
 
-  const API_BASE_URL = "http://localhost:5000/api/users";
+  const API_BASE_URL = "https://localhost:7024/api/users";
 
   useEffect(() => {
     fetchAllUsers();
@@ -37,7 +37,7 @@ const User = () => {
   const fetchAllUsers = () => {
     setLoading(true);
     axios
-      .get(`${API_BASE_URL}/GetAllUsers`)
+      .get(`${API_BASE_URL}/GetUsers`)
       .then((res) => setUsers(res.data))
       .catch((err) => setError("Error fetching users"))
       .finally(() => setLoading(false));
@@ -77,7 +77,7 @@ const User = () => {
   const deleteUser = (userId: number) => {
     if (window.confirm("Are you sure you want to delete this user?")) {
       axios
-        .delete(`${API_BASE_URL}/DeleteUser/${userId}`)
+        .delete(`${API_BASE_URL}/${userId}`)
         .then(() => {
           setMessage("User deleted successfully!");
           fetchAllUsers();
