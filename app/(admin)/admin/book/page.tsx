@@ -60,6 +60,7 @@ function BookPage() {
 
   // 🔹 Open modal for editing book
   const handleEdit = (book: any) => {
+    
     setEditingBook(book);
     setFormData({
       name: book.name,
@@ -78,11 +79,12 @@ function BookPage() {
     e.preventDefault();
     try {
       if (editingBook) {
+        debugger;
         // Update (include ID in request)
-        await axios.put(`${API_URL}/UpdateBooks/${editingBook.id}`, {
-          id: editingBook.id,
-          ...formData,
-        });
+await axios.put(`${API_URL}/UpdateBook`, {
+  Id: editingBook.id,   // Must match backend property case
+  ...formData,
+});
       } else {
         // Create
         await axios.post(API_URL + "/AddBook", formData);
