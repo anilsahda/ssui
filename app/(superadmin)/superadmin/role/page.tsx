@@ -17,7 +17,7 @@ function Page() {
 
   const fetchRoles = async () => {
     try {
-      const res = await axios.get("https://localhost:7024/api/Roles/GetRoles");
+      const res = await axios.get("https://localhost:7071/api/Roles/GetRoles");
       setRoles(res.data);
     } catch (err) {
       Swal.fire("Error", "Failed to fetch roles", "error");

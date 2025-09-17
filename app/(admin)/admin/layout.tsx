@@ -74,8 +74,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 </Link>
               </li>
               <li>
-                <Link href="/admin/item1" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                  <FaUsers size={16} className="text-warning" /> item 1
+                <Link href="/admin/task" className="nav-link d-flex align-items-center gap-2 sidebar-link">
+                  <FaUsers size={16} className="text-warning" /> Manage Task
                 </Link>
               </li>
             </ul>

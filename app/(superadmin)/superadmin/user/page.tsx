@@ -22,7 +22,7 @@ function Page() {
 
   const fetchUsers = async () => {
     try {
-      const res = await axios.get("https://localhost:7024/api/Users/GetUsers");
+      const res = await axios.get("https://localhost:7071/api/Users/GetUsers");
       setUsers(res.data);
     } catch (err) {
       Swal.fire("Error", "Failed to fetch users", "error");
