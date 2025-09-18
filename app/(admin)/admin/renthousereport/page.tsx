@@ -2,19 +2,18 @@
 import React, { useEffect, useState } from "react";
 import {
   Container,
-  Table,
   Button,
   Modal,
   Form,
   Alert,
   Spinner,
+  ListGroup,
 } from "react-bootstrap";
 
 interface House {
   id: number;
   name: string;
   address?: string;
-  // any other fields
 }
 
 interface RentHouseReport {
@@ -41,8 +40,8 @@ export default function RentHouseReportsPage() {
   );
 
   // Form fields
-  const [formHouseId, setFormHouseId] = useState<number | "">("");
-  const [formRentAmount, setFormRentAmount] = useState<number | "">("");
+  const [formHouseId, setFormHouseId] = useState<number | null>(null);
+  const [formRentAmount, setFormRentAmount] = useState<number | null>(null);
   const [formDescription, setFormDescription] = useState("");
 
   useEffect(() => {
@@ -56,10 +55,16 @@ export default function RentHouseReportsPage() {
     try {
       const res = await fetch("https://localhost:7255/api/RentHouseReports");
       if (!res.ok) throw new Error("Failed to fetch rent house reports.");
-      const data: RentHouseReport[] = await res.json();
+      const data = await res.json();
+
+      if (!Array.isArray(data)) {
+        throw new Error("Invalid data format: Expected an array of reports");
+      }
+
       setReports(data);
     } catch (err) {
       setError((err as Error).message);
+      setReports([]);
     } finally {
       setLoading(false);
     }
@@ -67,27 +72,31 @@ export default function RentHouseReportsPage() {
 
   async function fetchHouses() {
     try {
-      const res = await fetch("https://localhost:7255/api/Houses");
+      const res = await fetch("https://localhost:7255/api/House");
       if (!res.ok) throw new Error("Failed to fetch houses.");
       const data: House[] = await res.json();
+
+      if (!Array.isArray(data)) {
+        throw new Error("Invalid data format: Expected an array of houses");
+      }
+
       setHouses(data);
     } catch (err) {
       console.error("Error fetching houses:", err);
+      setError((err as Error).message);
     }
   }
 
   function openModal(report?: RentHouseReport) {
     if (report) {
-      // edit mode
       setEditingReport(report);
       setFormHouseId(report.houseId);
       setFormRentAmount(report.rentAmount);
       setFormDescription(report.description);
     } else {
-      // new
       setEditingReport(null);
-      setFormHouseId("");
-      setFormRentAmount("");
+      setFormHouseId(null);
+      setFormRentAmount(null);
       setFormDescription("");
     }
     setError(null);
@@ -97,6 +106,10 @@ export default function RentHouseReportsPage() {
 
   function closeModal() {
     setShowModal(false);
+    setEditingReport(null);
+    setFormHouseId(null);
+    setFormRentAmount(null);
+    setFormDescription("");
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -104,10 +117,9 @@ export default function RentHouseReportsPage() {
     setError(null);
     setSuccess(null);
 
-    // validation
     if (
-      formHouseId === "" ||
-      formRentAmount === "" ||
+      formHouseId == null ||
+      formRentAmount == null ||
       formDescription.trim() === ""
     ) {
       setError("Please fill in all fields.");
@@ -121,6 +133,7 @@ export default function RentHouseReportsPage() {
         houseId: formHouseId,
         rentAmount: formRentAmount,
         description: formDescription.trim(),
+        reportDate: editingReport?.reportDate ?? new Date().toISOString(),
       };
 
       const method = editingReport ? "PUT" : "POST";
@@ -179,6 +192,10 @@ export default function RentHouseReportsPage() {
     }
   }
 
+  function getHouseName(houseId: number): string {
+    return houses.find((h) => h.id === houseId)?.name || `House ${houseId}`;
+  }
+
   return (
     <Container className="py-4">
       <h2 className="mb-4">Rent House Reports</h2>
@@ -204,53 +221,47 @@ export default function RentHouseReportsPage() {
         </div>
       )}
 
-      <Table striped bordered hover responsive>
-        <thead className="table-dark">
-          <tr>
-            <th>#</th>
-            <th>House</th>
-            <th>Rent Amount</th>
-            <th>Description</th>
-            <th>Reported On</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {reports.length === 0 && !loading && (
-            <tr>
-              <td colSpan={6} className="text-center">
-                No reports found.
-              </td>
-            </tr>
-          )}
+      {!loading && reports.length === 0 ? (
+        <p>No reports found.</p>
+      ) : (
+        <ListGroup>
           {reports.map((r) => (
-            <tr key={r.id}>
-              <td>{r.id}</td>
-              <td>{r.house?.name || `House ${r.houseId}`}</td>
-              <td>{r.rentAmount}</td>
-              <td>{r.description}</td>
-              <td>{new Date(r.reportDate).toLocaleString()}</td>
-              <td>
-                <Button
-                  variant="warning"
-                  size="sm"
-                  className="me-2"
-                  onClick={() => openModal(r)}
-                >
-                  Edit
-                </Button>
-                <Button
-                  variant="danger"
-                  size="sm"
-                  onClick={() => handleDelete(r.id)}
-                >
-                  Delete
-                </Button>
-              </td>
-            </tr>
+            <ListGroup.Item key={r.id} className="mb-2">
+              <div className="d-flex flex-column flex-md-row justify-content-between align-items-start">
+                <div className="me-md-3 mb-2 mb-md-0">
+                  <h5>{getHouseName(r.houseId)}</h5>
+                  <p className="mb-1">
+                    <strong>Rent:</strong> ${r.rentAmount}
+                  </p>
+                  <p className="mb-1">
+                    <strong>Description:</strong> {r.description}
+                  </p>
+                  <small className="text-muted">
+                    Reported on: {new Date(r.reportDate).toLocaleString()}
+                  </small>
+                </div>
+                <div className="text-md-end">
+                  <Button
+                    variant="warning"
+                    size="sm"
+                    className="me-2"
+                    onClick={() => openModal(r)}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={() => handleDelete(r.id)}
+                  >
+                    Delete
+                  </Button>
+                </div>
+              </div>
+            </ListGroup.Item>
           ))}
-        </tbody>
-      </Table>
+        </ListGroup>
+      )}
 
       {/* Modal for Add / Edit */}
       <Modal show={showModal} onHide={closeModal} backdrop="static" centered>
@@ -264,7 +275,7 @@ export default function RentHouseReportsPage() {
             <Form.Group className="mb-3" controlId="formHouse">
               <Form.Label>House</Form.Label>
               <Form.Select
-                value={formHouseId}
+                value={formHouseId ?? ""}
                 onChange={(e) => setFormHouseId(Number(e.target.value))}
                 disabled={loading}
                 required
@@ -283,7 +294,7 @@ export default function RentHouseReportsPage() {
               <Form.Control
                 type="number"
                 placeholder="Enter rent amount"
-                value={formRentAmount}
+                value={formRentAmount ?? ""}
                 onChange={(e) => setFormRentAmount(Number(e.target.value))}
                 disabled={loading}
                 required

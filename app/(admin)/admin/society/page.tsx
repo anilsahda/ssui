@@ -1,7 +1,17 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { Modal, Button, Form, Table, Spinner, Alert } from "react-bootstrap";
+import {
+  Modal,
+  Button,
+  Form,
+  Spinner,
+  Alert,
+  ListGroup,
+  Card,
+  Row,
+  Col,
+} from "react-bootstrap";
 
 interface House {
   id: number;
@@ -36,7 +46,6 @@ const SocietiesPage = () => {
     zipCode: "",
   });
 
-  // Fetch societies on mount
   useEffect(() => {
     fetchSocieties();
   }, []);
@@ -44,10 +53,10 @@ const SocietiesPage = () => {
   const fetchSocieties = async () => {
     try {
       setLoading(true);
-      const res = await axios.get<Society[]>(
-        "https://localhost:7255/api/societies"
-      );
-      setSocieties(res.data);
+      const res = await axios.get("https://localhost:7255/api/societies");
+      console.log("API Response:", res.data);
+      const societiesData = Array.isArray(res.data) ? res.data : [];
+      setSocieties(societiesData);
       setError(null);
     } catch (err) {
       setError("Failed to fetch societies.");
@@ -130,49 +139,53 @@ const SocietiesPage = () => {
         </div>
       ) : error ? (
         <Alert variant="danger">{error}</Alert>
+      ) : societies.length === 0 ? (
+        <p>No societies found.</p>
       ) : (
-        <Table striped bordered hover responsive>
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Address</th>
-              <th>City</th>
-              <th>State</th>
-              <th>Zip Code</th>
-              <th>Number of Houses</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {societies.map((society) => (
-              <tr key={society.id}>
-                <td>{society.name}</td>
-                <td>{society.address}</td>
-                <td>{society.city}</td>
-                <td>{society.state}</td>
-                <td>{society.zipCode}</td>
-                <td>{society.houses.length}</td>
-                <td>
-                  <Button
-                    variant="info"
-                    size="sm"
-                    className="me-2"
-                    onClick={() => openEditModal(society)}
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    onClick={() => handleDelete(society.id)}
-                  >
-                    Delete
-                  </Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </Table>
+        <ListGroup>
+          {societies.map((society) => (
+            <ListGroup.Item key={society.id} className="mb-3">
+              <Card>
+                <Card.Body>
+                  <Row>
+                    <Col xs={12} md={8}>
+                      <Card.Title>{society.name}</Card.Title>
+                      <Card.Text>
+                        <strong>Address:</strong> {society.address} <br />
+                        <strong>City:</strong> {society.city} <br />
+                        <strong>State:</strong> {society.state} <br />
+                        <strong>Zip Code:</strong> {society.zipCode} <br />
+                        <strong>Number of Houses:</strong>{" "}
+                        {society.houses?.length || 0}
+                      </Card.Text>
+                    </Col>
+                    <Col
+                      xs={12}
+                      md={4}
+                      className="d-flex align-items-center justify-content-md-end mt-3 mt-md-0"
+                    >
+                      <Button
+                        variant="info"
+                        size="sm"
+                        className="me-2"
+                        onClick={() => openEditModal(society)}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        onClick={() => handleDelete(society.id)}
+                      >
+                        Delete
+                      </Button>
+                    </Col>
+                  </Row>
+                </Card.Body>
+              </Card>
+            </ListGroup.Item>
+          ))}
+        </ListGroup>
       )}
 
       {/* Modal for Add/Edit */}

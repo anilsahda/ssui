@@ -1,4 +1,4 @@
-"use client"; // Only if using App Router
+"use client";
 
 import React, { useEffect, useState } from "react";
 
@@ -37,12 +37,20 @@ export default function AllocateHouses() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/AllocateHouses");
+      const res = await fetch("https://localhost:7255/api/AllocateHouses");
       if (!res.ok) throw new Error("Failed to fetch allocations");
-      const data: AllocateHouse[] = await res.json();
+
+      const response = await res.json();
+      const data = Array.isArray(response)
+        ? response
+        : Array.isArray(response.data)
+        ? response.data
+        : [];
+
       setAllocations(data);
     } catch (e) {
       setError((e as Error).message);
+      setAllocations([]);
     } finally {
       setLoading(false);
     }
@@ -50,12 +58,20 @@ export default function AllocateHouses() {
 
   async function fetchHouses() {
     try {
-      const res = await fetch("/api/Houses");
+      const res = await fetch("https://localhost:7255/api/House");
       if (!res.ok) throw new Error("Failed to fetch houses");
-      const data: House[] = await res.json();
+
+      const response = await res.json();
+      const data = Array.isArray(response)
+        ? response
+        : Array.isArray(response.data)
+        ? response.data
+        : [];
+
       setHouses(data);
     } catch (e) {
-      console.error(e);
+      console.error("Error fetching houses:", e);
+      setHouses([]);
     }
   }
 
@@ -63,10 +79,18 @@ export default function AllocateHouses() {
     try {
       const res = await fetch("https://localhost:7255/api/Members");
       if (!res.ok) throw new Error("Failed to fetch members");
-      const data: Member[] = await res.json();
+
+      const response = await res.json();
+      const data = Array.isArray(response)
+        ? response
+        : Array.isArray(response.data)
+        ? response.data
+        : [];
+
       setMembers(data);
     } catch (e) {
-      console.error(e);
+      console.error("Error fetching members:", e);
+      setMembers([]);
     }
   }
 
@@ -81,6 +105,7 @@ export default function AllocateHouses() {
       alert("Please select both house and member.");
       return;
     }
+
     setLoading(true);
     setError(null);
     try {
@@ -89,10 +114,12 @@ export default function AllocateHouses() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ houseId: newHouseId, memberId: newMemberId }),
       });
+
       if (!res.ok) {
         const errMsg = await res.text();
         throw new Error(errMsg || "Failed to create allocation");
       }
+
       await fetchAllocations();
       setNewHouseId(undefined);
       setNewMemberId(undefined);
@@ -113,10 +140,12 @@ export default function AllocateHouses() {
           method: "PUT",
         }
       );
+
       if (!res.ok) {
         const errMsg = await res.text();
         throw new Error(errMsg || "Failed to release allocation");
       }
+
       await fetchAllocations();
     } catch (e) {
       setError((e as Error).message);
@@ -131,7 +160,7 @@ export default function AllocateHouses() {
 
       {error && <div className="alert alert-danger">{error}</div>}
 
-      {/* Create Allocation */}
+      {/* Create Allocation Form */}
       <div className="card mb-4">
         <div className="card-header">Create New Allocation</div>
         <div className="card-body">
@@ -194,62 +223,7 @@ export default function AllocateHouses() {
         </div>
       </div>
 
-      {/* Allocations Table */}
-      <div className="card">
-        <div className="card-header">Current Allocations</div>
-        <div className="card-body p-0">
-          {loading ? (
-            <div className="text-center py-4">
-              <div className="spinner-border text-primary" />
-            </div>
-          ) : allocations.length === 0 ? (
-            <div className="text-center py-3">No allocations found.</div>
-          ) : (
-            <div className="table-responsive">
-              <table className="table table-striped table-bordered m-0">
-                <thead className="table-light">
-                  <tr>
-                    <th>ID</th>
-                    <th>House</th>
-                    <th>Member</th>
-                    <th>Allocated At</th>
-                    <th>Released At</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {allocations.map((alloc) => (
-                    <tr key={alloc.id}>
-                      <td>{alloc.id}</td>
-                      <td>{alloc.house?.name}</td>
-                      <td>{alloc.member?.name}</td>
-                      <td>{new Date(alloc.allocationDate).toLocaleString()}</td>
-                      <td>
-                        {alloc.releaseDate ? (
-                          new Date(alloc.releaseDate).toLocaleString()
-                        ) : (
-                          <span className="badge bg-warning">Not Released</span>
-                        )}
-                      </td>
-                      <td>
-                        {!alloc.releaseDate && (
-                          <button
-                            className="btn btn-sm btn-outline-danger"
-                            onClick={() => releaseAllocation(alloc.id)}
-                            disabled={loading}
-                          >
-                            Release
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      </div>
+      {/* Allocation table removed */}
     </div>
   );
 }

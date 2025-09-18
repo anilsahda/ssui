@@ -15,22 +15,32 @@ const HousesPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Form state for Add/Edit
   const [formData, setFormData] = useState<Partial<House>>({});
   const [isEditing, setIsEditing] = useState(false);
   const [showModal, setShowModal] = useState(false);
 
-  // Fetch houses
   const fetchHouses = async () => {
     setLoading(true);
     setError(null);
     try {
       const res = await fetch("https://localhost:7255/api/House");
       if (!res.ok) throw new Error("Failed to fetch houses");
-      const data = await res.json();
-      setHouses(data);
+
+      const response = await res.json();
+      const housesArray = Array.isArray(response)
+        ? response
+        : Array.isArray(response.data)
+        ? response.data
+        : [];
+
+      if (!Array.isArray(housesArray)) {
+        throw new Error("Invalid API response: expected array");
+      }
+
+      setHouses(housesArray);
     } catch (err: any) {
       setError(err.message);
+      setHouses([]);
     }
     setLoading(false);
   };
@@ -39,7 +49,6 @@ const HousesPage: React.FC = () => {
     fetchHouses();
   }, []);
 
-  // Handle input change
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
@@ -48,27 +57,23 @@ const HousesPage: React.FC = () => {
     }));
   };
 
-  // Open modal for Add
   const openAddModal = () => {
     setFormData({});
     setIsEditing(false);
     setShowModal(true);
   };
 
-  // Open modal for Edit
   const openEditModal = (house: House) => {
     setFormData(house);
     setIsEditing(true);
     setShowModal(true);
   };
 
-  // Close modal
   const closeModal = () => {
     setShowModal(false);
     setFormData({});
   };
 
-  // Submit form handler (Create or Update)
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
@@ -80,7 +85,6 @@ const HousesPage: React.FC = () => {
     };
 
     try {
-      debugger;
       const url = isEditing
         ? `https://localhost:7255/api/House/${formData.id}`
         : "https://localhost:7255/api/House";
@@ -94,9 +98,7 @@ const HousesPage: React.FC = () => {
         body: JSON.stringify(payload),
       });
 
-      if (!res.ok) {
-        throw new Error("Failed to save house");
-      }
+      if (!res.ok) throw new Error("Failed to save house");
 
       await fetchHouses();
       closeModal();
@@ -105,7 +107,6 @@ const HousesPage: React.FC = () => {
     }
   };
 
-  // Delete house
   const handleDelete = async (id: number) => {
     if (!confirm("Are you sure you want to delete this house?")) return;
 
@@ -137,43 +138,10 @@ const HousesPage: React.FC = () => {
       ) : houses.length === 0 ? (
         <p>No houses found.</p>
       ) : (
-        <table className="table table-striped table-bordered">
-          <thead className="table-dark">
-            <tr>
-              <th>ID</th>
-              <th>House Number</th>
-              <th>Society ID</th>
-              <th>Address</th>
-              <th>Allocated</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {houses.map((house) => (
-              <tr key={house.id}>
-                <td>{house.id}</td>
-                <td>{house.houseNumber}</td>
-                <td>{house.societyId}</td>
-                <td>{house.address}</td>
-                <td>{house.isAllocated ? "Yes" : "No"}</td>
-                <td>
-                  <button
-                    className="btn btn-sm btn-info me-2"
-                    onClick={() => openEditModal(house)}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    className="btn btn-sm btn-danger"
-                    onClick={() => handleDelete(house.id)}
-                  >
-                    Delete
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="alert alert-info">
+          {/* Optionally, you can list house count or just leave a message */}
+          {houses.length} house(s) fetched. Table view has been removed.
+        </div>
       )}
 
       {/* Modal */}

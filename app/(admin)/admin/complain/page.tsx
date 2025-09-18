@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from "react";
 import {
   Container,
-  Table,
   Button,
   Form,
   Row,
@@ -58,10 +57,12 @@ export default function ComplainsPage() {
         : "https://localhost:7255/api/Complains";
       const res = await fetch(endpoint);
       if (!res.ok) throw new Error("Failed to fetch complaints.");
-      const data: Complain[] = await res.json();
-      setComplains(data);
+
+      const data = await res.json();
+      setComplains(Array.isArray(data) ? data : []);
     } catch (err) {
       setError((err as Error).message);
+      setComplains([]);
     } finally {
       setLoading(false);
     }
@@ -75,10 +76,23 @@ export default function ComplainsPage() {
         fetch("https://localhost:7255/api/Members"),
       ]);
 
-      if (houseRes.ok) setHouses(await houseRes.json());
-      if (memberRes.ok) setMembers(await memberRes.json());
+      if (houseRes.ok) {
+        const houseData = await houseRes.json();
+        setHouses(Array.isArray(houseData) ? houseData : []);
+      } else {
+        setHouses([]);
+      }
+
+      if (memberRes.ok) {
+        const memberData = await memberRes.json();
+        setMembers(Array.isArray(memberData) ? memberData : []);
+      } else {
+        setMembers([]);
+      }
     } catch (err) {
       console.error("Error loading houses or members.");
+      setHouses([]);
+      setMembers([]);
     }
   };
 
@@ -121,7 +135,7 @@ export default function ComplainsPage() {
     }
   };
 
-  // Resolve a complaint
+  // Resolve a complaint (still here in case you re-add a UI for it later)
   const handleResolve = async (id: number) => {
     setLoading(true);
     try {
@@ -218,7 +232,7 @@ export default function ComplainsPage() {
         </Button>
       </Form>
 
-      {/* Filter */}
+      {/* Filter Switch */}
       <Form.Check
         type="switch"
         label="Show only unresolved complaints"
@@ -227,58 +241,7 @@ export default function ComplainsPage() {
         className="mb-4"
       />
 
-      {/* Complaints Table */}
-      <Table striped bordered hover responsive>
-        <thead className="table-dark">
-          <tr>
-            <th>ID</th>
-            <th>Description</th>
-            <th>House</th>
-            <th>Member</th>
-            <th>Date</th>
-            <th>Status</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {complains.length === 0 ? (
-            <tr>
-              <td colSpan={7} className="text-center py-3">
-                No complaints found.
-              </td>
-            </tr>
-          ) : (
-            complains.map((c) => (
-              <tr key={c.id}>
-                <td>{c.id}</td>
-                <td>{c.description}</td>
-                <td>{c.house?.name}</td>
-                <td>{c.member?.name || "N/A"}</td>
-                <td>{new Date(c.complainDate).toLocaleString()}</td>
-                <td>
-                  {c.isResolved ? (
-                    <span className="text-success fw-bold">Resolved</span>
-                  ) : (
-                    <span className="text-danger fw-bold">Unresolved</span>
-                  )}
-                </td>
-                <td>
-                  {!c.isResolved && (
-                    <Button
-                      size="sm"
-                      variant="success"
-                      onClick={() => handleResolve(c.id)}
-                      disabled={loading}
-                    >
-                      Resolve
-                    </Button>
-                  )}
-                </td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </Table>
+      {/* Table Removed */}
     </Container>
   );
 }

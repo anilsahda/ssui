@@ -2,12 +2,14 @@
 import React, { useEffect, useState } from "react";
 import {
   Container,
-  Table,
   Button,
   Modal,
   Form,
   Alert,
   Spinner,
+  ListGroup,
+  Row,
+  Col,
 } from "react-bootstrap";
 
 interface Member {
@@ -51,10 +53,18 @@ export default function MemberReports() {
     try {
       const res = await fetch("https://localhost:7255/api/MemberReports");
       if (!res.ok) throw new Error("Failed to fetch reports");
-      const data: MemberReport[] = await res.json();
+
+      const response = await res.json();
+      const data = Array.isArray(response)
+        ? response
+        : Array.isArray(response?.data)
+        ? response.data
+        : [];
+
       setReports(data);
     } catch (err) {
       setError((err as Error).message);
+      setReports([]);
     } finally {
       setLoading(false);
     }
@@ -64,10 +74,11 @@ export default function MemberReports() {
     try {
       const res = await fetch("https://localhost:7255/api/Members");
       if (!res.ok) throw new Error("Failed to fetch members");
-      const data: Member[] = await res.json();
-      setMembers(data);
+      const data = await res.json();
+      setMembers(Array.isArray(data) ? data : []);
     } catch (err) {
       setError((err as Error).message);
+      setMembers([]);
     }
   };
 
@@ -146,9 +157,12 @@ export default function MemberReports() {
     try {
       const res = await fetch(
         `https://localhost:7255/api/MemberReports/${id}`,
-        { method: "DELETE" }
+        {
+          method: "DELETE",
+        }
       );
       if (!res.ok) throw new Error("Failed to delete report");
+
       setSuccess("Report deleted.");
       fetchReports();
     } catch (err) {
@@ -179,31 +193,24 @@ export default function MemberReports() {
         </div>
       )}
 
-      <Table striped bordered hover responsive>
-        <thead className="table-dark">
-          <tr>
-            <th>#</th>
-            <th>Title</th>
-            <th>Description</th>
-            <th>Member</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {reports.length === 0 && (
-            <tr>
-              <td colSpan={5} className="text-center">
-                No reports found.
-              </td>
-            </tr>
-          )}
+      {/* Reports List (no table) */}
+      {reports.length === 0 ? (
+        <p>No reports found.</p>
+      ) : (
+        <ListGroup>
           {reports.map((report) => (
-            <tr key={report.id}>
-              <td>{report.id}</td>
-              <td>{report.title}</td>
-              <td>{report.description}</td>
-              <td>{report.member?.name || "N/A"}</td>
-              <td>
+            <ListGroup.Item
+              key={report.id}
+              className="d-flex justify-content-between align-items-start flex-column flex-md-row"
+            >
+              <div className="me-3">
+                <h5>{report.title}</h5>
+                <p className="mb-1">{report.description}</p>
+                <small>
+                  <strong>Member:</strong> {report.member?.name || "N/A"}
+                </small>
+              </div>
+              <div className="mt-2 mt-md-0 text-md-end">
                 <Button
                   size="sm"
                   variant="warning"
@@ -219,11 +226,11 @@ export default function MemberReports() {
                 >
                   Delete
                 </Button>
-              </td>
-            </tr>
+              </div>
+            </ListGroup.Item>
           ))}
-        </tbody>
-      </Table>
+        </ListGroup>
+      )}
 
       {/* Modal for Add/Edit */}
       <Modal show={showModal} onHide={closeModal} backdrop="static">
@@ -269,11 +276,12 @@ export default function MemberReports() {
                 required
               >
                 <option value="">Select Member</option>
-                {members.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.name}
-                  </option>
-                ))}
+                {Array.isArray(members) &&
+                  members.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name}
+                    </option>
+                  ))}
               </Form.Select>
             </Form.Group>
           </Modal.Body>

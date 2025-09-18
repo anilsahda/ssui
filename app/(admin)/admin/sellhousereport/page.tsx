@@ -3,12 +3,12 @@
 import React, { useState, useEffect } from "react";
 import {
   Container,
-  Table,
   Button,
   Modal,
   Form,
   Alert,
   Spinner,
+  Card,
 } from "react-bootstrap";
 
 interface House {
@@ -65,7 +65,7 @@ export default function SellHouseReportsPage() {
 
   async function fetchHouses() {
     try {
-      const res = await fetch("https://localhost:7255/api/Houses");
+      const res = await fetch("https://localhost:7255/api/House");
       if (!res.ok) throw new Error("Failed to fetch houses.");
       const data: House[] = await res.json();
       setHouses(data);
@@ -200,53 +200,38 @@ export default function SellHouseReportsPage() {
         </div>
       )}
 
-      <Table striped bordered hover responsive>
-        <thead className="table-dark">
-          <tr>
-            <th>#</th>
-            <th>House</th>
-            <th>Price</th>
-            <th>Description</th>
-            <th>Reported On</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {reports.length === 0 && !loading && (
-            <tr>
-              <td colSpan={6} className="text-center">
-                No reports found
-              </td>
-            </tr>
-          )}
-          {reports.map((r) => (
-            <tr key={r.id}>
-              <td>{r.id}</td>
-              <td>{r.house?.name || `House ${r.houseId}`}</td>
-              <td>{r.price}</td>
-              <td>{r.description}</td>
-              <td>{new Date(r.reportDate).toLocaleString()}</td>
-              <td>
-                <Button
-                  variant="warning"
-                  size="sm"
-                  className="me-2"
-                  onClick={() => openModal(r)}
-                >
-                  Edit
-                </Button>
-                <Button
-                  variant="danger"
-                  size="sm"
-                  onClick={() => handleDelete(r.id)}
-                >
-                  Delete
-                </Button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </Table>
+      {reports.length === 0 && !loading ? (
+        <p className="text-center">No reports found</p>
+      ) : (
+        reports.map((r) => (
+          <Card className="mb-3" key={r.id}>
+            <Card.Body>
+              <Card.Title>
+                {r.house?.name || `House ${r.houseId}`} - ${r.price}
+              </Card.Title>
+              <Card.Subtitle className="mb-2 text-muted">
+                {new Date(r.reportDate).toLocaleString()}
+              </Card.Subtitle>
+              <Card.Text>{r.description}</Card.Text>
+              <Button
+                variant="warning"
+                size="sm"
+                className="me-2"
+                onClick={() => openModal(r)}
+              >
+                Edit
+              </Button>
+              <Button
+                variant="danger"
+                size="sm"
+                onClick={() => handleDelete(r.id)}
+              >
+                Delete
+              </Button>
+            </Card.Body>
+          </Card>
+        ))
+      )}
 
       {/* Modal */}
       <Modal show={showModal} onHide={closeModal} backdrop="static" centered>

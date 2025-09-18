@@ -2,20 +2,17 @@
 import React, { useEffect, useState } from "react";
 import {
   Container,
-  Table,
   Button,
   Modal,
   Form,
   Alert,
   Spinner,
-  Row,
-  Col,
+  Card,
 } from "react-bootstrap";
 
 interface House {
   id: number;
   houseNumber: string;
-  // Add more fields if needed
 }
 
 interface AllocatedHouse {
@@ -66,10 +63,22 @@ export default function MembersPage() {
     try {
       const res = await fetch("https://localhost:7255/api/Members");
       if (!res.ok) throw new Error("Failed to fetch members");
-      const data: Member[] = await res.json();
-      setMembers(data);
+
+      const response = await res.json();
+      const membersArray = Array.isArray(response)
+        ? response
+        : Array.isArray(response.data)
+        ? response.data
+        : [];
+
+      if (!Array.isArray(membersArray)) {
+        throw new Error("Invalid response format: expected an array");
+      }
+
+      setMembers(membersArray);
     } catch (err) {
       setError((err as Error).message);
+      setMembers([]);
     } finally {
       setLoading(false);
     }
@@ -150,7 +159,9 @@ export default function MembersPage() {
     setSuccess(null);
 
     try {
-      const res = await fetch(`/api/Members/${id}`, { method: "DELETE" });
+      const res = await fetch(`https://localhost:7255/api/Members/${id}`, {
+        method: "DELETE",
+      });
       if (!res.ok) throw new Error("Failed to delete member");
       setSuccess("Member deleted.");
       fetchMembers();
@@ -182,63 +193,54 @@ export default function MembersPage() {
         </div>
       )}
 
-      <Table striped bordered hover responsive>
-        <thead className="table-dark">
-          <tr>
-            <th>#</th>
-            <th>Name</th>
-            <th>Email</th>
-            <th>Phone</th>
-            <th>Allocated Houses</th>
-            <th>Reports</th>
-            <th>Complains</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {members.length === 0 && (
-            <tr>
-              <td colSpan={8} className="text-center">
-                No members found.
-              </td>
-            </tr>
-          )}
-          {members.map((member) => (
-            <tr key={member.id}>
-              <td>{member.id}</td>
-              <td>{member.name}</td>
-              <td>{member.email}</td>
-              <td>{member.phone || "-"}</td>
-              <td>
+      {/* Member Cards instead of Table */}
+      {members.length === 0 && !loading ? (
+        <p className="text-center">No members found.</p>
+      ) : (
+        members.map((member) => (
+          <Card key={member.id} className="mb-3">
+            <Card.Body>
+              <Card.Title>{member.name}</Card.Title>
+              <Card.Subtitle className="mb-2 text-muted">
+                {member.email}
+              </Card.Subtitle>
+              <p>
+                <strong>Phone:</strong> {member.phone || "-"}
+              </p>
+              <p>
+                <strong>Allocated Houses:</strong>{" "}
                 {member.allocatedHouses.length > 0
                   ? member.allocatedHouses
                       .map((ah) => ah.house.houseNumber)
                       .join(", ")
                   : "-"}
-              </td>
-              <td>{member.memberReports.length}</td>
-              <td>{member.complains.length}</td>
-              <td>
-                <Button
-                  size="sm"
-                  variant="warning"
-                  className="me-2"
-                  onClick={() => openModal(member)}
-                >
-                  Edit
-                </Button>
-                <Button
-                  size="sm"
-                  variant="danger"
-                  onClick={() => handleDelete(member.id)}
-                >
-                  Delete
-                </Button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </Table>
+              </p>
+              <p>
+                <strong>Reports:</strong> {member.memberReports.length}
+              </p>
+              <p>
+                <strong>Complains:</strong> {member.complains.length}
+              </p>
+
+              <Button
+                size="sm"
+                variant="warning"
+                className="me-2"
+                onClick={() => openModal(member)}
+              >
+                Edit
+              </Button>
+              <Button
+                size="sm"
+                variant="danger"
+                onClick={() => handleDelete(member.id)}
+              >
+                Delete
+              </Button>
+            </Card.Body>
+          </Card>
+        ))
+      )}
 
       {/* Modal for Add/Edit */}
       <Modal show={showModal} onHide={closeModal} backdrop="static">
