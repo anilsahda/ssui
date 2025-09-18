@@ -54,10 +54,28 @@ export default function SellHouseReportsPage() {
     try {
       const res = await fetch("https://localhost:7255/api/SellHouseReports");
       if (!res.ok) throw new Error("Failed to fetch reports.");
+<<<<<<< HEAD
       const data: SellHouseReport[] = await res.json();
       setReports(data);
     } catch (err) {
       setError((err as Error).message);
+=======
+      const data = await res.json();
+      console.log("Fetched reports data:", data);
+
+      // Adjust this depending on your API response structure
+      // If your API returns { data: SellHouseReport[] }, do:
+      if (Array.isArray(data)) {
+        setReports(data);
+      } else if (Array.isArray(data.data)) {
+        setReports(data.data);
+      } else {
+        throw new Error("Unexpected reports data format");
+      }
+    } catch (err) {
+      setError((err as Error).message);
+      setReports([]); // reset to empty on error
+>>>>>>> c9967644c415257e92df8890c7a51ac49b65286f
     } finally {
       setLoading(false);
     }
@@ -67,10 +85,26 @@ export default function SellHouseReportsPage() {
     try {
       const res = await fetch("https://localhost:7255/api/House");
       if (!res.ok) throw new Error("Failed to fetch houses.");
+<<<<<<< HEAD
       const data: House[] = await res.json();
       setHouses(data);
     } catch (err) {
       console.error(err);
+=======
+      const data = await res.json();
+
+      if (Array.isArray(data)) {
+        setHouses(data);
+      } else if (Array.isArray(data.data)) {
+        setHouses(data.data);
+      } else {
+        console.error("Unexpected houses data format", data);
+        setHouses([]);
+      }
+    } catch (err) {
+      console.error(err);
+      setHouses([]);
+>>>>>>> c9967644c415257e92df8890c7a51ac49b65286f
     }
   }
 
@@ -200,7 +234,16 @@ export default function SellHouseReportsPage() {
         </div>
       )}
 
+<<<<<<< HEAD
       {reports.length === 0 && !loading ? (
+=======
+      {/* Defensive check to ensure reports is an array */}
+      {!Array.isArray(reports) ? (
+        <p className="text-center text-danger">
+          Error: Reports data is invalid.
+        </p>
+      ) : reports.length === 0 && !loading ? (
+>>>>>>> c9967644c415257e92df8890c7a51ac49b65286f
         <p className="text-center">No reports found</p>
       ) : (
         reports.map((r) => (
