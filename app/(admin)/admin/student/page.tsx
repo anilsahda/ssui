@@ -1,32 +1,104 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import axios from "axios";
 
 function StudentPage() {
+  const [students, setStudents] = useState<any[]>([]);
   const [showModal, setShowModal] = useState(false);
-  const [students, setStudents] = useState([
-    {
-      id: 1,
-      name: "Kapil Yadav",
-      branch: "Computer Science",
-      mobile: "9876543210",
-      email: "kapil@example.com",
-      dob: "2000-01-01",
-      address: "Delhi, India",
-    },
-    {
-      id: 2,
-      name: "Rahul Sharma",
-      branch: "Electronics",
-      mobile: "9123456780",
-      email: "rahul@example.com",
-      dob: "2001-05-15",
-      address: "Mumbai, India",
-    },
-  ]);
+  const [editingStudent, setEditingStudent] = useState<any>(null);
+  const [formData, setFormData] = useState({
+    name: "",
+    branch: "",
+    mobile: "",
+    email: "",
+    dob: "",
+    address: "",
+  });
 
-  const handleOpenModal = () => setShowModal(true);
-  const handleCloseModal = () => setShowModal(false);
+  // 🔹 API base URL (change as per your backend)
+  const API_URL = "https://localhost:7293/api/Students";
+
+  // 🔹 Fetch students on load
+  useEffect(() => {
+    fetchStudents();
+  }, []);
+
+  const fetchStudents = async () => {
+    try {
+      const res = await axios.get(API_URL + "/GetStudent");
+      setStudents(res.data);
+    } catch (err) {
+      console.error("Error fetching students:", err);
+    }
+  };
+
+  // 🔹 Handle input changes
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  // 🔹 Open modal for new student
+  const handleOpenModal = () => {
+    setEditingStudent(null);
+    setFormData({
+      name: "",
+      branch: "",
+      mobile: "",
+      email: "",
+      dob: "",
+      address: "",
+    });
+    setShowModal(true);
+  };
+
+  // 🔹 Open modal for editing student
+  const handleEdit = (student: any) => {
+    setEditingStudent(student);
+    setFormData({
+      name: student.name,
+      branch: student.branch,
+      mobile: student.mobile,
+      email: student.email,
+      dob: student.dob,
+      address: student.address,
+    });
+    setShowModal(true);
+  };
+
+  // 🔹 Add / Update Student
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (editingStudent) {
+        // Update
+        await axios.put(`${API_URL}/UpdateStudent`, {
+          Id: editingStudent.id,
+          ...formData,
+        });
+      } else {
+        // Create
+        await axios.post(API_URL + "/AddStudent", formData);
+      }
+      fetchStudents();
+      setShowModal(false);
+    } catch (err) {
+      console.error("Error saving student:", err);
+    }
+  };
+
+  // 🔹 Delete Student
+  const handleDelete = async (id: number) => {
+    if (!window.confirm("Are you sure you want to delete this student?")) return;
+    try {
+      await axios.delete(`${API_URL}/${id}`);
+      fetchStudents();
+    } catch (err) {
+      console.error("Error deleting student:", err);
+    }
+  };
 
   return (
     <div className="container mt-4">
@@ -39,7 +111,7 @@ function StudentPage() {
         </button>
       </div>
 
-      {/* Modal Popup */}
+      {/* Student Form Modal */}
       {showModal && (
         <div
           className="modal fade show d-block"
@@ -49,28 +121,39 @@ function StudentPage() {
           <div className="modal-dialog modal-dialog-centered modal-lg">
             <div className="modal-content">
               <div className="modal-header">
-                <h5 className="modal-title">Add Student</h5>
+                <h5 className="modal-title">
+                  {editingStudent ? "Edit Student" : "Add Student"}
+                </h5>
                 <button
                   type="button"
                   className="btn-close"
-                  onClick={handleCloseModal}
+                  onClick={() => setShowModal(false)}
                 ></button>
               </div>
               <div className="modal-body">
-                <form>
+                <form onSubmit={handleSubmit}>
                   <div className="row">
                     <div className="col-md-6 mb-3">
                       <label className="form-label">Student Name</label>
                       <input
                         type="text"
                         className="form-control"
-                        placeholder="Enter Student Name"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleChange}
+                        required
                       />
                     </div>
                     <div className="col-md-6 mb-3">
                       <label className="form-label">Branch</label>
-                      <select className="form-select">
-                        <option>Select Branch</option>
+                      <select
+                        className="form-select"
+                        name="branch"
+                        value={formData.branch}
+                        onChange={handleChange}
+                        required
+                      >
+                        <option value="">Select Branch</option>
                         <option>Computer Science</option>
                         <option>Electronics</option>
                         <option>Mechanical</option>
@@ -83,7 +166,10 @@ function StudentPage() {
                       <input
                         type="text"
                         className="form-control"
-                        placeholder="Enter Mobile Number"
+                        name="mobile"
+                        value={formData.mobile}
+                        onChange={handleChange}
+                        required
                       />
                     </div>
                     <div className="col-md-6 mb-3">
@@ -91,19 +177,32 @@ function StudentPage() {
                       <input
                         type="email"
                         className="form-control"
-                        placeholder="Enter Email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleChange}
+                        required
                       />
                     </div>
                     <div className="col-md-6 mb-3">
                       <label className="form-label">Date of Birth</label>
-                      <input type="date" className="form-control" />
+                      <input
+                        type="date"
+                        className="form-control"
+                        name="dob"
+                        value={formData.dob}
+                        onChange={handleChange}
+                        required
+                      />
                     </div>
                     <div className="col-md-12 mb-3">
                       <label className="form-label">Address</label>
                       <textarea
                         className="form-control"
+                        name="address"
                         rows={2}
-                        placeholder="Enter Address"
+                        value={formData.address}
+                        onChange={handleChange}
+                        required
                       ></textarea>
                     </div>
                   </div>
@@ -111,12 +210,12 @@ function StudentPage() {
                     <button
                       type="button"
                       className="btn btn-secondary me-2"
-                      onClick={handleCloseModal}
+                      onClick={() => setShowModal(false)}
                     >
                       Cancel
                     </button>
                     <button type="submit" className="btn btn-primary">
-                      Add Student
+                      {editingStudent ? "Update Student" : "Add Student"}
                     </button>
                   </div>
                 </form>
@@ -130,6 +229,7 @@ function StudentPage() {
       <table className="table table-bordered table-striped mt-4">
         <thead className="table-light">
           <tr>
+            <th>Id</th>
             <th>Name</th>
             <th>Branch</th>
             <th>Mobile</th>
@@ -140,21 +240,45 @@ function StudentPage() {
           </tr>
         </thead>
         <tbody>
-          {students.map((student) => (
-            <tr key={student.id}>
-              <td>{student.name}</td>
-              <td>{student.branch}</td>
-              <td>{student.mobile}</td>
-              <td>{student.email}</td>
-              <td>{student.dob}</td>
-              <td>{student.address}</td>
-              <td>
-                <button className="btn btn-success btn-sm me-1">View</button>
-                <button className="btn btn-warning btn-sm me-1">Edit</button>
-                <button className="btn btn-danger btn-sm">Delete</button>
+          {students.length > 0 ? (
+            students.map((student) => (
+              <tr key={student.id}>
+                <td>{student.id}</td>
+                <td>{student.name}</td>
+                <td>{student.branch}</td>
+                <td>{student.mobile}</td>
+                <td>{student.email}</td>
+                <td>{student.dob}</td>
+                <td>{student.address}</td>
+                <td>
+                  <button
+                    className="btn btn-warning btn-sm me-1"
+                    onClick={() => handleEdit(student)}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    className="btn btn-danger btn-sm me-1"
+                    onClick={() => handleDelete(student.id)}
+                  >
+                    Delete
+                  </button>
+                  <button
+                    className="btn btn-success btn-sm"
+                    onClick={() => alert(`Student: ${student.name}`)}
+                  >
+                    View
+                  </button>
+                </td>
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td colSpan={8} className="text-center">
+                No Students Found
               </td>
             </tr>
-          ))}
+          )}
         </tbody>
       </table>
     </div>
