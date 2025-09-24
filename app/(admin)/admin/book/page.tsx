@@ -5,24 +5,31 @@ import axios from "axios";
 
 function BookPage() {
   const [books, setBooks] = useState<any[]>([]);
+  const [publications, setPublications] = useState<any[]>([]);
+  const [branches, setBranches] = useState<any[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [editingBook, setEditingBook] = useState<any>(null);
+
   const [formData, setFormData] = useState({
     name: "",
     details: "",
     author: "",
     publicationId: 0,
-    branch: "",
+    branchId: 0,
     price: "",
     quantity: "",
   });
 
-  // 🔹 API base URL (change according to your backend)
+  // 🔹 API base URLs
   const API_URL = "https://localhost:7293/api/Books";
+  const PUBLICATION_API_URL = "https://localhost:7293/api/Publications";
+  const BRANCH_API_URL = "https://localhost:7293/api/Branches";
 
-  // 🔹 Fetch all books on load
+  // 🔹 Fetch books, publications & branches
   useEffect(() => {
     fetchBooks();
+    fetchPublications();
+    fetchBranches();
   }, []);
 
   const fetchBooks = async () => {
@@ -34,13 +41,43 @@ function BookPage() {
     }
   };
 
+  const fetchPublications = async () => {
+    try {
+      const res = await axios.get(PUBLICATION_API_URL + "/GetPublications");
+      setPublications(res.data);
+    } catch (err) {
+      console.error("Error fetching publications:", err);
+    }
+  };
+
+  const fetchBranches = async () => {
+    try {
+      const res = await axios.get(BRANCH_API_URL + "/GetBranches");
+      setBranches(res.data);
+    } catch (err) {
+      console.error("Error fetching branches:", err);
+    }
+  };
+
   // 🔹 Handle input changes
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
     >
   ) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    let { name, value } = e.target;
+
+    // Convert numbers properly
+    if (
+      name === "publicationId" ||
+      name === "branchId" ||
+      name === "price" ||
+      name === "quantity"
+    ) {
+      value = value === "" ? "" : Number(value);
+    }
+
+    setFormData({ ...formData, [name]: value });
   };
 
   // 🔹 Open modal for new book
@@ -51,7 +88,7 @@ function BookPage() {
       details: "",
       author: "",
       publicationId: 0,
-      branch: "",
+      branchId: 0,
       price: "",
       quantity: "",
     });
@@ -60,14 +97,13 @@ function BookPage() {
 
   // 🔹 Open modal for editing book
   const handleEdit = (book: any) => {
-    
     setEditingBook(book);
     setFormData({
       name: book.name,
       details: book.details,
       author: book.author,
       publicationId: book.publicationId,
-      branch: book.branch,
+      branchId: book.branchId,
       price: book.price,
       quantity: book.quantity,
     });
@@ -79,12 +115,11 @@ function BookPage() {
     e.preventDefault();
     try {
       if (editingBook) {
-        debugger;
-        // Update (include ID in request)
-await axios.put(`${API_URL}/UpdateBook`, {
-  Id: editingBook.id,   // Must match backend property case
-  ...formData,
-});
+        // Update (include ID)
+        await axios.put(`${API_URL}/UpdateBook`, {
+          Id: editingBook.id,
+          ...formData,
+        });
       } else {
         // Create
         await axios.post(API_URL + "/AddBook", formData);
@@ -127,7 +162,7 @@ await axios.put(`${API_URL}/UpdateBook`, {
           style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
         >
           <div
-            className="modal-dialog modal-dialog-centered modal-lg"
+            className="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg"
             role="document"
           >
             <div className="modal-content">
@@ -182,16 +217,17 @@ await axios.put(`${API_URL}/UpdateBook`, {
                     <label className="form-label">Publication</label>
                     <select
                       className="form-select"
-                      name="publication"
+                      name="publicationId"
                       value={formData.publicationId}
                       onChange={handleChange}
+                      required
                     >
-                      <option value="">Select Publication</option>
-                      <option>Oxford University Press</option>
-                      <option>Cambridge University Press</option>
-                      <option>McGraw Hill</option>
-                      <option>Pearson</option>
-                      <option>MIT Press</option>
+                      <option value={0}>Select Publication</option>
+                      {publications.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
                     </select>
                   </div>
 
@@ -199,16 +235,17 @@ await axios.put(`${API_URL}/UpdateBook`, {
                     <label className="form-label">Branch</label>
                     <select
                       className="form-select"
-                      name="branch"
-                      value={formData.branch}
+                      name="branchId"
+                      value={formData.branchId}
                       onChange={handleChange}
+                      required
                     >
-                      <option value="">Select Branch</option>
-                      <option>Computer Science</option>
-                      <option>Electronics</option>
-                      <option>Mechanical</option>
-                      <option>Civil</option>
-                      <option>Electrical</option>
+                      <option value={0}>Select Branch</option>
+                      {branches.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
                     </select>
                   </div>
 
@@ -216,6 +253,7 @@ await axios.put(`${API_URL}/UpdateBook`, {
                     <label className="form-label">Price</label>
                     <input
                       type="number"
+                      min="0"
                       className="form-control"
                       name="price"
                       value={formData.price}
@@ -227,6 +265,7 @@ await axios.put(`${API_URL}/UpdateBook`, {
                     <label className="form-label">Quantity</label>
                     <input
                       type="number"
+                      min="0"
                       className="form-control"
                       name="quantity"
                       value={formData.quantity}
@@ -275,8 +314,18 @@ await axios.put(`${API_URL}/UpdateBook`, {
                 <td>{book.id}</td>
                 <td>{book.name}</td>
                 <td>{book.author}</td>
-                <td>{book.publicationId}</td>
-                <td>{book.branch}</td>
+                <td>
+                  {
+                    publications.find((p) => p.id === book.publicationId)
+                      ?.name || book.publicationId
+                  }
+                </td>
+                <td>
+                  {
+                    branches.find((b) => b.id === book.branchId)?.name ||
+                    book.branchId
+                  }
+                </td>
                 <td>{book.price}</td>
                 <td>{book.quantity}</td>
                 <td>{book.details}</td>

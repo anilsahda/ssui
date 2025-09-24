@@ -296,10 +296,10 @@ function IssueBookPage() {
               issuedBooks.map((book) => (
                 <tr key={book.id}>
                   <td>{book.id}</td>
-                  <td>{book.bookName}</td>
-                  <td>{book.publication}</td>
-                  <td>{book.branch}</td>
-                  <td>{book.student}</td>
+                  <td>{book.bookId}</td>
+                  <td>{book.publicationId}</td>
+                  <td>{book.branchId}</td>
+                  <td>{book.studentId}</td>
                   <td>{book.issueDate}</td>
                   <td>{book.issueDays}</td>
                   <td>
