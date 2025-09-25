@@ -6,10 +6,11 @@ import axios from "axios";
 function StudentPage() {
   const [students, setStudents] = useState<any[]>([]);
   const [showModal, setShowModal] = useState(false);
+  const [branches, setBranches] = useState<any[]>([]);
   const [editingStudent, setEditingStudent] = useState<any>(null);
   const [formData, setFormData] = useState({
     name: "",
-    branch: "",
+    branchId: 0,
     mobile: "",
     email: "",
     dob: "",
@@ -18,10 +19,12 @@ function StudentPage() {
 
   // 🔹 API base URL (change as per your backend)
   const API_URL = "https://localhost:7293/api/Students";
+  const BRANCH_API_URL = "https://localhost:7293/api/Branches";
 
   // 🔹 Fetch students on load
   useEffect(() => {
     fetchStudents();
+    fetchBranches();
   }, []);
 
   const fetchStudents = async () => {
@@ -30,6 +33,14 @@ function StudentPage() {
       setStudents(res.data);
     } catch (err) {
       console.error("Error fetching students:", err);
+    }
+  };
+  const fetchBranches = async () => {
+    try {
+      const res = await axios.get(BRANCH_API_URL + "/GetBranches");
+      setBranches(res.data);
+    } catch (err) {
+      console.error("Error fetching branches:", err);
     }
   };
 
@@ -45,7 +56,7 @@ function StudentPage() {
     setEditingStudent(null);
     setFormData({
       name: "",
-      branch: "",
+      branchId: 0,
       mobile: "",
       email: "",
       dob: "",
@@ -59,7 +70,7 @@ function StudentPage() {
     setEditingStudent(student);
     setFormData({
       name: student.name,
-      branch: student.branch,
+      branchId: student.branchId,
       mobile: student.mobile,
       email: student.email,
       dob: student.dob,
@@ -144,23 +155,24 @@ function StudentPage() {
                         required
                       />
                     </div>
-                    <div className="col-md-6 mb-3">
-                      <label className="form-label">Branch</label>
-                      <select
-                        className="form-select"
-                        name="branch"
-                        value={formData.branch}
-                        onChange={handleChange}
-                        required
-                      >
-                        <option value="">Select Branch</option>
-                        <option>Computer Science</option>
-                        <option>Electronics</option>
-                        <option>Mechanical</option>
-                        <option>Civil</option>
-                        <option>Electrical</option>
-                      </select>
-                    </div>
+                    <div className="mb-3">
+                    <label className="form-label">Branch</label>
+                    <select
+                      className="form-select"
+                      name="branchId"
+                      value={formData.branchId}
+                      onChange={handleChange}
+                      required
+                    >
+                      <option value={0}>Select Branch</option>
+                      {branches.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
                     <div className="col-md-6 mb-3">
                       <label className="form-label">Mobile</label>
                       <input
@@ -245,7 +257,12 @@ function StudentPage() {
               <tr key={student.id}>
                 <td>{student.id}</td>
                 <td>{student.name}</td>
-                <td>{student.branch}</td>
+                  <td>
+                  {
+                    branches.find((b) => b.id === student.branchId)?.name ||
+                    student.branchId
+                  }
+                </td>
                 <td>{student.mobile}</td>
                 <td>{student.email}</td>
                 <td>{student.dob}</td>

@@ -14,10 +14,10 @@ function IssueBookPage() {
   const [students, setStudents] = useState<any[]>([]);
 
   const [formData, setFormData] = useState({
-    publication: "",
-    bookName: "",
-    branch: "",
-    student: "",
+    publicationId: 0,
+    bookId: 0,
+    branchId: 0,
+    studentId: 0,
     issueDays: "",
     issueDate: "",
   });
@@ -33,7 +33,10 @@ function IssueBookPage() {
   // 🔹 Fetch dropdown + issuedBooks
   useEffect(() => {
     fetchIssuedBooks();
-    fetchDropdownData();
+    fetchBooks();
+    fetchBranches();
+    fetchPublications();
+    fetchStudents();
   }, []);
 
   const fetchIssuedBooks = async () => {
@@ -44,39 +47,72 @@ function IssueBookPage() {
       console.error("Error fetching issued books:", err);
     }
   };
-
-  const fetchDropdownData = async () => {
+  const fetchPublications = async () => {
     try {
-      const [pubRes, bookRes, branchRes, studentRes] = await Promise.all([
-        axios.get(PUB_API),
-        axios.get(BOOK_API),
-        axios.get(BRANCH_API),
-        axios.get(STUDENT_API),
-      ]);
-      setPublications(pubRes.data);
-      setBooks(bookRes.data);
-      setBranches(branchRes.data);
-      setStudents(studentRes.data);
+      const res = await axios.get(PUB_API);
+      setPublications(res.data);
     } catch (err) {
-      console.error("Error fetching dropdown data:", err);
+      console.error("Error fetching publications:", err);
     }
   };
 
+  const fetchBranches = async () => {
+    try {
+      const res = await axios.get(BRANCH_API);
+      setBranches(res.data);
+    } catch (err) {
+      console.error("Error fetching branches:", err);
+    }
+  };
+  const fetchBooks = async () => {
+    try {
+      const res = await axios.get(BOOK_API);
+      setBooks(res.data);
+    } catch (err) {
+      console.error("Error fetching publications:", err);
+    }
+  };
+
+  const fetchStudents = async () => {
+    try {
+      const res = await axios.get(STUDENT_API);
+      setStudents(res.data);
+    } catch (err) {
+      console.error("Error fetching branches:", err);
+    }
+  };
+
+  
+
   // 🔹 Input handler
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+      e: React.ChangeEvent<
+        HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+      >
+    ) => {
+      let { name, value } = e.target;
+  
+      // Convert numbers properly
+      if (
+        name === "publicationId" ||
+        name === "branchId" ||
+        name === "studentId" ||
+        name === "bookId"
+      ) {
+        value = value === "" ? "" : Number(value);
+      }
+  
+      setFormData({ ...formData, [name]: value });
+    };
 
   // 🔹 Open Modal
   const handleOpenModal = () => {
     setEditingIssue(null);
     setFormData({
-      publication: "",
-      bookName: "",
-      branch: "",
-      student: "",
+      publicationId: 0,
+      bookId: 0,
+      branchId:0,
+      studentId: 0,
       issueDays: "",
       issueDate: "",
     });
@@ -87,10 +123,10 @@ function IssueBookPage() {
   const handleEdit = (issue: any) => {
     setEditingIssue(issue);
     setFormData({
-      publication: issue.publication,
-      bookName: issue.bookName,
-      branch: issue.branch,
-      student: issue.student,
+      publicationId: issue.publicationId,
+      bookId: issue.bookId,
+      branchId: issue.branchId,
+      studentId: issue.studentId,
       issueDays: issue.issueDays,
       issueDate: issue.issueDate,
     });
@@ -158,37 +194,18 @@ function IssueBookPage() {
                 <form onSubmit={handleSubmit}>
                   {/* Publication */}
                   <div className="mb-3">
-                    <label className="form-label">Select Publication</label>
+                    <label className="form-label">Publication</label>
                     <select
                       className="form-select"
-                      name="publication"
-                      value={formData.publication}
+                      name="publicationId"
+                      value={formData.publicationId}
                       onChange={handleChange}
                       required
                     >
-                      <option value="">Select Publication</option>
-                      {publications.map((pub) => (
-                        <option key={pub.id} value={pub.name}>
-                          {pub.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Book */}
-                  <div className="mb-3">
-                    <label className="form-label">Select Book</label>
-                    <select
-                      className="form-select"
-                      name="bookName"
-                      value={formData.bookName}
-                      onChange={handleChange}
-                      required
-                    >
-                      <option value="">Select Book</option>
-                      {books.map((book) => (
-                        <option key={book.id} value={book.name}>
-                          {book.name}
+                      <option value={0}>Select Publication</option>
+                      {publications.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
                         </option>
                       ))}
                     </select>
@@ -196,18 +213,37 @@ function IssueBookPage() {
 
                   {/* Branch */}
                   <div className="mb-3">
-                    <label className="form-label">Select Branch</label>
+                    <label className="form-label">Branch</label>
                     <select
                       className="form-select"
-                      name="branch"
-                      value={formData.branch}
+                      name="branchId"
+                      value={formData.branchId}
                       onChange={handleChange}
                       required
                     >
-                      <option value="">Select Branch</option>
-                      {branches.map((branch) => (
-                        <option key={branch.id} value={branch.name}>
-                          {branch.name}
+                      <option value={0}>Select Branch</option>
+                      {branches.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Book */}
+                    <div className="mb-3">
+                    <label className="form-label">Book</label>
+                    <select
+                      className="form-select"
+                      name="bookId"
+                      value={formData.bookId}
+                      onChange={handleChange}
+                      required
+                    >
+                      <option value={0}>Select Book</option>
+                      {books.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
                         </option>
                       ))}
                     </select>
@@ -215,18 +251,18 @@ function IssueBookPage() {
 
                   {/* Student */}
                   <div className="mb-3">
-                    <label className="form-label">Select Student</label>
+                    <label className="form-label">Student</label>
                     <select
                       className="form-select"
-                      name="student"
-                      value={formData.student}
+                      name="studentId"
+                      value={formData.studentId}
                       onChange={handleChange}
                       required
                     >
-                      <option value="">Select Student</option>
-                      {students.map((student) => (
-                        <option key={student.id} value={student.name}>
-                          {student.name}
+                      <option value={0}>Select Student</option>
+                      {students.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
                         </option>
                       ))}
                     </select>
@@ -296,10 +332,31 @@ function IssueBookPage() {
               issuedBooks.map((book) => (
                 <tr key={book.id}>
                   <td>{book.id}</td>
-                  <td>{book.bookId}</td>
-                  <td>{book.publicationId}</td>
-                  <td>{book.branchId}</td>
-                  <td>{book.studentId}</td>
+                  <td>
+                  {
+                    books.find((p) => p.id === book.bookId)
+                      ?.name || book.bookId
+                  }
+                </td>
+                  <td>
+                  {
+                    publications.find((p) => p.id === book.publicationId)
+                      ?.name || book.publicationId
+                  }
+                </td>
+                <td>
+                  {
+                    branches.find((b) => b.id === book.branchId)?.name ||
+                    book.branchId
+                  }
+                </td>
+                  
+                <td>
+                  {
+                    students.find((b) => b.id === book.studentId)?.name ||
+                    book.studentId
+                  }
+                </td>
                   <td>{book.issueDate}</td>
                   <td>{book.issueDays}</td>
                   <td>
