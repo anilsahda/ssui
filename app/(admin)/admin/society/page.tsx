@@ -1,44 +1,32 @@
 "use client";
-import React, { useEffect, useState } from "react";
-import axios from "axios";
+
+import React, { useEffect, useState, useCallback } from "react";
 import {
-  Modal,
-  Button,
+  Container,
   Form,
-  Spinner,
+  Button,
+  Table,
   Alert,
-  ListGroup,
-  Card,
+  Modal,
+  Spinner,
+  InputGroup,
   Row,
   Col,
 } from "react-bootstrap";
 
-interface House {
-  id: number;
-  // You can extend with more house properties if needed
-}
-
-interface Society {
-  id: number;
+type Society = {
+  _id: string;
   name: string;
   address: string;
   city: string;
   state: string;
   zipCode: string;
-  houses: House[];
-}
+};
 
-const SocietiesPage = () => {
+export default function SocietyPage() {
   const [societies, setSocieties] = useState<Society[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  // Modal state
-  const [showModal, setShowModal] = useState(false);
-  const [editingSociety, setEditingSociety] = useState<Society | null>(null);
-
-  // Form state
-  const [form, setForm] = useState({
+  const [filteredSocieties, setFilteredSocieties] = useState<Society[]>([]);
+  const [formData, setFormData] = useState<Omit<Society, "_id">>({
     name: "",
     address: "",
     city: "",
@@ -46,225 +34,359 @@ const SocietiesPage = () => {
     zipCode: "",
   });
 
+  const [fetching, setFetching] = useState(false); // loading state for fetch
+  const [submitting, setSubmitting] = useState(false); // loading state for submit
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  const [searchTerm, setSearchTerm] = useState("");
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 5;
+  const totalPages = Math.ceil(filteredSocieties.length / pageSize);
+
+  const API_BASE = "http://localhost:5000/api/societies";
+
+  // Fetch societies from API - useCallback to avoid redeclaration on each render
+  const fetchSocieties = useCallback(async () => {
+    setFetching(true);
+    setError(null);
+    try {
+      const res = await fetch(API_BASE);
+      if (!res.ok) throw new Error("Failed to fetch societies");
+      const data = await res.json();
+      if (data.success) {
+        setSocieties(data.data);
+        setFilteredSocieties(data.data);
+        setCurrentPage(1);
+      } else {
+        throw new Error(data.message || "Failed to load societies");
+      }
+    } catch (err) {
+      setError((err as Error).message || "Failed to fetch societies");
+    } finally {
+      setFetching(false);
+    }
+  }, [API_BASE]);
+
   useEffect(() => {
     fetchSocieties();
-  }, []);
+  }, [fetchSocieties]);
 
-  const fetchSocieties = async () => {
-    try {
-      setLoading(true);
-      const res = await axios.get("https://localhost:7255/api/societies");
-      console.log("API Response:", res.data);
-      const societiesData = Array.isArray(res.data) ? res.data : [];
-      setSocieties(societiesData);
-      setError(null);
-    } catch (err) {
-      setError("Failed to fetch societies.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const openNewModal = () => {
-    setEditingSociety(null);
-    setForm({
-      name: "",
-      address: "",
-      city: "",
-      state: "",
-      zipCode: "",
-    });
-    setShowModal(true);
-  };
-
-  const openEditModal = (society: Society) => {
-    setEditingSociety(society);
-    setForm({
-      name: society.name,
-      address: society.address,
-      city: society.city,
-      state: society.state,
-      zipCode: society.zipCode,
-    });
-    setShowModal(true);
-  };
-
-  const handleDelete = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this society?")) return;
-    try {
-      await axios.delete(`https://localhost:7255/api/societies/${id}`);
-      setSocieties(societies.filter((s) => s.id !== id));
-    } catch {
-      alert("Failed to delete society.");
-    }
-  };
-
+  // Handle form input change
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  // Add new society
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
+    setSuccess(null);
+
+    if (
+      !formData.name.trim() ||
+      !formData.address.trim() ||
+      !formData.city.trim() ||
+      !formData.state.trim() ||
+      !formData.zipCode.trim()
+    ) {
+      setError("Please fill all fields.");
+      return;
+    }
+
+    setSubmitting(true);
     try {
-      if (editingSociety) {
-        // Update
-        await axios.put(
-          `https://localhost:7255/api/societies/${editingSociety.id}`,
-          {
-            id: editingSociety.id,
-            ...form,
-          }
-        );
-      } else {
-        // Create
-        await axios.post("https://localhost:7255/api/societies", form);
+      const res = await fetch(API_BASE, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Failed to add society");
       }
-      setShowModal(false);
+      setSuccess("Society added successfully");
+      setFormData({ name: "", address: "", city: "", state: "", zipCode: "" });
       fetchSocieties();
-    } catch {
-      alert("Failed to save society.");
+    } catch (err) {
+      setError((err as Error).message || "Error adding society");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Search/filter societies by name or city
+  const handleSearch = (term: string) => {
+    setSearchTerm(term);
+    if (!term.trim()) {
+      setFilteredSocieties(societies);
+      setCurrentPage(1);
+      return;
+    }
+    const lowerTerm = term.toLowerCase();
+    const filtered = societies.filter(
+      (s) =>
+        s.name.toLowerCase().includes(lowerTerm) ||
+        s.city.toLowerCase().includes(lowerTerm)
+    );
+    setFilteredSocieties(filtered);
+    setCurrentPage(1);
+  };
+
+  // Pagination slice
+  const paginatedSocieties = filteredSocieties.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
+
+  // Confirm delete modal
+  const confirmDelete = (id: string) => {
+    setDeleteId(id);
+    setShowDeleteModal(true);
+  };
+
+  // Delete society API call
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    setShowDeleteModal(false);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const res = await fetch(`${API_BASE}/${deleteId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Failed to delete society");
+      }
+      setSuccess("Society deleted successfully");
+      fetchSocieties();
+    } catch (err) {
+      setError((err as Error).message || "Error deleting society");
+    } finally {
+      setDeleteId(null);
     }
   };
 
   return (
-    <div className="container mt-4">
-      <h2>Societies</h2>
-      <Button variant="primary" className="mb-3" onClick={openNewModal}>
-        + Add New Society
-      </Button>
+    <Container className="my-5">
+      <h2 className="mb-4 text-center">🏘️ Society Management</h2>
 
-      {loading ? (
-        <div className="text-center">
+      {/* Alerts */}
+      {error && (
+        <Alert variant="danger" onClose={() => setError(null)} dismissible>
+          {error}
+        </Alert>
+      )}
+      {success && (
+        <Alert variant="success" onClose={() => setSuccess(null)} dismissible>
+          {success}
+        </Alert>
+      )}
+
+      {/* Add Society Form */}
+      <Form
+        onSubmit={handleSubmit}
+        className="mb-5 p-4 bg-light rounded shadow-sm"
+      >
+        <Row>
+          <Col md={6} className="mb-3">
+            <Form.Label>Name</Form.Label>
+            <Form.Control
+              name="name"
+              placeholder="Society Name"
+              value={formData.name}
+              onChange={handleChange}
+              disabled={submitting}
+              required
+            />
+          </Col>
+          <Col md={6} className="mb-3">
+            <Form.Label>Address</Form.Label>
+            <Form.Control
+              name="address"
+              placeholder="Address"
+              value={formData.address}
+              onChange={handleChange}
+              disabled={submitting}
+              required
+            />
+          </Col>
+          <Col md={4} className="mb-3">
+            <Form.Label>City</Form.Label>
+            <Form.Control
+              name="city"
+              placeholder="City"
+              value={formData.city}
+              onChange={handleChange}
+              disabled={submitting}
+              required
+            />
+          </Col>
+          <Col md={4} className="mb-3">
+            <Form.Label>State</Form.Label>
+            <Form.Control
+              name="state"
+              placeholder="State"
+              value={formData.state}
+              onChange={handleChange}
+              disabled={submitting}
+              required
+            />
+          </Col>
+          <Col md={4} className="mb-3">
+            <Form.Label>Zip Code</Form.Label>
+            <Form.Control
+              name="zipCode"
+              placeholder="Zip Code"
+              value={formData.zipCode}
+              onChange={handleChange}
+              disabled={submitting}
+              required
+            />
+          </Col>
+        </Row>
+
+        <div className="text-end">
+          <Button type="submit" variant="primary" disabled={submitting}>
+            {submitting ? (
+              <>
+                <Spinner
+                  as="span"
+                  animation="border"
+                  size="sm"
+                  role="status"
+                  aria-hidden="true"
+                  className="me-2"
+                />
+                Adding...
+              </>
+            ) : (
+              "Add Society"
+            )}
+          </Button>
+        </div>
+      </Form>
+
+      {/* Search */}
+      <InputGroup className="mb-3">
+        <Form.Control
+          placeholder="Search by Name or City"
+          value={searchTerm}
+          onChange={(e) => handleSearch(e.target.value)}
+          disabled={fetching}
+        />
+        <Button
+          variant="outline-secondary"
+          onClick={() => handleSearch("")}
+          disabled={fetching || !searchTerm}
+        >
+          Clear
+        </Button>
+      </InputGroup>
+
+      {/* Societies Table */}
+      {fetching ? (
+        <div className="text-center my-5">
           <Spinner animation="border" />
         </div>
-      ) : error ? (
-        <Alert variant="danger">{error}</Alert>
-      ) : societies.length === 0 ? (
-        <p>No societies found.</p>
       ) : (
-        <ListGroup>
-          {societies.map((society) => (
-            <ListGroup.Item key={society.id} className="mb-3">
-              <Card>
-                <Card.Body>
-                  <Row>
-                    <Col xs={12} md={8}>
-                      <Card.Title>{society.name}</Card.Title>
-                      <Card.Text>
-                        <strong>Address:</strong> {society.address} <br />
-                        <strong>City:</strong> {society.city} <br />
-                        <strong>State:</strong> {society.state} <br />
-                        <strong>Zip Code:</strong> {society.zipCode} <br />
-                        <strong>Number of Houses:</strong>{" "}
-                        {society.houses?.length || 0}
-                      </Card.Text>
-                    </Col>
-                    <Col
-                      xs={12}
-                      md={4}
-                      className="d-flex align-items-center justify-content-md-end mt-3 mt-md-0"
-                    >
+        <>
+          <Table striped bordered hover responsive className="shadow-sm">
+            <thead className="table-light">
+              <tr>
+                <th>#</th>
+                <th>Name</th>
+                <th>Address</th>
+                <th>City</th>
+                <th>State</th>
+                <th>Zip Code</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {paginatedSocieties.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="text-center">
+                    No societies found
+                  </td>
+                </tr>
+              ) : (
+                paginatedSocieties.map((society, idx) => (
+                  <tr key={society._id}>
+                    <td>{(currentPage - 1) * pageSize + idx + 1}</td>
+                    <td>{society.name}</td>
+                    <td>{society.address}</td>
+                    <td>{society.city}</td>
+                    <td>{society.state}</td>
+                    <td>{society.zipCode}</td>
+                    <td>
                       <Button
-                        variant="info"
+                        variant="outline-danger"
                         size="sm"
-                        className="me-2"
-                        onClick={() => openEditModal(society)}
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        variant="danger"
-                        size="sm"
-                        onClick={() => handleDelete(society.id)}
+                        onClick={() => confirmDelete(society._id)}
                       >
                         Delete
                       </Button>
-                    </Col>
-                  </Row>
-                </Card.Body>
-              </Card>
-            </ListGroup.Item>
-          ))}
-        </ListGroup>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </Table>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="d-flex justify-content-center align-items-center gap-3 mt-3">
+              <Button
+                variant="outline-primary"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              >
+                Prev
+              </Button>
+              <span>
+                Page {currentPage} of {totalPages}
+              </span>
+              <Button
+                variant="outline-primary"
+                disabled={currentPage === totalPages}
+                onClick={() =>
+                  setCurrentPage((p) => Math.min(totalPages, p + 1))
+                }
+              >
+                Next
+              </Button>
+            </div>
+          )}
+        </>
       )}
 
-      {/* Modal for Add/Edit */}
-      <Modal show={showModal} onHide={() => setShowModal(false)}>
-        <Form onSubmit={handleSubmit}>
-          <Modal.Header closeButton>
-            <Modal.Title>
-              {editingSociety ? "Edit Society" : "Add New Society"}
-            </Modal.Title>
-          </Modal.Header>
-          <Modal.Body>
-            <Form.Group className="mb-3" controlId="formName">
-              <Form.Label>Name</Form.Label>
-              <Form.Control
-                type="text"
-                name="name"
-                value={form.name}
-                onChange={handleChange}
-                required
-                placeholder="Enter society name"
-              />
-            </Form.Group>
-            <Form.Group className="mb-3" controlId="formAddress">
-              <Form.Label>Address</Form.Label>
-              <Form.Control
-                type="text"
-                name="address"
-                value={form.address}
-                onChange={handleChange}
-                required
-                placeholder="Enter address"
-              />
-            </Form.Group>
-            <Form.Group className="mb-3" controlId="formCity">
-              <Form.Label>City</Form.Label>
-              <Form.Control
-                type="text"
-                name="city"
-                value={form.city}
-                onChange={handleChange}
-                required
-                placeholder="Enter city"
-              />
-            </Form.Group>
-            <Form.Group className="mb-3" controlId="formState">
-              <Form.Label>State</Form.Label>
-              <Form.Control
-                type="text"
-                name="state"
-                value={form.state}
-                onChange={handleChange}
-                required
-                placeholder="Enter state"
-              />
-            </Form.Group>
-            <Form.Group className="mb-3" controlId="formZipCode">
-              <Form.Label>Zip Code</Form.Label>
-              <Form.Control
-                type="text"
-                name="zipCode"
-                value={form.zipCode}
-                onChange={handleChange}
-                required
-                placeholder="Enter zip code"
-              />
-            </Form.Group>
-          </Modal.Body>
-          <Modal.Footer>
-            <Button variant="secondary" onClick={() => setShowModal(false)}>
-              Cancel
-            </Button>
-            <Button variant="primary" type="submit">
-              {editingSociety ? "Update" : "Create"}
-            </Button>
-          </Modal.Footer>
-        </Form>
+      {/* Delete Confirmation Modal */}
+      <Modal
+        show={showDeleteModal}
+        onHide={() => setShowDeleteModal(false)}
+        centered
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Delete Society</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>Are you sure you want to delete this society?</Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
+            Cancel
+          </Button>
+          <Button variant="danger" onClick={handleDelete}>
+            Delete
+          </Button>
+        </Modal.Footer>
       </Modal>
-    </div>
+    </Container>
   );
-};
-
-export default SocietiesPage;
+}

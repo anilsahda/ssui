@@ -1,229 +1,250 @@
+// pages/admin/allocateHouses.tsx
+
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, FormEvent } from "react";
+import {
+  Container,
+  Form,
+  Button,
+  Table,
+  Spinner,
+  Alert,
+  Row,
+  Col,
+} from "react-bootstrap";
 
-// Interfaces
-interface House {
-  id: number;
-  name: string;
-}
+type House = {
+  _id: string;
+  houseNumber: string;
+};
 
-interface Member {
-  id: number;
-  name: string;
-}
+type Member = {
+  _id: string;
+  fullName: string;
+};
 
-interface AllocateHouse {
-  id: number;
-  houseId: number;
-  memberId: number;
+type Allocation = {
+  _id: string;
+  houseId: House;
+  memberId: Member;
   allocationDate: string;
-  releaseDate?: string | null;
-  house: House;
-  member: Member;
-}
+  releaseDate: string | null;
+};
 
-export default function AllocateHouses() {
-  const [allocations, setAllocations] = useState<AllocateHouse[]>([]);
+const AllocateHousesPage: React.FC = () => {
+  const [allocations, setAllocations] = useState<Allocation[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const [houseId, setHouseId] = useState<string>("");
+  const [memberId, setMemberId] = useState<string>("");
+  const [allocationDate, setAllocationDate] = useState<string>("");
+  const [releaseDate, setReleaseDate] = useState<string>("");
+
   const [houses, setHouses] = useState<House[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
 
-  const [newHouseId, setNewHouseId] = useState<number | undefined>();
-  const [newMemberId, setNewMemberId] = useState<number | undefined>();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const API_BASE = "http://localhost:5000/api/allocations";
+  const HOUSES_API = "http://localhost:5000/api/houses";
+  const MEMBERS_API = "http://localhost:5000/api/members";
 
-  async function fetchAllocations() {
+  // Fetch all data
+  async function fetchData() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("https://localhost:7255/api/AllocateHouses");
-      if (!res.ok) throw new Error("Failed to fetch allocations");
+      const [allocRes, housesRes, membersRes] = await Promise.all([
+        fetch(API_BASE),
+        fetch(HOUSES_API),
+        fetch(MEMBERS_API),
+      ]);
 
-      const response = await res.json();
-      const data = Array.isArray(response)
-        ? response
-        : Array.isArray(response.data)
-        ? response.data
-        : [];
+      if (!allocRes.ok || !housesRes.ok || !membersRes.ok) {
+        throw new Error("Failed to load data.");
+      }
 
-      setAllocations(data);
-    } catch (e) {
-      setError((e as Error).message);
-      setAllocations([]);
+      const [allocJson, housesJson, membersJson] = await Promise.all([
+        allocRes.json(),
+        housesRes.json(),
+        membersRes.json(),
+      ]);
+
+      setAllocations(allocJson.data || []);
+      setHouses(housesJson.data || housesJson);
+      setMembers(membersJson.data || membersJson);
+    } catch (err: any) {
+      setError(err.message || "Unknown error");
     } finally {
       setLoading(false);
-    }
-  }
-
-  async function fetchHouses() {
-    try {
-      const res = await fetch("https://localhost:7255/api/House");
-      if (!res.ok) throw new Error("Failed to fetch houses");
-
-      const response = await res.json();
-      const data = Array.isArray(response)
-        ? response
-        : Array.isArray(response.data)
-        ? response.data
-        : [];
-
-      setHouses(data);
-    } catch (e) {
-      console.error("Error fetching houses:", e);
-      setHouses([]);
-    }
-  }
-
-  async function fetchMembers() {
-    try {
-      const res = await fetch("https://localhost:7255/api/Members");
-      if (!res.ok) throw new Error("Failed to fetch members");
-
-      const response = await res.json();
-      const data = Array.isArray(response)
-        ? response
-        : Array.isArray(response.data)
-        ? response.data
-        : [];
-
-      setMembers(data);
-    } catch (e) {
-      console.error("Error fetching members:", e);
-      setMembers([]);
     }
   }
 
   useEffect(() => {
-    fetchAllocations();
-    fetchHouses();
-    fetchMembers();
+    fetchData();
   }, []);
 
-  async function createAllocation() {
-    if (!newHouseId || !newMemberId) {
-      alert("Please select both house and member.");
-      return;
-    }
-
-    setLoading(true);
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
     setError(null);
+
     try {
-      const res = await fetch("https://localhost:7255/api/AllocateHouses", {
+      const payload = {
+        houseId,
+        memberId,
+        allocationDate: allocationDate || undefined,
+        releaseDate: releaseDate || undefined,
+      };
+
+      const res = await fetch(API_BASE, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ houseId: newHouseId, memberId: newMemberId }),
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
-        const errMsg = await res.text();
-        throw new Error(errMsg || "Failed to create allocation");
+        const errorJson = await res.json();
+        throw new Error(errorJson.error || "Allocation failed.");
       }
 
-      await fetchAllocations();
-      setNewHouseId(undefined);
-      setNewMemberId(undefined);
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setLoading(false);
+      // Reset form
+      setHouseId("");
+      setMemberId("");
+      setAllocationDate("");
+      setReleaseDate("");
+
+      await fetchData();
+    } catch (err: any) {
+      setError(err.message);
     }
-  }
-
-  async function releaseAllocation(id: number) {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch(
-        `https://localhost:7255/api/AllocateHouses/${id}/release`,
-        {
-          method: "PUT",
-        }
-      );
-
-      if (!res.ok) {
-        const errMsg = await res.text();
-        throw new Error(errMsg || "Failed to release allocation");
-      }
-
-      await fetchAllocations();
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setLoading(false);
-    }
-  }
+  };
 
   return (
-    <div className="container py-4">
-      <h1 className="mb-4">🏠 Allocate Houses</h1>
+    <Container className="my-5">
+      <h2 className="mb-4 text-center">🏠 Allocate Houses</h2>
 
-      {error && <div className="alert alert-danger">{error}</div>}
+      {error && (
+        <Alert variant="danger" dismissible onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
 
-      {/* Create Allocation Form */}
-      <div className="card mb-4">
-        <div className="card-header">Create New Allocation</div>
-        <div className="card-body">
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              createAllocation();
-            }}
-          >
-            <div className="row g-3 align-items-end">
-              <div className="col-md-5">
-                <label htmlFor="houseSelect" className="form-label">
-                  Select House
-                </label>
-                <select
-                  className="form-select"
-                  id="houseSelect"
-                  value={newHouseId ?? ""}
-                  onChange={(e) => setNewHouseId(Number(e.target.value))}
-                >
-                  <option value="">-- Select House --</option>
-                  {houses.map((house) => (
-                    <option key={house.id} value={house.id}>
-                      {house.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+      <Form
+        onSubmit={handleSubmit}
+        className="border p-4 rounded shadow-sm bg-light mb-4"
+      >
+        <Row>
+          <Col md={6}>
+            <Form.Group className="mb-3" controlId="formHouse">
+              <Form.Label>Select House</Form.Label>
+              <Form.Select
+                value={houseId}
+                onChange={(e) => setHouseId(e.target.value)}
+                required
+              >
+                <option value="">Choose...</option>
+                {houses.map((house) => (
+                  <option key={house._id} value={house._id}>
+                    {house.houseNumber}
+                  </option>
+                ))}
+              </Form.Select>
+            </Form.Group>
+          </Col>
 
-              <div className="col-md-5">
-                <label htmlFor="memberSelect" className="form-label">
-                  Select Member
-                </label>
-                <select
-                  className="form-select"
-                  id="memberSelect"
-                  value={newMemberId ?? ""}
-                  onChange={(e) => setNewMemberId(Number(e.target.value))}
-                >
-                  <option value="">-- Select Member --</option>
-                  {members.map((member) => (
-                    <option key={member.id} value={member.id}>
-                      {member.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+          <Col md={6}>
+            <Form.Group className="mb-3" controlId="formMember">
+              <Form.Label>Select Member</Form.Label>
+              <Form.Select
+                value={memberId}
+                onChange={(e) => setMemberId(e.target.value)}
+                required
+              >
+                <option value="">Choose...</option>
+                {members.map((member) => (
+                  <option key={member._id} value={member._id}>
+                    {member.fullName}
+                  </option>
+                ))}
+              </Form.Select>
+            </Form.Group>
+          </Col>
+        </Row>
 
-              <div className="col-md-2 d-grid">
-                <button
-                  type="submit"
-                  className="btn btn-primary"
-                  disabled={loading}
-                >
-                  Allocate
-                </button>
-              </div>
-            </div>
-          </form>
+        <Row>
+          <Col md={6}>
+            <Form.Group className="mb-3" controlId="formAllocationDate">
+              <Form.Label>Allocation Date</Form.Label>
+              <Form.Control
+                type="date"
+                value={allocationDate}
+                onChange={(e) => setAllocationDate(e.target.value)}
+              />
+            </Form.Group>
+          </Col>
+
+          <Col md={6}>
+            <Form.Group className="mb-3" controlId="formReleaseDate">
+              <Form.Label>Release Date</Form.Label>
+              <Form.Control
+                type="date"
+                value={releaseDate}
+                onChange={(e) => setReleaseDate(e.target.value)}
+              />
+            </Form.Group>
+          </Col>
+        </Row>
+
+        <div className="text-end">
+          <Button variant="primary" type="submit">
+            Allocate
+          </Button>
         </div>
-      </div>
+      </Form>
 
-      {/* Allocation table removed */}
-    </div>
+      <h4 className="mb-3">📋 Allocation Records</h4>
+
+      {loading ? (
+        <div className="text-center my-4">
+          <Spinner animation="border" />
+          <p className="mt-2">Loading...</p>
+        </div>
+      ) : allocations.length > 0 ? (
+        <Table striped bordered hover responsive className="shadow-sm">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>House</th>
+              <th>Member</th>
+              <th>Allocation Date</th>
+              <th>Release Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            {allocations.map((alloc, index) => (
+              <tr key={alloc._id}>
+                <td>{index + 1}</td>
+                <td>{alloc.houseId?.houseNumber}</td>
+                <td>{alloc.memberId?.fullName}</td>
+                <td>
+                  {alloc.allocationDate
+                    ? new Date(alloc.allocationDate).toLocaleDateString()
+                    : "-"}
+                </td>
+                <td>
+                  {alloc.releaseDate
+                    ? new Date(alloc.releaseDate).toLocaleDateString()
+                    : "-"}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+      ) : (
+        <Alert variant="info">No allocations found.</Alert>
+      )}
+    </Container>
   );
-}
+};
+
+export default AllocateHousesPage;

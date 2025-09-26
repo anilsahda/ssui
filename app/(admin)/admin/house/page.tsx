@@ -1,248 +1,303 @@
 "use client";
-import React, { useEffect, useState, ChangeEvent, FormEvent } from "react";
-import "bootstrap/dist/css/bootstrap.min.css";
+
+import React, { useEffect, useState, FormEvent } from "react";
+import {
+  Container,
+  Form,
+  Button,
+  Table,
+  Spinner,
+  Alert,
+  Badge,
+  Modal,
+  Row,
+  Col,
+} from "react-bootstrap";
+import { FaEdit, FaTrash } from "react-icons/fa";
 
 type House = {
-  id: number;
+  _id: string;
   houseNumber: string;
-  societyId: number;
+  societyId: string;
   address: string;
   isAllocated: boolean;
 };
 
 const HousesPage: React.FC = () => {
   const [houses, setHouses] = useState<House[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  const [formData, setFormData] = useState<Partial<House>>({});
-  const [isEditing, setIsEditing] = useState(false);
-  const [showModal, setShowModal] = useState(false);
+  // form fields
+  const [houseNumber, setHouseNumber] = useState("");
+  const [societyId, setSocietyId] = useState("");
+  const [address, setAddress] = useState("");
+  const [isAllocated, setIsAllocated] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
+
+  // delete modal
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  const API_BASE = "http://localhost:5000/api/houses";
 
   const fetchHouses = async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("https://localhost:7255/api/House");
+      const res = await fetch(API_BASE);
       if (!res.ok) throw new Error("Failed to fetch houses");
-
-      const response = await res.json();
-      const housesArray = Array.isArray(response)
-        ? response
-        : Array.isArray(response.data)
-        ? response.data
-        : [];
-
-      if (!Array.isArray(housesArray)) {
-        throw new Error("Invalid API response: expected array");
-      }
-
-      setHouses(housesArray);
+      const json = await res.json();
+      setHouses(json.data || []);
     } catch (err: any) {
       setError(err.message);
       setHouses([]);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
     fetchHouses();
   }, []);
 
-  const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
-  };
-
-  const openAddModal = () => {
-    setFormData({});
-    setIsEditing(false);
-    setShowModal(true);
-  };
-
-  const openEditModal = (house: House) => {
-    setFormData(house);
-    setIsEditing(true);
-    setShowModal(true);
-  };
-
-  const closeModal = () => {
-    setShowModal(false);
-    setFormData({});
+  const resetForm = () => {
+    setHouseNumber("");
+    setSocietyId("");
+    setAddress("");
+    setIsAllocated(false);
+    setEditId(null);
   };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    setError(null);
+    setSuccessMsg(null);
 
     const payload = {
-      houseNumber: formData.houseNumber || "",
-      societyId: formData.societyId || 0,
-      address: formData.address || "",
-      isAllocated: formData.isAllocated || false,
+      houseNumber,
+      societyId,
+      address,
+      isAllocated,
     };
 
     try {
-      const url = isEditing
-        ? `https://localhost:7255/api/House/${formData.id}`
-        : "https://localhost:7255/api/House";
-      const method = isEditing ? "PUT" : "POST";
+      const url = editId ? `${API_BASE}/${editId}` : API_BASE;
+      const method = editId ? "PUT" : "POST";
 
       const res = await fetch(url, {
         method,
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-
-      if (!res.ok) throw new Error("Failed to save house");
-
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Failed to save house");
+      }
       await fetchHouses();
-      closeModal();
+      resetForm();
+      setSuccessMsg(
+        editId ? "House updated successfully!" : "House created successfully!"
+      );
     } catch (err: any) {
-      alert(err.message);
+      setError(err.message);
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this house?")) return;
+  const handleEdit = (h: House) => {
+    setEditId(h._id);
+    setHouseNumber(h.houseNumber);
+    setSocietyId(h.societyId);
+    setAddress(h.address);
+    setIsAllocated(h.isAllocated);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const confirmDelete = (id: string) => {
+    setDeleteId(id);
+    setShowDeleteModal(true);
+  };
+
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    setError(null);
+    setSuccessMsg(null);
 
     try {
-      const res = await fetch(`https://localhost:7255/api/House/${id}`, {
-        method: "DELETE",
-      });
-
-      if (!res.ok) throw new Error("Failed to delete house");
-
+      const res = await fetch(`${API_BASE}/${deleteId}`, { method: "DELETE" });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Failed to delete house");
+      }
       await fetchHouses();
+      setSuccessMsg("House deleted successfully!");
     } catch (err: any) {
-      alert(err.message);
+      setError(err.message);
+    } finally {
+      setShowDeleteModal(false);
+      setDeleteId(null);
     }
   };
 
   return (
-    <div className="container mt-4">
-      <h1 className="mb-4">Houses Management</h1>
+    <Container className="my-5">
+      <h2 className="mb-4 text-center">🏠 House Management</h2>
 
-      {error && <div className="alert alert-danger">{error}</div>}
-
-      <button className="btn btn-primary mb-3" onClick={openAddModal}>
-        Add New House
-      </button>
-
-      {loading ? (
-        <p>Loading...</p>
-      ) : houses.length === 0 ? (
-        <p>No houses found.</p>
-      ) : (
-        <div className="alert alert-info">
-          {/* Optionally, you can list house count or just leave a message */}
-          {houses.length} house(s) fetched. Table view has been removed.
-        </div>
+      {error && (
+        <Alert variant="danger" onClose={() => setError(null)} dismissible>
+          {error}
+        </Alert>
       )}
-
-      {/* Modal */}
-      {showModal && (
-        <div
-          className="modal show fade d-block"
-          tabIndex={-1}
-          role="dialog"
-          style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+      {successMsg && (
+        <Alert
+          variant="success"
+          onClose={() => setSuccessMsg(null)}
+          dismissible
         >
-          <div className="modal-dialog" role="document">
-            <form onSubmit={handleSubmit} className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">
-                  {isEditing ? "Edit House" : "Add New House"}
-                </h5>
-                <button
-                  type="button"
-                  className="btn-close"
-                  onClick={closeModal}
-                  aria-label="Close"
-                />
-              </div>
-              <div className="modal-body">
-                <div className="mb-3">
-                  <label htmlFor="houseNumber" className="form-label">
-                    House Number
-                  </label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    id="houseNumber"
-                    name="houseNumber"
-                    value={formData.houseNumber || ""}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-
-                <div className="mb-3">
-                  <label htmlFor="societyId" className="form-label">
-                    Society ID
-                  </label>
-                  <input
-                    type="number"
-                    className="form-control"
-                    id="societyId"
-                    name="societyId"
-                    value={formData.societyId || ""}
-                    onChange={handleInputChange}
-                    required
-                    min={1}
-                  />
-                </div>
-
-                <div className="mb-3">
-                  <label htmlFor="address" className="form-label">
-                    Address
-                  </label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    id="address"
-                    name="address"
-                    value={formData.address || ""}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-
-                <div className="form-check">
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    id="isAllocated"
-                    name="isAllocated"
-                    checked={formData.isAllocated || false}
-                    onChange={handleInputChange}
-                  />
-                  <label className="form-check-label" htmlFor="isAllocated">
-                    Allocated
-                  </label>
-                </div>
-              </div>
-              <div className="modal-footer">
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={closeModal}
-                >
-                  Cancel
-                </button>
-                <button type="submit" className="btn btn-primary">
-                  {isEditing ? "Update" : "Create"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+          {successMsg}
+        </Alert>
       )}
-    </div>
+
+      {/* FORM */}
+      <Form
+        onSubmit={handleSubmit}
+        className="bg-light p-4 rounded shadow-sm mb-5"
+      >
+        <Row>
+          <Col md={6}>
+            <Form.Group className="mb-3">
+              <Form.Label>House Number</Form.Label>
+              <Form.Control
+                placeholder="e.g. A-101"
+                value={houseNumber}
+                onChange={(e) => setHouseNumber(e.target.value)}
+                required
+              />
+            </Form.Group>
+          </Col>
+
+          <Col md={6}>
+            <Form.Group className="mb-3">
+              <Form.Label>Society ID</Form.Label>
+              <Form.Control
+                placeholder="e.g. SOC123"
+                value={societyId}
+                onChange={(e) => setSocietyId(e.target.value)}
+                required
+              />
+            </Form.Group>
+          </Col>
+        </Row>
+
+        <Form.Group className="mb-3">
+          <Form.Label>Address</Form.Label>
+          <Form.Control
+            placeholder="e.g. 123 Main St, Springfield"
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+            required
+          />
+        </Form.Group>
+
+        <Form.Check
+          className="mb-3"
+          type="checkbox"
+          id="isAllocated"
+          label="Is Allocated"
+          checked={isAllocated}
+          onChange={(e) => setIsAllocated(e.target.checked)}
+        />
+
+        <div className="d-flex justify-content-end gap-2">
+          <Button variant="primary" type="submit">
+            {editId ? "Update House" : "Create House"}
+          </Button>
+          {editId && (
+            <Button variant="secondary" onClick={resetForm}>
+              Cancel
+            </Button>
+          )}
+        </div>
+      </Form>
+
+      {/* TABLE */}
+      {loading ? (
+        <div className="text-center">
+          <Spinner animation="border" />
+          <p>Loading houses...</p>
+        </div>
+      ) : houses.length === 0 ? (
+        <Alert variant="info">No houses found.</Alert>
+      ) : (
+        <Table responsive bordered hover className="shadow-sm">
+          <thead className="table-light">
+            <tr>
+              <th>#</th>
+              <th>House Number</th>
+              <th>Society ID</th>
+              <th>Address</th>
+              <th>Allocated</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {houses.map((h, index) => (
+              <tr key={h._id}>
+                <td>{index + 1}</td>
+                <td>{h.houseNumber}</td>
+                <td>{h.societyId}</td>
+                <td>{h.address}</td>
+                <td>
+                  <Badge bg={h.isAllocated ? "success" : "secondary"}>
+                    {h.isAllocated ? "Yes" : "No"}
+                  </Badge>
+                </td>
+                <td>
+                  <Button
+                    variant="outline-warning"
+                    size="sm"
+                    className="me-2"
+                    onClick={() => handleEdit(h)}
+                    title="Edit"
+                  >
+                    <FaEdit />
+                  </Button>
+                  <Button
+                    variant="outline-danger"
+                    size="sm"
+                    onClick={() => confirmDelete(h._id)}
+                    title="Delete"
+                  >
+                    <FaTrash />
+                  </Button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+      )}
+
+      {/* DELETE MODAL */}
+      <Modal
+        show={showDeleteModal}
+        onHide={() => setShowDeleteModal(false)}
+        centered
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Confirm Delete</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>Are you sure you want to delete this house?</Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
+            Cancel
+          </Button>
+          <Button variant="danger" onClick={handleDelete}>
+            Delete
+          </Button>
+        </Modal.Footer>
+      </Modal>
+    </Container>
   );
 };
 

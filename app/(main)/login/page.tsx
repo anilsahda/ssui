@@ -86,7 +86,7 @@ export default function LoginPage() {
         {/* Header */}
         <div className="text-center mb-4">
           <img
-            src="https://cdn-icons-png.flaticon.com/512/295/295128.png"
+            src="http://cdn-icons-png.flaticon.com/512/295/295128.png"
             alt="Login"
             width="60"
             className="mb-2"

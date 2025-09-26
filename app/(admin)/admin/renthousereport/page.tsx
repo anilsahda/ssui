@@ -1,337 +1,364 @@
 "use client";
-import React, { useEffect, useState } from "react";
+
+import React, { useState, useEffect, FormEvent } from "react";
 import {
   Container,
-  Button,
-  Modal,
   Form,
-  Alert,
+  Button,
+  Table,
   Spinner,
-  ListGroup,
+  Alert,
+  Modal,
+  Row,
+  Col,
 } from "react-bootstrap";
 
-interface House {
-  id: number;
-  name: string;
-  address?: string;
-}
-
 interface RentHouseReport {
-  id: number;
-  houseId: number;
-  rentAmount: number;
-  description: string;
-  reportDate: string; // ISO
-  house?: House;
+  _id: string;
+  houseId: { _id: string } | string;
+  rentAmount: string;
+  rentStartDate: string;
+  rentEndDate: string | null;
+  renterName: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
-export default function RentHouseReportsPage() {
+export default function RentHouseReportsAdmin() {
   const [reports, setReports] = useState<RentHouseReport[]>([]);
-  const [houses, setHouses] = useState<House[]>([]);
+  const [houseId, setHouseId] = useState("");
+  const [rentAmount, setRentAmount] = useState("");
+  const [rentStartDate, setRentStartDate] = useState("");
+  const [rentEndDate, setRentEndDate] = useState("");
+  const [renterName, setRenterName] = useState("");
+  const [editId, setEditId] = useState<string | null>(null);
 
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
 
-  // Modal state
-  const [showModal, setShowModal] = useState(false);
-  const [editingReport, setEditingReport] = useState<RentHouseReport | null>(
-    null
-  );
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  // Form fields
-  const [formHouseId, setFormHouseId] = useState<number | null>(null);
-  const [formRentAmount, setFormRentAmount] = useState<number | null>(null);
-  const [formDescription, setFormDescription] = useState("");
+  const API_BASE = "http://localhost:5000/api/rent-house-reports";
 
-  useEffect(() => {
-    fetchReports();
-    fetchHouses();
-  }, []);
-
-  async function fetchReports() {
+  const fetchReports = async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("https://localhost:7255/api/RentHouseReports");
-      if (!res.ok) throw new Error("Failed to fetch rent house reports.");
-      const data = await res.json();
-
-      if (!Array.isArray(data)) {
-        throw new Error("Invalid data format: Expected an array of reports");
+      const res = await fetch(API_BASE);
+      if (!res.ok) {
+        throw new Error("Failed to fetch reports");
       }
-
-      setReports(data);
-    } catch (err) {
-      setError((err as Error).message);
+      const data = await res.json();
+      if (data.success) {
+        setReports(data.data);
+      } else {
+        // if your API returns differently
+        setReports(data.data || []);
+      }
+    } catch (err: any) {
+      setError(err.message);
       setReports([]);
     } finally {
       setLoading(false);
     }
-  }
+  };
 
-  async function fetchHouses() {
-    try {
-      const res = await fetch("https://localhost:7255/api/House");
-      if (!res.ok) throw new Error("Failed to fetch houses.");
-      const data: House[] = await res.json();
+  useEffect(() => {
+    fetchReports();
+  }, []);
 
-      if (!Array.isArray(data)) {
-        throw new Error("Invalid data format: Expected an array of houses");
-      }
-
-      setHouses(data);
-    } catch (err) {
-      console.error("Error fetching houses:", err);
-      setError((err as Error).message);
-    }
-  }
-
-  function openModal(report?: RentHouseReport) {
-    if (report) {
-      setEditingReport(report);
-      setFormHouseId(report.houseId);
-      setFormRentAmount(report.rentAmount);
-      setFormDescription(report.description);
-    } else {
-      setEditingReport(null);
-      setFormHouseId(null);
-      setFormRentAmount(null);
-      setFormDescription("");
-    }
+  const resetForm = () => {
+    setHouseId("");
+    setRentAmount("");
+    setRentStartDate("");
+    setRentEndDate("");
+    setRenterName("");
+    setEditId(null);
     setError(null);
-    setSuccess(null);
-    setShowModal(true);
-  }
+    setSuccessMsg(null);
+  };
 
-  function closeModal() {
-    setShowModal(false);
-    setEditingReport(null);
-    setFormHouseId(null);
-    setFormRentAmount(null);
-    setFormDescription("");
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
-    setSuccess(null);
+    setSuccessMsg(null);
 
+    // Basic validation
     if (
-      formHouseId == null ||
-      formRentAmount == null ||
-      formDescription.trim() === ""
+      !houseId.trim() ||
+      !rentAmount.trim() ||
+      !rentStartDate.trim() ||
+      !renterName.trim()
     ) {
-      setError("Please fill in all fields.");
+      setError("Please fill in all required fields.");
       return;
     }
 
-    setLoading(true);
+    const method = editId ? "PUT" : "POST";
+    const url = editId ? `${API_BASE}/${editId}` : API_BASE;
+
+    const body = {
+      houseId: houseId.trim(),
+      rentAmount: rentAmount.trim(),
+      rentStartDate,
+      rentEndDate: rentEndDate || null,
+      renterName: renterName.trim(),
+    };
+
     try {
-      const body = {
-        id: editingReport?.id,
-        houseId: formHouseId,
-        rentAmount: formRentAmount,
-        description: formDescription.trim(),
-        reportDate: editingReport?.reportDate ?? new Date().toISOString(),
-      };
-
-      const method = editingReport ? "PUT" : "POST";
-      const url = editingReport
-        ? `https://localhost:7255/api/RentHouseReports/${editingReport.id}`
-        : "https://localhost:7255/api/RentHouseReports";
-
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-
       if (!res.ok) {
-        const msg = await res.text();
-        throw new Error(msg || "Failed to save report.");
+        const errResp = await res.json();
+        throw new Error(errResp.error || "Failed to save report");
       }
-
-      setSuccess(
-        editingReport
-          ? "Report updated successfully."
-          : "Report created successfully."
+      await fetchReports();
+      setSuccessMsg(
+        editId ? "Report updated successfully." : "Report added successfully."
       );
-      fetchReports();
-      closeModal();
-    } catch (err) {
-      setError((err as Error).message);
-    } finally {
-      setLoading(false);
+      resetForm();
+    } catch (err: any) {
+      setError(err.message || "Error occurred.");
     }
-  }
+  };
 
-  async function handleDelete(id: number) {
-    if (!confirm("Are you sure you want to delete this report?")) return;
-    setLoading(true);
+  const handleEdit = (report: RentHouseReport) => {
+    setEditId(report._id);
+    const hid =
+      typeof report.houseId === "string" ? report.houseId : report.houseId._id;
+    setHouseId(hid);
+    setRentAmount(report.rentAmount);
+    setRentStartDate(report.rentStartDate.substring(0, 10));
+    setRentEndDate(
+      report.rentEndDate ? report.rentEndDate.substring(0, 10) : ""
+    );
+    setRenterName(report.renterName);
+
+    // Scroll to form (optional)
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const confirmDelete = (id: string) => {
+    setDeleteId(id);
+    setShowDeleteModal(true);
+  };
+
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    setShowDeleteModal(false);
     setError(null);
-    setSuccess(null);
-
+    setSuccessMsg(null);
     try {
-      const res = await fetch(
-        `https://localhost:7255/api/RentHouseReports/${id}`,
-        {
-          method: "DELETE",
-        }
-      );
+      const res = await fetch(`${API_BASE}/${deleteId}`, {
+        method: "DELETE",
+      });
       if (!res.ok) {
-        const msg = await res.text();
-        throw new Error(msg || "Failed to delete report.");
+        const errResp = await res.json();
+        throw new Error(errResp.error || "Failed to delete report");
       }
-      setSuccess("Report deleted successfully.");
-      fetchReports();
-    } catch (err) {
-      setError((err as Error).message);
+      await fetchReports();
+      setSuccessMsg("Report deleted successfully.");
+    } catch (err: any) {
+      setError(err.message || "Delete failed");
     } finally {
-      setLoading(false);
+      setDeleteId(null);
     }
-  }
-
-  function getHouseName(houseId: number): string {
-    return houses.find((h) => h.id === houseId)?.name || `House ${houseId}`;
-  }
+  };
 
   return (
-    <Container className="py-4">
-      <h2 className="mb-4">Rent House Reports</h2>
+    <Container className="my-5">
+      <h2 className="mb-4 text-center">📝 Rent House Reports</h2>
 
       {error && (
         <Alert variant="danger" onClose={() => setError(null)} dismissible>
           {error}
         </Alert>
       )}
-      {success && (
-        <Alert variant="success" onClose={() => setSuccess(null)} dismissible>
-          {success}
+      {successMsg && (
+        <Alert
+          variant="success"
+          onClose={() => setSuccessMsg(null)}
+          dismissible
+        >
+          {successMsg}
         </Alert>
       )}
 
-      <Button variant="primary" className="mb-3" onClick={() => openModal()}>
-        + New Report
-      </Button>
-
-      {loading && (
-        <div className="text-center my-3">
-          <Spinner animation="border" />
-        </div>
-      )}
-
-      {!loading && reports.length === 0 ? (
-        <p>No reports found.</p>
-      ) : (
-        <ListGroup>
-          {reports.map((r) => (
-            <ListGroup.Item key={r.id} className="mb-2">
-              <div className="d-flex flex-column flex-md-row justify-content-between align-items-start">
-                <div className="me-md-3 mb-2 mb-md-0">
-                  <h5>{getHouseName(r.houseId)}</h5>
-                  <p className="mb-1">
-                    <strong>Rent:</strong> ${r.rentAmount}
-                  </p>
-                  <p className="mb-1">
-                    <strong>Description:</strong> {r.description}
-                  </p>
-                  <small className="text-muted">
-                    Reported on: {new Date(r.reportDate).toLocaleString()}
-                  </small>
-                </div>
-                <div className="text-md-end">
-                  <Button
-                    variant="warning"
-                    size="sm"
-                    className="me-2"
-                    onClick={() => openModal(r)}
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    onClick={() => handleDelete(r.id)}
-                  >
-                    Delete
-                  </Button>
-                </div>
-              </div>
-            </ListGroup.Item>
-          ))}
-        </ListGroup>
-      )}
-
-      {/* Modal for Add / Edit */}
-      <Modal show={showModal} onHide={closeModal} backdrop="static" centered>
-        <Modal.Header closeButton>
-          <Modal.Title>
-            {editingReport ? "Edit Report" : "New Report"}
-          </Modal.Title>
-        </Modal.Header>
-        <Form onSubmit={handleSubmit}>
-          <Modal.Body>
-            <Form.Group className="mb-3" controlId="formHouse">
-              <Form.Label>House</Form.Label>
-              <Form.Select
-                value={formHouseId ?? ""}
-                onChange={(e) => setFormHouseId(Number(e.target.value))}
-                disabled={loading}
+      <Form
+        onSubmit={handleSubmit}
+        className="bg-light p-4 rounded shadow-sm mb-5"
+      >
+        <Row className="mb-3">
+          <Col md={6}>
+            <Form.Group>
+              <Form.Label>House ID *</Form.Label>
+              <Form.Control
+                type="text"
+                value={houseId}
+                onChange={(e) => setHouseId(e.target.value)}
+                placeholder="Enter House ID"
                 required
-              >
-                <option value="">Select House</option>
-                {houses.map((h) => (
-                  <option key={h.id} value={h.id}>
-                    {h.name}
-                  </option>
-                ))}
-              </Form.Select>
+              />
             </Form.Group>
+          </Col>
+          <Col md={6}>
+            <Form.Group>
+              <Form.Label>Renter Name *</Form.Label>
+              <Form.Control
+                type="text"
+                value={renterName}
+                onChange={(e) => setRenterName(e.target.value)}
+                placeholder="Enter Renter Name"
+                required
+              />
+            </Form.Group>
+          </Col>
+        </Row>
 
-            <Form.Group className="mb-3" controlId="formRentAmount">
-              <Form.Label>Rent Amount</Form.Label>
+        <Row className="mb-3">
+          <Col md={4}>
+            <Form.Group>
+              <Form.Label>Rent Amount *</Form.Label>
               <Form.Control
                 type="number"
+                step="0.01"
+                value={rentAmount}
+                onChange={(e) => setRentAmount(e.target.value)}
                 placeholder="Enter rent amount"
-                value={formRentAmount ?? ""}
-                onChange={(e) => setFormRentAmount(Number(e.target.value))}
-                disabled={loading}
                 required
               />
             </Form.Group>
-
-            <Form.Group className="mb-3" controlId="formDescription">
-              <Form.Label>Description</Form.Label>
+          </Col>
+          <Col md={4}>
+            <Form.Group>
+              <Form.Label>Start Date *</Form.Label>
               <Form.Control
-                as="textarea"
-                rows={2}
-                placeholder="Enter description"
-                value={formDescription}
-                onChange={(e) => setFormDescription(e.target.value)}
-                disabled={loading}
+                type="date"
+                value={rentStartDate}
+                onChange={(e) => setRentStartDate(e.target.value)}
                 required
               />
             </Form.Group>
-          </Modal.Body>
-          <Modal.Footer>
-            <Button variant="secondary" onClick={closeModal} disabled={loading}>
+          </Col>
+          <Col md={4}>
+            <Form.Group>
+              <Form.Label>End Date</Form.Label>
+              <Form.Control
+                type="date"
+                value={rentEndDate}
+                onChange={(e) => setRentEndDate(e.target.value)}
+              />
+            </Form.Group>
+          </Col>
+        </Row>
+
+        <div className="text-end">
+          <Button variant="primary" type="submit">
+            {editId ? "Update Report" : "Add Report"}
+          </Button>
+          {editId && (
+            <Button
+              variant="outline-secondary"
+              className="ms-2"
+              onClick={resetForm}
+            >
               Cancel
             </Button>
-            <Button variant="primary" type="submit" disabled={loading}>
-              {loading ? (
-                <>
-                  <Spinner size="sm" animation="border" className="me-2" />
-                  Saving...
-                </>
-              ) : editingReport ? (
-                "Update Report"
-              ) : (
-                "Create Report"
-              )}
-            </Button>
-          </Modal.Footer>
-        </Form>
+          )}
+        </div>
+      </Form>
+
+      {loading ? (
+        <div className="text-center">
+          <Spinner animation="border" />
+        </div>
+      ) : (
+        <Table striped bordered hover responsive className="shadow-sm">
+          <thead className="table-light">
+            <tr>
+              <th>#</th>
+              <th>House ID</th>
+              <th>Rent Amount</th>
+              <th>Start Date</th>
+              <th>End Date</th>
+              <th>Renter Name</th>
+              <th>Created At</th>
+              <th>Updated At</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {reports.length === 0 && (
+              <tr>
+                <td colSpan={9} className="text-center">
+                  No reports found
+                </td>
+              </tr>
+            )}
+            {reports.map((r, idx) => {
+              const hid =
+                typeof r.houseId === "string" ? r.houseId : r.houseId._id;
+              return (
+                <tr key={r._id}>
+                  <td>{idx + 1}</td>
+                  <td>{hid}</td>
+                  <td>{parseFloat(r.rentAmount).toFixed(2)}</td>
+                  <td>{new Date(r.rentStartDate).toLocaleDateString()}</td>
+                  <td>
+                    {r.rentEndDate
+                      ? new Date(r.rentEndDate).toLocaleDateString()
+                      : "-"}
+                  </td>
+                  <td>{r.renterName}</td>
+                  <td>{new Date(r.createdAt).toLocaleString()}</td>
+                  <td>{new Date(r.updatedAt).toLocaleString()}</td>
+                  <td>
+                    <Button
+                      variant="outline-primary"
+                      size="sm"
+                      className="me-2"
+                      onClick={() => handleEdit(r)}
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      variant="outline-danger"
+                      size="sm"
+                      onClick={() => confirmDelete(r._id)}
+                    >
+                      Delete
+                    </Button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </Table>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        show={showDeleteModal}
+        onHide={() => setShowDeleteModal(false)}
+        centered
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Confirm Deletion</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>Are you sure you want to delete this report?</Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
+            Cancel
+          </Button>
+          <Button variant="danger" onClick={handleDelete}>
+            Delete
+          </Button>
+        </Modal.Footer>
       </Modal>
     </Container>
   );

@@ -1,247 +1,268 @@
-"use client"; // Only needed in App Router
+"use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, FormEvent } from "react";
 import {
   Container,
-  Button,
   Form,
-  Row,
-  Col,
+  Button,
+  Table,
   Spinner,
   Alert,
+  Row,
+  Col,
+  Badge,
 } from "react-bootstrap";
 
-// Interfaces
-interface House {
-  id: number;
-  name: string;
-}
+type House = {
+  _id: string;
+  houseNumber: string;
+};
 
-interface Member {
-  id: number;
-  name: string;
-}
+type Member = {
+  _id: string;
+  fullName: string;
+};
 
-interface Complain {
-  id: number;
-  houseId: number;
-  memberId?: number | null;
+type Complain = {
+  _id: string;
+  houseId: House;
+  memberId: Member | null;
   description: string;
   complainDate: string;
   isResolved: boolean;
-  house: House;
-  member?: Member;
-}
+};
 
-export default function ComplainsPage() {
+const ComplainsPage: React.FC = () => {
   const [complains, setComplains] = useState<Complain[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Form state
+  const [houseId, setHouseId] = useState<string>("");
+  const [memberId, setMemberId] = useState<string | null>(null);
+  const [description, setDescription] = useState<string>("");
+  const [complainDate, setComplainDate] = useState<string>("");
+  const [isResolved, setIsResolved] = useState<boolean>(false);
+
+  // Data sets
   const [houses, setHouses] = useState<House[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
 
-  const [filterUnresolved, setFilterUnresolved] = useState(false);
-  const [description, setDescription] = useState("");
-  const [houseId, setHouseId] = useState<number>();
-  const [memberId, setMemberId] = useState<number | null>(null);
+  const API_BASE = "http://localhost:5000/api/complain";
+  const HOUSES_API = "http://localhost:5000/api/houses";
+  const MEMBERS_API = "http://localhost:5000/api/members";
 
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-
-  // Fetch complaints (with optional unresolved filter)
-  const fetchComplains = async () => {
+  const fetchData = async () => {
     setLoading(true);
     setError(null);
     try {
-      const endpoint = filterUnresolved
-        ? "https://localhost:7255/api/Complains/unresolved"
-        : "https://localhost:7255/api/Complains";
-      const res = await fetch(endpoint);
-      if (!res.ok) throw new Error("Failed to fetch complaints.");
-
-      const data = await res.json();
-      setComplains(Array.isArray(data) ? data : []);
-    } catch (err) {
-      setError((err as Error).message);
-      setComplains([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Fetch houses and members for form selects
-  const fetchHousesAndMembers = async () => {
-    try {
-      const [houseRes, memberRes] = await Promise.all([
-        fetch("https://localhost:7255/api/Houses"),
-        fetch("https://localhost:7255/api/Members"),
+      const [compRes, houseRes, memberRes] = await Promise.all([
+        fetch(API_BASE),
+        fetch(HOUSES_API),
+        fetch(MEMBERS_API),
       ]);
 
-      if (houseRes.ok) {
-        const houseData = await houseRes.json();
-        setHouses(Array.isArray(houseData) ? houseData : []);
-      } else {
-        setHouses([]);
+      if (!compRes.ok || !houseRes.ok || !memberRes.ok) {
+        throw new Error("Error fetching data");
       }
 
-      if (memberRes.ok) {
-        const memberData = await memberRes.json();
-        setMembers(Array.isArray(memberData) ? memberData : []);
-      } else {
-        setMembers([]);
-      }
-    } catch (err) {
-      console.error("Error loading houses or members.");
-      setHouses([]);
-      setMembers([]);
+      const compData = await compRes.json();
+      const houseData = await houseRes.json();
+      const memberData = await memberRes.json();
+
+      setComplains(compData.data || []);
+      setHouses(houseData.data || houseData);
+      setMembers(memberData.data || memberData);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchComplains();
-    fetchHousesAndMembers();
-  }, [filterUnresolved]);
+    fetchData();
+  }, []);
 
-  // Submit new complaint
-  const handleCreateComplain = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!description || !houseId) {
-      setError("Description and House are required.");
-      return;
-    }
-
-    setLoading(true);
     setError(null);
+
     try {
-      const res = await fetch("https://localhost:7255/api/Complains", {
+      const payload = {
+        houseId,
+        memberId,
+        description,
+        complainDate: complainDate || undefined,
+        isResolved,
+      };
+
+      const res = await fetch(API_BASE, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ description, houseId, memberId }),
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
-        const msg = await res.text();
-        throw new Error(msg);
+        const errJson = await res.json();
+        throw new Error(errJson.error || "Failed to create complaint.");
       }
 
-      setSuccessMessage("Complaint created successfully.");
-      setDescription("");
-      setHouseId(undefined);
+      // Reset
+      setHouseId("");
       setMemberId(null);
-      fetchComplains();
-    } catch (err) {
-      setError((err as Error).message);
-    } finally {
-      setLoading(false);
-    }
-  };
+      setDescription("");
+      setComplainDate("");
+      setIsResolved(false);
 
-  // Resolve a complaint (still here in case you re-add a UI for it later)
-  const handleResolve = async (id: number) => {
-    setLoading(true);
-    try {
-      const res = await fetch(
-        `https://localhost:7255/api/Complains/${id}/resolve`,
-        {
-          method: "PUT",
-        }
-      );
-      if (!res.ok) {
-        const msg = await res.text();
-        throw new Error(msg);
-      }
-      fetchComplains();
-    } catch (err) {
-      setError((err as Error).message);
-    } finally {
-      setLoading(false);
+      await fetchData();
+    } catch (err: any) {
+      setError(err.message);
     }
   };
 
   return (
-    <Container className="my-4">
-      <h2 className="mb-4">📋 Complaints Management</h2>
+    <Container className="my-5">
+      <h2 className="mb-4 text-center">🛠️ Complaints Management</h2>
 
-      {/* Alerts */}
-      {error && <Alert variant="danger">{error}</Alert>}
-      {successMessage && (
-        <Alert
-          variant="success"
-          dismissible
-          onClose={() => setSuccessMessage(null)}
-        >
-          {successMessage}
+      {error && (
+        <Alert variant="danger" dismissible onClose={() => setError(null)}>
+          {error}
         </Alert>
       )}
 
-      {/* Complaint Form */}
-      <Form onSubmit={handleCreateComplain} className="mb-5">
-        <h5>Create New Complaint</h5>
-        <Row className="mb-3">
+      <Form
+        onSubmit={handleSubmit}
+        className="bg-light p-4 rounded shadow-sm mb-4"
+      >
+        <Row>
           <Col md={6}>
-            <Form.Group>
-              <Form.Label>Description</Form.Label>
-              <Form.Control
-                as="textarea"
-                rows={2}
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-              />
-            </Form.Group>
-          </Col>
-          <Col md={3}>
-            <Form.Group>
-              <Form.Label>House</Form.Label>
+            <Form.Group className="mb-3" controlId="formHouse">
+              <Form.Label>🏠 House</Form.Label>
               <Form.Select
-                value={houseId ?? ""}
-                onChange={(e) => setHouseId(Number(e.target.value))}
+                value={houseId}
+                onChange={(e) => setHouseId(e.target.value)}
+                required
               >
-                <option value="">Select House</option>
+                <option value="">Select a house</option>
                 {houses.map((h) => (
-                  <option key={h.id} value={h.id}>
-                    {h.name}
+                  <option key={h._id} value={h._id}>
+                    {h.houseNumber}
                   </option>
                 ))}
               </Form.Select>
             </Form.Group>
           </Col>
-          <Col md={3}>
-            <Form.Group>
-              <Form.Label>Member (Optional)</Form.Label>
+
+          <Col md={6}>
+            <Form.Group className="mb-3" controlId="formMember">
+              <Form.Label>👤 Member (optional)</Form.Label>
               <Form.Select
                 value={memberId ?? ""}
                 onChange={(e) =>
-                  setMemberId(e.target.value ? Number(e.target.value) : null)
+                  setMemberId(e.target.value === "" ? null : e.target.value)
                 }
               >
-                <option value="">Select Member</option>
+                <option value="">Anonymous / Not linked</option>
                 {members.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.name}
+                  <option key={m._id} value={m._id}>
+                    {m.fullName}
                   </option>
                 ))}
               </Form.Select>
             </Form.Group>
           </Col>
         </Row>
-        <Button type="submit" disabled={loading}>
-          {loading ? (
-            <Spinner animation="border" size="sm" />
-          ) : (
-            "Submit Complaint"
-          )}
-        </Button>
+
+        <Form.Group className="mb-3" controlId="formDescription">
+          <Form.Label>📝 Description</Form.Label>
+          <Form.Control
+            as="textarea"
+            rows={3}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            required
+            placeholder="Enter details of the complaint..."
+          />
+        </Form.Group>
+
+        <Row>
+          <Col md={6}>
+            <Form.Group className="mb-3" controlId="formDate">
+              <Form.Label>📅 Complaint Date</Form.Label>
+              <Form.Control
+                type="date"
+                value={complainDate}
+                onChange={(e) => setComplainDate(e.target.value)}
+              />
+            </Form.Group>
+          </Col>
+
+          <Col md={6} className="d-flex align-items-center">
+            <Form.Check
+              type="checkbox"
+              id="isResolved"
+              label="Mark as Resolved"
+              checked={isResolved}
+              onChange={(e) => setIsResolved(e.target.checked)}
+            />
+          </Col>
+        </Row>
+
+        <div className="text-end">
+          <Button variant="primary" type="submit">
+            Submit Complaint
+          </Button>
+        </div>
       </Form>
 
-      {/* Filter Switch */}
-      <Form.Check
-        type="switch"
-        label="Show only unresolved complaints"
-        checked={filterUnresolved}
-        onChange={() => setFilterUnresolved(!filterUnresolved)}
-        className="mb-4"
-      />
+      <h4 className="mb-3">📄 Complaint Records</h4>
 
-      {/* Table Removed */}
+      {loading ? (
+        <div className="text-center my-4">
+          <Spinner animation="border" />
+          <p>Loading complaints...</p>
+        </div>
+      ) : complains.length === 0 ? (
+        <Alert variant="info">No complaints found.</Alert>
+      ) : (
+        <Table striped bordered hover responsive className="shadow-sm">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>House</th>
+              <th>Member</th>
+              <th>Description</th>
+              <th>Complaint Date</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {complains.map((comp, idx) => (
+              <tr key={comp._id}>
+                <td>{idx + 1}</td>
+                <td>{comp.houseId?.houseNumber || "N/A"}</td>
+                <td>{comp.memberId?.fullName || "Anonymous"}</td>
+                <td>{comp.description}</td>
+                <td>
+                  {comp.complainDate
+                    ? new Date(comp.complainDate).toLocaleDateString()
+                    : "-"}
+                </td>
+                <td>
+                  {comp.isResolved ? (
+                    <Badge bg="success">Resolved</Badge>
+                  ) : (
+                    <Badge bg="warning">Pending</Badge>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+      )}
     </Container>
   );
-}
+};
+
+export default ComplainsPage;

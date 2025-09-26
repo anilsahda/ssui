@@ -1,318 +1,296 @@
 "use client";
-import React, { useEffect, useState } from "react";
+
+import React, { useEffect, useState, FormEvent, useRef } from "react";
 import {
   Container,
-  Button,
-  Modal,
   Form,
-  Alert,
+  Button,
+  Table,
   Spinner,
-  Card,
+  Alert,
+  Modal,
+  Badge,
+  OverlayTrigger,
+  Tooltip,
 } from "react-bootstrap";
 
-interface House {
-  id: number;
+type House = {
+  _id: string;
   houseNumber: string;
-}
+};
 
-interface AllocatedHouse {
-  id: number;
-  house: House;
-}
+type AllocatedHouse = {
+  _id: string;
+  houseId?: House;
+};
 
-interface MemberReport {
-  id: number;
-  title: string;
-}
-
-interface Complain {
-  id: number;
-  title: string;
-}
-
-interface Member {
-  id: number;
-  name: string;
+type Member = {
+  _id: string;
+  fullName: string;
   email: string;
-  phone?: string;
   allocatedHouses: AllocatedHouse[];
-  memberReports: MemberReport[];
-  complains: Complain[];
-}
+};
 
-export default function MembersPage() {
+const MembersPage: React.FC = () => {
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  const [showModal, setShowModal] = useState(false);
-  const [editingMember, setEditingMember] = useState<Member | null>(null);
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [editId, setEditId] = useState<string | null>(null);
 
-  const [formName, setFormName] = useState("");
-  const [formEmail, setFormEmail] = useState("");
-  const [formPhone, setFormPhone] = useState("");
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  const API_BASE = "http://localhost:5000/api/members";
+  const formRef = useRef<HTMLFormElement>(null);
+
+  const fetchMembers = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(API_BASE);
+      if (!res.ok) throw new Error("Failed to fetch members");
+      const json = await res.json();
+      setMembers(json.data || []);
+    } catch (err: any) {
+      setError(err.message);
+      setMembers([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetchMembers();
   }, []);
 
-  async function fetchMembers() {
-    setLoading(true);
+  const resetForm = () => {
+    setFullName("");
+    setEmail("");
+    setEditId(null);
     setError(null);
-    try {
-      const res = await fetch("https://localhost:7255/api/Members");
-      if (!res.ok) throw new Error("Failed to fetch members");
+    setSuccessMsg(null);
+  };
 
-      const response = await res.json();
-      const membersArray = Array.isArray(response)
-        ? response
-        : Array.isArray(response.data)
-        ? response.data
-        : [];
-
-      if (!Array.isArray(membersArray)) {
-        throw new Error("Invalid response format: expected an array");
-      }
-
-      setMembers(membersArray);
-    } catch (err) {
-      setError((err as Error).message);
-      setMembers([]);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  function openModal(member?: Member) {
-    if (member) {
-      setEditingMember(member);
-      setFormName(member.name);
-      setFormEmail(member.email);
-      setFormPhone(member.phone || "");
-    } else {
-      setEditingMember(null);
-      setFormName("");
-      setFormEmail("");
-      setFormPhone("");
-    }
-    setShowModal(true);
-    setError(null);
-    setSuccess(null);
-  }
-
-  function closeModal() {
-    setShowModal(false);
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
-    setSuccess(null);
+    setSuccessMsg(null);
 
-    if (!formName.trim() || !formEmail.trim()) {
+    if (!fullName.trim() || !email.trim()) {
       setError("Name and Email are required.");
       return;
     }
 
-    setLoading(true);
+    const payload = { fullName: fullName.trim(), email: email.trim() };
+    const url = editId ? `${API_BASE}/${editId}` : API_BASE;
+    const method = editId ? "PUT" : "POST";
 
     try {
-      const body = {
-        id: editingMember?.id,
-        name: formName,
-        email: formEmail,
-        phone: formPhone || null,
-      };
-
-      const method = editingMember ? "PUT" : "POST";
-      const url = editingMember
-        ? `https://localhost:7255/api/Members/${editingMember.id}`
-        : "https://localhost:7255/api/Members";
-
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
-        const msg = await res.text();
-        throw new Error(msg || "Failed to save member");
+        const err = await res.json();
+        throw new Error(err.error || "Failed to save member");
       }
 
-      setSuccess(editingMember ? "Member updated." : "Member added.");
-      fetchMembers();
-      closeModal();
-    } catch (err) {
-      setError((err as Error).message);
-    } finally {
-      setLoading(false);
+      await fetchMembers();
+      resetForm();
+      setSuccessMsg(
+        editId ? "Member updated successfully." : "Member added successfully."
+      );
+    } catch (err: any) {
+      setError(err.message);
     }
-  }
+  };
 
-  async function handleDelete(id: number) {
-    if (!confirm("Are you sure you want to delete this member?")) return;
+  const handleEdit = (member: Member) => {
+    setEditId(member._id);
+    setFullName(member.fullName);
+    setEmail(member.email);
+    formRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
-    setLoading(true);
+  const confirmDelete = (id: string) => {
+    setDeleteId(id);
+    setShowDeleteModal(true);
+  };
+
+  const handleDelete = async () => {
+    if (!deleteId) return;
     setError(null);
-    setSuccess(null);
-
     try {
-      const res = await fetch(`https://localhost:7255/api/Members/${id}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) throw new Error("Failed to delete member");
-      setSuccess("Member deleted.");
-      fetchMembers();
-    } catch (err) {
-      setError((err as Error).message);
+      const res = await fetch(`${API_BASE}/${deleteId}`, { method: "DELETE" });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Failed to delete member");
+      }
+      await fetchMembers();
+      setSuccessMsg("Member deleted successfully.");
+    } catch (err: any) {
+      setError(err.message);
     } finally {
-      setLoading(false);
+      setDeleteId(null);
+      setShowDeleteModal(false);
     }
-  }
+  };
 
   return (
-    <Container className="py-4">
-      <h2 className="mb-4">Members Management</h2>
+    <Container className="my-5">
+      <h2 className="mb-4 text-center">👤 Members Management</h2>
 
-      {error && <Alert variant="danger">{error}</Alert>}
-      {success && (
-        <Alert variant="success" dismissible onClose={() => setSuccess(null)}>
-          {success}
+      {error && (
+        <Alert variant="danger" onClose={() => setError(null)} dismissible>
+          {error}
         </Alert>
       )}
 
-      <Button className="mb-3" onClick={() => openModal()}>
-        + Add New Member
-      </Button>
-
-      {loading && (
-        <div className="text-center my-3">
-          <Spinner animation="border" />
-        </div>
+      {successMsg && (
+        <Alert
+          variant="success"
+          onClose={() => setSuccessMsg(null)}
+          dismissible
+        >
+          {successMsg}
+        </Alert>
       )}
 
-      {/* Member Cards instead of Table */}
-      {members.length === 0 && !loading ? (
-        <p className="text-center">No members found.</p>
-      ) : (
-        members.map((member) => (
-          <Card key={member.id} className="mb-3">
-            <Card.Body>
-              <Card.Title>{member.name}</Card.Title>
-              <Card.Subtitle className="mb-2 text-muted">
-                {member.email}
-              </Card.Subtitle>
-              <p>
-                <strong>Phone:</strong> {member.phone || "-"}
-              </p>
-              <p>
-                <strong>Allocated Houses:</strong>{" "}
-                {member.allocatedHouses.length > 0
-                  ? member.allocatedHouses
-                      .map((ah) => ah.house.houseNumber)
-                      .join(", ")
-                  : "-"}
-              </p>
-              <p>
-                <strong>Reports:</strong> {member.memberReports.length}
-              </p>
-              <p>
-                <strong>Complains:</strong> {member.complains.length}
-              </p>
+      <Form
+        onSubmit={handleSubmit}
+        ref={formRef}
+        className="bg-light p-4 rounded shadow-sm mb-5"
+      >
+        <h5>{editId ? "Edit Member" : "Add New Member"}</h5>
+        <Form.Group className="mb-3">
+          <Form.Label>Full Name</Form.Label>
+          <Form.Control
+            type="text"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            placeholder="Enter full name"
+            required
+          />
+        </Form.Group>
 
-              <Button
-                size="sm"
-                variant="warning"
-                className="me-2"
-                onClick={() => openModal(member)}
-              >
-                Edit
-              </Button>
-              <Button
-                size="sm"
-                variant="danger"
-                onClick={() => handleDelete(member.id)}
-              >
-                Delete
-              </Button>
-            </Card.Body>
-          </Card>
-        ))
-      )}
+        <Form.Group className="mb-3">
+          <Form.Label>Email address</Form.Label>
+          <Form.Control
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="e.g. user@example.com"
+            required
+          />
+        </Form.Group>
 
-      {/* Modal for Add/Edit */}
-      <Modal show={showModal} onHide={closeModal} backdrop="static">
-        <Modal.Header closeButton>
-          <Modal.Title>
-            {editingMember ? "Edit Member" : "Add New Member"}
-          </Modal.Title>
-        </Modal.Header>
-
-        <Form onSubmit={handleSubmit}>
-          <Modal.Body>
-            <Form.Group className="mb-3" controlId="memberName">
-              <Form.Label>Name</Form.Label>
-              <Form.Control
-                type="text"
-                placeholder="Enter full name"
-                value={formName}
-                onChange={(e) => setFormName(e.target.value)}
-                disabled={loading}
-                required
-              />
-            </Form.Group>
-
-            <Form.Group className="mb-3" controlId="memberEmail">
-              <Form.Label>Email</Form.Label>
-              <Form.Control
-                type="email"
-                placeholder="Enter email address"
-                value={formEmail}
-                onChange={(e) => setFormEmail(e.target.value)}
-                disabled={loading}
-                required
-              />
-            </Form.Group>
-
-            <Form.Group className="mb-3" controlId="memberPhone">
-              <Form.Label>Phone (optional)</Form.Label>
-              <Form.Control
-                type="tel"
-                placeholder="Enter phone number"
-                value={formPhone}
-                onChange={(e) => setFormPhone(e.target.value)}
-                disabled={loading}
-              />
-            </Form.Group>
-          </Modal.Body>
-
-          <Modal.Footer>
-            <Button variant="secondary" onClick={closeModal} disabled={loading}>
+        <div className="text-end">
+          <Button variant="primary" type="submit">
+            {editId ? "Update Member" : "Add Member"}
+          </Button>
+          {editId && (
+            <Button
+              variant="outline-secondary"
+              className="ms-2"
+              onClick={resetForm}
+            >
               Cancel
             </Button>
-            <Button type="submit" variant="primary" disabled={loading}>
-              {loading ? (
-                <>
-                  <Spinner
-                    animation="border"
+          )}
+        </div>
+      </Form>
+
+      {loading ? (
+        <div className="text-center">
+          <Spinner animation="border" />
+        </div>
+      ) : members.length === 0 ? (
+        <Alert variant="info">No members found.</Alert>
+      ) : (
+        <Table bordered hover responsive className="shadow-sm">
+          <thead className="table-light">
+            <tr>
+              <th>#</th>
+              <th>Full Name</th>
+              <th>Email</th>
+              <th>Allocated Houses</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {members.map((m, index) => (
+              <tr key={m._id}>
+                <td>{index + 1}</td>
+                <td>{m.fullName}</td>
+                <td>
+                  <OverlayTrigger
+                    placement="top"
+                    overlay={<Tooltip>{m.email}</Tooltip>}
+                  >
+                    <span>{m.email}</span>
+                  </OverlayTrigger>
+                </td>
+                <td>
+                  {m.allocatedHouses && m.allocatedHouses.length > 0 ? (
+                    m.allocatedHouses.map((ah) => (
+                      <Badge bg="info" className="me-1" key={ah._id}>
+                        {ah.houseId?.houseNumber ?? "?"}
+                      </Badge>
+                    ))
+                  ) : (
+                    <Badge bg="secondary">None</Badge>
+                  )}
+                </td>
+                <td>
+                  <Button
+                    variant="outline-primary"
                     size="sm"
-                    role="status"
-                    aria-hidden="true"
                     className="me-2"
-                  />
-                  Saving...
-                </>
-              ) : editingMember ? (
-                "Update Member"
-              ) : (
-                "Add Member"
-              )}
-            </Button>
-          </Modal.Footer>
-        </Form>
+                    onClick={() => handleEdit(m)}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    variant="outline-danger"
+                    size="sm"
+                    onClick={() => confirmDelete(m._id)}
+                  >
+                    Delete
+                  </Button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        show={showDeleteModal}
+        onHide={() => setShowDeleteModal(false)}
+        centered
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Confirm Deletion</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>Are you sure you want to delete this member?</Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
+            Cancel
+          </Button>
+          <Button variant="danger" onClick={handleDelete}>
+            Delete
+          </Button>
+        </Modal.Footer>
       </Modal>
     </Container>
   );
-}
+};
+
+export default MembersPage;

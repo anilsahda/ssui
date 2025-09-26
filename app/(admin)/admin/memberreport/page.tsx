@@ -1,70 +1,53 @@
 "use client";
-import React, { useEffect, useState } from "react";
+
+import React, { useEffect, useState, FormEvent } from "react";
 import {
   Container,
-  Button,
-  Modal,
   Form,
+  Button,
+  Table,
+  Modal,
   Alert,
   Spinner,
-  ListGroup,
-  Row,
-  Col,
 } from "react-bootstrap";
 
-interface Member {
-  id: number;
-  name: string;
-}
+type Member = {
+  _id: string;
+  fullName: string;
+};
 
-interface MemberReport {
-  id: number;
-  title: string;
-  description: string;
-  memberId: number;
-  member?: Member;
-}
+type Report = {
+  _id: string;
+  memberId: { _id: string; fullName: string } | string;
+  reportDetails: string;
+  reportDate: string;
+};
 
-export default function MemberReports() {
-  const [reports, setReports] = useState<MemberReport[]>([]);
+const MemberReportsPage: React.FC = () => {
+  const [reports, setReports] = useState<Report[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
-
   const [loading, setLoading] = useState(false);
+
+  const [reportDetails, setReportDetails] = useState("");
+  const [memberId, setMemberId] = useState("");
+  const [editId, setEditId] = useState<string | null>(null);
+
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  // Modal controls
-  const [showModal, setShowModal] = useState(false);
-  const [editingReport, setEditingReport] = useState<MemberReport | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  // Form state
-  const [formTitle, setFormTitle] = useState("");
-  const [formDescription, setFormDescription] = useState("");
-  const [formMemberId, setFormMemberId] = useState<number | "">("");
-
-  useEffect(() => {
-    fetchReports();
-    fetchMembers();
-  }, []);
+  const API_BASE = "http://localhost:5000/api";
 
   const fetchReports = async () => {
     setLoading(true);
-    setError(null);
     try {
-      const res = await fetch("https://localhost:7255/api/MemberReports");
-      if (!res.ok) throw new Error("Failed to fetch reports");
-
-      const response = await res.json();
-      const data = Array.isArray(response)
-        ? response
-        : Array.isArray(response?.data)
-        ? response.data
-        : [];
-
-      setReports(data);
+      const res = await fetch(`${API_BASE}/member-reports`);
+      const data = await res.json();
+      setReports(data || []);
     } catch (err) {
-      setError((err as Error).message);
-      setReports([]);
+      setError("Failed to load reports.");
     } finally {
       setLoading(false);
     }
@@ -72,245 +55,231 @@ export default function MemberReports() {
 
   const fetchMembers = async () => {
     try {
-      const res = await fetch("https://localhost:7255/api/Members");
-      if (!res.ok) throw new Error("Failed to fetch members");
+      const res = await fetch(`${API_BASE}/members`);
       const data = await res.json();
-      setMembers(Array.isArray(data) ? data : []);
-    } catch (err) {
-      setError((err as Error).message);
+      setMembers(data.data || []);
+    } catch {
       setMembers([]);
     }
   };
 
-  const openModal = (report?: MemberReport) => {
-    if (report) {
-      setEditingReport(report);
-      setFormTitle(report.title);
-      setFormDescription(report.description);
-      setFormMemberId(report.memberId);
-    } else {
-      setEditingReport(null);
-      setFormTitle("");
-      setFormDescription("");
-      setFormMemberId("");
-    }
-    setShowModal(true);
+  useEffect(() => {
+    fetchReports();
+    fetchMembers();
+  }, []);
+
+  const resetForm = () => {
+    setReportDetails("");
+    setMemberId("");
+    setEditId(null);
     setError(null);
-    setSuccess(null);
+    setSuccessMsg(null);
   };
 
-  const closeModal = () => setShowModal(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
-    setSuccess(null);
+    setSuccessMsg(null);
 
-    if (!formTitle.trim() || !formDescription.trim() || !formMemberId) {
-      setError("Please fill in all fields");
+    if (!memberId || !reportDetails.trim()) {
+      setError("Please select a member and fill in report details.");
       return;
     }
 
-    setLoading(true);
-
     try {
-      const body = {
-        id: editingReport?.id,
-        title: formTitle,
-        description: formDescription,
-        memberId: formMemberId,
-      };
-
-      const method = editingReport ? "PUT" : "POST";
-      const url = editingReport
-        ? `https://localhost:7255/api/MemberReports/${editingReport.id}`
-        : "https://localhost:7255/api/MemberReports";
+      const method = editId ? "PUT" : "POST";
+      const url = editId
+        ? `${API_BASE}/member-reports/${editId}`
+        : `${API_BASE}/member-reports`;
 
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ reportDetails, memberId }),
       });
 
-      if (!res.ok) {
-        const msg = await res.text();
-        throw new Error(msg || "Failed to save report");
-      }
+      if (!res.ok) throw new Error("Failed to save report");
 
-      setSuccess(editingReport ? "Report updated." : "Report added.");
-      fetchReports();
-      closeModal();
-    } catch (err) {
-      setError((err as Error).message);
-    } finally {
-      setLoading(false);
+      await fetchReports();
+      resetForm();
+      setSuccessMsg(editId ? "Report updated successfully." : "Report added.");
+    } catch (err: any) {
+      setError(err.message || "Error saving report.");
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this report?")) return;
+  const handleEdit = (report: Report) => {
+    setEditId(report._id);
+    setReportDetails(report.reportDetails);
+    setMemberId(
+      typeof report.memberId === "string"
+        ? report.memberId
+        : report.memberId?._id || ""
+    );
+  };
 
-    setLoading(true);
-    setError(null);
-    setSuccess(null);
+  const confirmDelete = (id: string) => {
+    setDeleteId(id);
+    setShowDeleteModal(true);
+  };
 
+  const handleDelete = async () => {
+    if (!deleteId) return;
     try {
-      const res = await fetch(
-        `https://localhost:7255/api/MemberReports/${id}`,
-        {
-          method: "DELETE",
-        }
-      );
-      if (!res.ok) throw new Error("Failed to delete report");
-
-      setSuccess("Report deleted.");
-      fetchReports();
-    } catch (err) {
-      setError((err as Error).message);
+      await fetch(`${API_BASE}/member-reports/${deleteId}`, {
+        method: "DELETE",
+      });
+      await fetchReports();
+      setSuccessMsg("Report deleted.");
+    } catch {
+      setError("Failed to delete report.");
     } finally {
-      setLoading(false);
+      setShowDeleteModal(false);
+      setDeleteId(null);
     }
   };
 
   return (
-    <Container className="py-4">
-      <h2 className="mb-4">Member Reports</h2>
+    <Container className="my-5">
+      <h2 className="mb-4 text-center">📋 Member Reports</h2>
 
-      {error && <Alert variant="danger">{error}</Alert>}
-      {success && (
-        <Alert variant="success" dismissible onClose={() => setSuccess(null)}>
-          {success}
+      {error && (
+        <Alert variant="danger" onClose={() => setError(null)} dismissible>
+          {error}
+        </Alert>
+      )}
+      {successMsg && (
+        <Alert
+          variant="success"
+          onClose={() => setSuccessMsg(null)}
+          dismissible
+        >
+          {successMsg}
         </Alert>
       )}
 
-      <Button className="mb-3" onClick={() => openModal()}>
-        + Add New Report
-      </Button>
+      <Form
+        onSubmit={handleSubmit}
+        className="bg-light p-4 rounded shadow-sm mb-4"
+      >
+        <h5>{editId ? "Edit Report" : "New Member Report"}</h5>
+        <Form.Group className="mb-3">
+          <Form.Label>Select Member</Form.Label>
+          <Form.Select
+            value={memberId}
+            onChange={(e) => setMemberId(e.target.value)}
+            required
+          >
+            <option value="">-- Select Member --</option>
+            {members.map((m) => (
+              <option key={m._id} value={m._id}>
+                {m.fullName}
+              </option>
+            ))}
+          </Form.Select>
+        </Form.Group>
 
-      {loading && (
-        <div className="text-center my-3">
-          <Spinner animation="border" />
-        </div>
-      )}
+        <Form.Group className="mb-3">
+          <Form.Label>Report Details</Form.Label>
+          <Form.Control
+            as="textarea"
+            rows={3}
+            value={reportDetails}
+            onChange={(e) => setReportDetails(e.target.value)}
+            required
+          />
+        </Form.Group>
 
-      {/* Reports List (no table) */}
-      {reports.length === 0 ? (
-        <p>No reports found.</p>
-      ) : (
-        <ListGroup>
-          {reports.map((report) => (
-            <ListGroup.Item
-              key={report.id}
-              className="d-flex justify-content-between align-items-start flex-column flex-md-row"
+        <div className="text-end">
+          <Button type="submit" variant="primary">
+            {editId ? "Update Report" : "Add Report"}
+          </Button>
+          {editId && (
+            <Button
+              variant="outline-secondary"
+              className="ms-2"
+              onClick={resetForm}
             >
-              <div className="me-3">
-                <h5>{report.title}</h5>
-                <p className="mb-1">{report.description}</p>
-                <small>
-                  <strong>Member:</strong> {report.member?.name || "N/A"}
-                </small>
-              </div>
-              <div className="mt-2 mt-md-0 text-md-end">
-                <Button
-                  size="sm"
-                  variant="warning"
-                  className="me-2"
-                  onClick={() => openModal(report)}
-                >
-                  Edit
-                </Button>
-                <Button
-                  size="sm"
-                  variant="danger"
-                  onClick={() => handleDelete(report.id)}
-                >
-                  Delete
-                </Button>
-              </div>
-            </ListGroup.Item>
-          ))}
-        </ListGroup>
-      )}
-
-      {/* Modal for Add/Edit */}
-      <Modal show={showModal} onHide={closeModal} backdrop="static">
-        <Modal.Header closeButton>
-          <Modal.Title>
-            {editingReport ? "Edit Report" : "Add New Report"}
-          </Modal.Title>
-        </Modal.Header>
-
-        <Form onSubmit={handleSubmit}>
-          <Modal.Body>
-            <Form.Group className="mb-3" controlId="reportTitle">
-              <Form.Label>Title</Form.Label>
-              <Form.Control
-                type="text"
-                placeholder="Enter report title"
-                value={formTitle}
-                onChange={(e) => setFormTitle(e.target.value)}
-                disabled={loading}
-                required
-              />
-            </Form.Group>
-
-            <Form.Group className="mb-3" controlId="reportDescription">
-              <Form.Label>Description</Form.Label>
-              <Form.Control
-                as="textarea"
-                rows={3}
-                placeholder="Enter report description"
-                value={formDescription}
-                onChange={(e) => setFormDescription(e.target.value)}
-                disabled={loading}
-                required
-              />
-            </Form.Group>
-
-            <Form.Group className="mb-3" controlId="reportMember">
-              <Form.Label>Member</Form.Label>
-              <Form.Select
-                value={formMemberId}
-                onChange={(e) => setFormMemberId(Number(e.target.value))}
-                disabled={loading}
-                required
-              >
-                <option value="">Select Member</option>
-                {Array.isArray(members) &&
-                  members.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.name}
-                    </option>
-                  ))}
-              </Form.Select>
-            </Form.Group>
-          </Modal.Body>
-
-          <Modal.Footer>
-            <Button variant="secondary" onClick={closeModal} disabled={loading}>
               Cancel
             </Button>
-            <Button type="submit" variant="primary" disabled={loading}>
-              {loading ? (
-                <>
-                  <Spinner
-                    animation="border"
+          )}
+        </div>
+      </Form>
+
+      {loading ? (
+        <div className="text-center my-4">
+          <Spinner animation="border" />
+        </div>
+      ) : reports.length === 0 ? (
+        <Alert variant="info">No reports found.</Alert>
+      ) : (
+        <Table bordered hover responsive className="shadow-sm">
+          <thead className="table-light">
+            <tr>
+              <th>Member</th>
+              <th>Report Details</th>
+              <th>Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {reports.map((r) => (
+              <tr key={r._id}>
+                <td>
+                  {typeof r.memberId === "string"
+                    ? r.memberId
+                    : r.memberId?.fullName || "Unknown"}
+                </td>
+                <td>{r.reportDetails}</td>
+                <td>
+                  {r.reportDate
+                    ? new Date(r.reportDate).toLocaleDateString()
+                    : "-"}
+                </td>
+                <td>
+                  <Button
+                    variant="outline-warning"
                     size="sm"
-                    role="status"
-                    aria-hidden="true"
                     className="me-2"
-                  />
-                  Saving...
-                </>
-              ) : editingReport ? (
-                "Update Report"
-              ) : (
-                "Add Report"
-              )}
-            </Button>
-          </Modal.Footer>
-        </Form>
+                    onClick={() => handleEdit(r)}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    variant="outline-danger"
+                    size="sm"
+                    onClick={() => confirmDelete(r._id)}
+                  >
+                    Delete
+                  </Button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        show={showDeleteModal}
+        onHide={() => setShowDeleteModal(false)}
+        centered
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Confirm Delete</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>Are you sure you want to delete this report?</Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
+            Cancel
+          </Button>
+          <Button variant="danger" onClick={handleDelete}>
+            Delete
+          </Button>
+        </Modal.Footer>
       </Modal>
     </Container>
   );
-}
+};
+
+export default MemberReportsPage;
