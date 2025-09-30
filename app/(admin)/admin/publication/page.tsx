@@ -1,157 +1,211 @@
 "use client";
-import React, { useState, useEffect } from "react";
-import axios from "axios";
+import { useEffect, useState } from "react";
 
-// ✅ Match backend Publication class
-interface Publication {
+type Publication = {
   id: number;
   name: string;
-}
+  address: string;
+};
 
-function PublicationPage() {
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:7293";
+
+export default function PublicationsPage() {
   const [publications, setPublications] = useState<Publication[]>([]);
-  const [newPublication, setNewPublication] = useState<string>("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const [formData, setFormData] = useState({
+    name: "",
+    address: "",
+  });
   const [editId, setEditId] = useState<number | null>(null);
 
-  // 🔹 Replace this with your deployed backend URL
-  const API_URL = "https://localhost:7293/api/Publications";
-
-  // Fetch publications
   useEffect(() => {
-    fetchPublications();
+    loadPublications();
   }, []);
 
-  const fetchPublications = async () => {
+  async function loadPublications() {
     try {
-      const res = await axios.get<Publication[]>(API_URL+"/GetPublications");
-      setPublications(res.data);
-    } catch (error) {
-      console.error("Error fetching publications:", error);
+      setLoading(true);
+      const res = await fetch(`${API_BASE}/api/Publication`);
+      if (!res.ok) throw new Error("Failed to fetch publications");
+      const data = await res.json();
+      setPublications(data);
+      setError(null);
+    } catch (err: any) {
+      setError(err.message || "Error loading data");
+    } finally {
+      setLoading(false);
     }
+  }
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
-  // Add or Update Publication
-  const savePublication = async () => {
-    if (!newPublication.trim()) return;
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!formData.name.trim()) {
+      alert("Name is required");
+      return;
+    }
+    if (!formData.address.trim()) {
+      alert("Address is required");
+      return;
+    }
 
     try {
-      if (editId) {
-        // Update
-        await axios.put(API_URL+"/UpdatePublication", {
-          id: editId,
-          name: newPublication,
-        });
-        setEditId(null);
-      } else {
-        // Add
-        const newId =
-          publications.length > 0
-            ? Math.max(...publications.map((p) => p.id)) + 1
-            : 1;
+      const method = editId ? "PUT" : "POST";
+      const url = editId
+        ? `${API_BASE}/api/Publication/${editId}`
+        : `${API_BASE}/api/Publication`;
 
-        await axios.post(API_URL+"/AddPublication", {
-          id: newId,
-          name: newPublication,
-        });
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`Server responded with ${res.status}: ${text}`);
       }
-      setNewPublication("");
-      fetchPublications();
-    } catch (error) {
-      console.error("Error saving publication:", error);
+
+      setFormData({ name: "", address: "" });
+      setEditId(null);
+      await loadPublications();
+    } catch (err: any) {
+      alert("Failed to save publication: " + err.message);
     }
   };
 
-  // Delete Publication
-  const deletePublication = async (id: number) => {
+  const handleEdit = (pub: Publication) => {
+    setEditId(pub.id);
+    setFormData({ name: pub.name, address: pub.address });
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm("Are you sure to delete this publication?")) return;
     try {
-      await axios.delete(`${API_URL}/${id}`);
-      fetchPublications();
-    } catch (error) {
-      console.error("Error deleting publication:", error);
+      const res = await fetch(`${API_BASE}/api/Publication/${id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error(`Delete failed with status ${res.status}`);
+      await loadPublications();
+    } catch (err: any) {
+      alert("Failed to delete publication: " + err.message);
     }
-  };
-
-  // Start Editing
-  const startEdit = (id: number, name: string) => {
-    setNewPublication(name);
-    setEditId(id);
   };
 
   return (
-    <div className="container mt-4">
-      <h2>Manage Publication</h2>
+    <div className="container mt-5">
+      <h2>Publications</h2>
 
-      {/* Input + Button */}
-      <div className="mb-3">
-        <input
-          type="text"
-          placeholder="Enter Publication Name"
-          className="form-control"
-          value={newPublication}
-          onChange={(e) => setNewPublication(e.target.value)}
-        />
+      {error && <div className="alert alert-danger">{error}</div>}
+
+      <div className="card mb-4">
+        <div className="card-header">
+          {editId ? `Edit Publication #${editId}` : "Add Publication"}
+        </div>
+        <div className="card-body">
+          <form onSubmit={handleSubmit}>
+            <div className="mb-3">
+              <label htmlFor="name" className="form-label">
+                Name
+              </label>
+              <input
+                id="name"
+                name="name"
+                className="form-control"
+                value={formData.name}
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            <div className="mb-3">
+              <label htmlFor="address" className="form-label">
+                Address
+              </label>
+              <input
+                id="address"
+                name="address"
+                className="form-control"
+                value={formData.address}
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            <button type="submit" className="btn btn-primary me-2">
+              {editId ? "Update" : "Add"}
+            </button>
+            {editId && (
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => {
+                  setEditId(null);
+                  setFormData({ name: "", address: "" });
+                }}
+              >
+                Cancel
+              </button>
+            )}
+          </form>
+        </div>
       </div>
 
-      <div className="mb-4">
-        <button onClick={savePublication} className="btn btn-primary me-2">
-          {editId ? "Update Publication" : "Add Publication"}
-        </button>
-        {editId && (
-          <button
-            onClick={() => {
-              setEditId(null);
-              setNewPublication("");
-            }}
-            className="btn btn-secondary"
-          >
-            Cancel
-          </button>
-        )}
-      </div>
-
-      {/* Table */}
-      <table className="table table-bordered table-striped">
-        <thead className="table-light">
-          <tr>
-            <th>Id</th>
-            <th>Publication Name</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {publications.length > 0 ? (
-            publications.map((pub) => (
-              <tr key={pub.id}>
-                <td>{pub.id}</td>
-                <td>{pub.name}</td>
-                <td>
-                  <button
-                    className="btn btn-warning me-1"
-                    onClick={() => startEdit(pub.id, pub.name)}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    className="btn btn-danger me-1"
-                    onClick={() => deletePublication(pub.id)}
-                  >
-                    Delete
-                  </button>
-                  <button className="btn btn-success">View</button>
+      {loading ? (
+        <p>Loading...</p>
+      ) : (
+        <table className="table table-bordered table-striped">
+          <thead className="table-dark">
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Address</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {publications.length === 0 ? (
+              <tr>
+                <td colSpan={4} className="text-center">
+                  No publications found.
                 </td>
               </tr>
-            ))
-          ) : (
-            <tr>
-              <td colSpan={3} className="text-center">
-                No publications found
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+            ) : (
+              publications.map((pub) => (
+                <tr key={pub.id}>
+                  <td>{pub.id}</td>
+                  <td>{pub.name}</td>
+                  <td>{pub.address}</td>
+                  <td>
+                    <button
+                      className="btn btn-sm btn-primary me-2"
+                      onClick={() => handleEdit(pub)}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      className="btn btn-sm btn-danger"
+                      onClick={() => handleDelete(pub.id)}
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 }
-
-export default PublicationPage;

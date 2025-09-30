@@ -23,7 +23,11 @@ function PenaltyPage() {
       {/* Select Student */}
       <div className="mb-4">
         <label className="form-label">Select Student</label>
-        <select className="form-select" value={selectedStudent} onChange={handleStudentChange}>
+        <select
+          className="form-select"
+          value={selectedStudent}
+          onChange={handleStudentChange}
+        >
           <option value="">---Select Students---</option>
           <option value="Amit Sharma">Amit Sharma</option>
           <option value="Neha Verma">Neha Verma</option>
@@ -54,7 +58,9 @@ function PenaltyPage() {
                   <td>{p.fine}</td>
                   <td>
                     <button className="btn btn-info btn-sm me-1">View</button>
-                    <button className="btn btn-warning btn-sm me-1">Edit</button>
+                    <button className="btn btn-warning btn-sm me-1">
+                      Edit
+                    </button>
                     <button className="btn btn-danger btn-sm">Delete</button>
                   </td>
                 </tr>

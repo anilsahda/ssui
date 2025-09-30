@@ -1,199 +1,195 @@
 "use client";
+import { useEffect, useState } from "react";
 
-import React, { useEffect, useState } from "react";
-import axios from "axios";
+type Branch = {
+  id: number;
+  name: string;
+  location: string;
+};
 
-function BranchPage() {
-  const [branches, setBranches] = useState<any[]>([]);
-  const [showModal, setShowModal] = useState(false);
-  const [editingBranch, setEditingBranch] = useState<any>(null);
-  const [formData, setFormData] = useState({
+type BranchDto = Omit<Branch, "id">;
+
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:7293";
+
+export default function BranchesPage() {
+  const [branches, setBranches] = useState<Branch[]>([]);
+  const [formData, setFormData] = useState<BranchDto>({
     name: "",
+    location: "",
   });
+  const [editId, setEditId] = useState<number | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // 🔹 API base URL (adjust to your backend)
-  const API_URL = "https://localhost:7293/api/Branches";
-
-  // 🔹 Fetch all branches
+  // Load branches on page load
   useEffect(() => {
-    fetchBranches();
+    loadBranches();
   }, []);
 
-  const fetchBranches = async () => {
+  const loadBranches = async () => {
     try {
-      const res = await axios.get(API_URL + "/GetBranches");
-      setBranches(res.data);
+      setLoading(true);
+      const res = await fetch(`${API_BASE}/api/Branch`);
+      const data = await res.json();
+      setBranches(data);
     } catch (err) {
-      console.error("Error fetching branches:", err);
+      setError("Failed to load branches.");
+    } finally {
+      setLoading(false);
     }
   };
 
-  // 🔹 Handle input change
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // 🔹 Open modal for new branch
-  const handleOpenModal = () => {
-    setEditingBranch(null);
-    setFormData({ name: "" });
-    setShowModal(true);
-  };
-
-  // 🔹 Open modal for editing branch
-  const handleEdit = (branch: any) => {
-    setEditingBranch(branch);
-    setFormData({ name: branch.name });
-    setShowModal(true);
-  };
-
-  // 🔹 Add / Update Branch
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      if (editingBranch) {
-        // Update
-        await axios.put(`${API_URL}/UpdateBranch`, {
-          Id: editingBranch.id,
-          ...formData,
-        });
-      } else {
-        // Create
-        await axios.post(API_URL + "/AddBranch", formData);
-      }
-      fetchBranches();
-      setShowModal(false);
-    } catch (err) {
-      console.error("Error saving branch:", err);
+
+    const url = editId
+      ? `${API_BASE}/api/Branch/${editId}`
+      : `${API_BASE}/api/Branch`;
+    const method = editId ? "PUT" : "POST";
+
+    const res = await fetch(url, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(formData),
+    });
+
+    if (!res.ok) {
+      alert("Failed to save branch.");
+      return;
     }
+
+    setFormData({ name: "", location: "" });
+    setEditId(null);
+    await loadBranches();
   };
 
-  // 🔹 Delete Branch
+  const handleEdit = (branch: Branch) => {
+    setFormData({ name: branch.name, location: branch.location });
+    setEditId(branch.id);
+  };
+
   const handleDelete = async (id: number) => {
-    if (!window.confirm("Are you sure you want to delete this branch?")) return;
-    try {
-      await axios.delete(`${API_URL}/${id}`);
-      fetchBranches();
-    } catch (err) {
-      console.error("Error deleting branch:", err);
+    if (!confirm("Are you sure you want to delete this branch?")) return;
+
+    const res = await fetch(`${API_BASE}/api/Branch/${id}`, {
+      method: "DELETE",
+    });
+
+    if (!res.ok) {
+      alert("Delete failed.");
+      return;
     }
+
+    await loadBranches();
   };
 
   return (
-    <div className="container mt-4">
-      <h2>Manage Branches</h2>
+    <div className="container mt-5">
+      <h2 className="mb-4">Branch Manager</h2>
 
-      {/* Button to open modal */}
-      <div className="mb-3 text-end">
-        <button className="btn btn-primary" onClick={handleOpenModal}>
-          + Add Branch
-        </button>
+      {/* FORM */}
+      <div className="card mb-4">
+        <div className="card-header">
+          {editId ? "Edit Branch" : "Add Branch"}
+        </div>
+        <div className="card-body">
+          <form onSubmit={handleSubmit}>
+            <div className="mb-3">
+              <label className="form-label">Branch Name</label>
+              <input
+                type="text"
+                name="name"
+                className="form-control"
+                value={formData.name}
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            <div className="mb-3">
+              <label className="form-label">Location</label>
+              <input
+                type="text"
+                name="location"
+                className="form-control"
+                value={formData.location}
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            <button type="submit" className="btn btn-primary me-2">
+              {editId ? "Update" : "Create"}
+            </button>
+            {editId && (
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => {
+                  setEditId(null);
+                  setFormData({ name: "", location: "" });
+                }}
+              >
+                Cancel
+              </button>
+            )}
+          </form>
+        </div>
       </div>
 
-      {/* Branch Form Modal */}
-      {showModal && (
-        <div
-          className="modal fade show d-block"
-          tabIndex={-1}
-          role="dialog"
-          style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
-        >
-          <div
-            className="modal-dialog modal-dialog-centered"
-            role="document"
-          >
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">
-                  {editingBranch ? "Edit Branch" : "Add Branch"}
-                </h5>
-                <button
-                  type="button"
-                  className="btn-close"
-                  onClick={() => setShowModal(false)}
-                ></button>
-              </div>
-              <div className="modal-body">
-                <form onSubmit={handleSubmit}>
-                  <div className="mb-3">
-                    <label className="form-label">Branch Name</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleChange}
-                      required
-                    />
-                  </div>
-
-                  <div className="d-flex justify-content-end">
+      {/* TABLE */}
+      <h4>All Branches</h4>
+      {error && <div className="alert alert-danger">{error}</div>}
+      {loading ? (
+        <p>Loading branches...</p>
+      ) : (
+        <table className="table table-bordered table-striped">
+          <thead className="table-dark">
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Location</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {branches.length > 0 ? (
+              branches.map((branch) => (
+                <tr key={branch.id}>
+                  <td>{branch.id}</td>
+                  <td>{branch.name}</td>
+                  <td>{branch.location}</td>
+                  <td>
                     <button
-                      type="button"
-                      className="btn btn-secondary me-2"
-                      onClick={() => setShowModal(false)}
+                      className="btn btn-sm btn-primary me-2"
+                      onClick={() => handleEdit(branch)}
                     >
-                      Cancel
+                      Edit
                     </button>
-                    <button type="submit" className="btn btn-primary">
-                      {editingBranch ? "Update Branch" : "Add Branch"}
+                    <button
+                      className="btn btn-sm btn-danger"
+                      onClick={() => handleDelete(branch.id)}
+                    >
+                      Delete
                     </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Branches Table */}
-      <table className="table table-bordered table-striped mt-3">
-        <thead className="table-light">
-          <tr>
-            <th>Id</th>
-            <th>Branch Name</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {branches.length > 0 ? (
-            branches.map((branch: any) => (
-              <tr key={branch.id}>
-                <td>{branch.id}</td>
-                <td>{branch.name}</td>
-                <td>
-                  <button
-                    className="btn btn-warning me-1"
-                    onClick={() => handleEdit(branch)}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    className="btn btn-danger me-1"
-                    onClick={() => handleDelete(branch.id)}
-                  >
-                    Delete
-                  </button>
-                  <button
-                    className="btn btn-success"
-                    onClick={() => alert(`Branch: ${branch.name}`)}
-                  >
-                    View
-                  </button>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={4} className="text-center text-muted">
+                  No branches available.
                 </td>
               </tr>
-            ))
-          ) : (
-            <tr>
-              <td colSpan={3} className="text-center">
-                No Branches Found
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+            )}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 }
-
-export default BranchPage;

@@ -1,56 +1,180 @@
 "use client";
 
 import Link from "next/link";
-import { MdDashboard, MdHelpOutline } from "react-icons/md";
-import { FaUsers, FaUserEdit, FaSignOutAlt, FaUserCog, FaUserShield, FaBook, FaBuilding, FaUserGraduate, FaClipboardList, FaUndo, FaMoneyBillWave } from "react-icons/fa";
-import { FiSearch, FiBell, FiMoon, FiUserCheck } from "react-icons/fi";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import "bootstrap/dist/css/bootstrap.min.css";
+
+import { MdDashboard, MdHelpOutline } from "react-icons/md";
+import {
+  FaUserEdit,
+  FaSignOutAlt,
+  FaUserCog,
+  FaBook,
+  FaBuilding,
+  FaUserGraduate,
+  FaClipboardList,
+  FaUndo,
+  FaMoneyBillWave,
+} from "react-icons/fa";
+import { FiSearch, FiBell, FiMoon } from "react-icons/fi";
 import { BsFileEarmarkPlus, BsFileEarmarkText } from "react-icons/bs";
 import { TbReportAnalytics } from "react-icons/tb";
 import { RiBookOpenLine } from "react-icons/ri";
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+export default function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const pathname = usePathname();
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
   useEffect(() => {
     import("bootstrap/dist/js/bootstrap.bundle.min.js");
   }, []);
 
+  const navItems = [
+    {
+      label: "Dashboard",
+      icon: <MdDashboard size={18} />,
+      href: "/admin",
+      color: "text-info",
+    },
+    {
+      label: "Add Publication",
+      icon: <BsFileEarmarkPlus size={16} />,
+      href: "/admin/publication",
+      color: "text-primary",
+    },
+    {
+      label: "Add Book",
+      icon: <FaBook size={16} />,
+      href: "/admin/book",
+      color: "text-success",
+    },
+    {
+      label: "Book Report",
+      icon: <TbReportAnalytics size={16} />,
+      href: "/admin/bookreport",
+      color: "text-warning",
+    },
+    {
+      label: "Add Branch",
+      icon: <FaBuilding size={16} />,
+      href: "/admin/branch",
+      color: "text-danger",
+    },
+    {
+      label: "Add Student",
+      icon: <FaUserGraduate size={16} />,
+      href: "/admin/student",
+      color: "text-info",
+    },
+    {
+      label: "Student Report",
+      icon: <FaClipboardList size={16} />,
+      href: "/admin/studentreport",
+      color: "text-secondary",
+    },
+    {
+      label: "Issue Book",
+      icon: <RiBookOpenLine size={16} />,
+      href: "/admin/issuebook",
+      color: "text-success",
+    },
+    {
+      label: "Issue Report",
+      icon: <BsFileEarmarkText size={16} />,
+      href: "/admin/issuereport",
+      color: "text-warning",
+    },
+    {
+      label: "Return Book",
+      icon: <FaUndo size={16} />,
+      href: "/admin/returnbook",
+      color: "text-primary",
+    },
+    {
+      label: "Penalty",
+      icon: <FaMoneyBillWave size={16} />,
+      href: "/admin/penalty",
+      color: "text-danger",
+    },
+  ];
+
   return (
-    <div className="d-flex flex-column min-vh-100 bg-light" style={{ fontFamily: "Inter, sans-serif" }}>
-      <header className="d-flex justify-content-between align-items-center px-4 py-2 shadow-sm bg-white border-bottom">
-        <h1 className="m-0 text-primary" style={{ fontSize: "1.6rem", fontWeight: 600 }}>SS Admin</h1>
-        <div className="flex-grow-1 px-4 d-none d-md-block">
-          <div className="position-relative mx-auto" style={{ width: "50%" }}>
-            <FiSearch size={18} className="position-absolute top-50 start-0 translate-middle-y ms-3 text-muted" />
-            <input type="text" className="form-control rounded-pill ps-5 shadow-sm" placeholder="Search..." />
+    <div
+      className="d-flex flex-column min-vh-100 bg-light"
+      style={{ fontFamily: "Inter, sans-serif" }}
+    >
+      {/* Header */}
+      <header className="d-flex justify-content-between align-items-center px-4 py-2 bg-white border-bottom shadow-sm sticky-top">
+        <h1 className="m-0 text-primary fs-4 fw-bold">Digital Library Admin</h1>
+
+        <div className="d-none d-md-block w-50 px-3">
+          <div className="position-relative">
+            <FiSearch className="position-absolute top-50 start-0 translate-middle-y ms-3 text-muted" />
+            <input
+              type="text"
+              className="form-control rounded-pill ps-5 shadow-sm"
+              placeholder="Search..."
+            />
           </div>
         </div>
 
         <div className="d-flex align-items-center gap-3">
-          <button className="btn btn-light rounded-circle shadow-sm p-2 action-btn"><FiMoon size={18} /></button>
-          <button className="btn btn-light rounded-circle shadow-sm p-2 action-btn"><MdHelpOutline size={18} /></button>
+          <button className="btn btn-light rounded-circle p-2">
+            <FiMoon size={18} />
+          </button>
+          <button className="btn btn-light rounded-circle p-2">
+            <MdHelpOutline size={18} />
+          </button>
+
           <div className="position-relative">
-            <button className="btn btn-light rounded-circle shadow-sm p-2 action-btn"><FiBell size={18} /></button>
-            <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style={{ fontSize: "0.65rem" }}>5</span>
+            <button className="btn btn-light rounded-circle p-2">
+              <FiBell size={18} />
+            </button>
+            <span
+              className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+              style={{ fontSize: "0.65rem" }}
+            >
+              5
+            </span>
           </div>
 
           <div className="dropdown">
-            <button id="dropdownUser" className="btn p-0 d-flex align-items-center gap-2 dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" type="button">
-              <img src="https://ui-avatars.com/api/?name=Admin+User&background=0d6efd&color=fff&rounded=true" alt="profile" className="rounded-circle shadow-sm border border-2 border-light" width="40" height="40" />
+            <button
+              className="btn p-0 dropdown-toggle d-flex align-items-center"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+            >
+              <img
+                src="https://ui-avatars.com/api/?name=Admin+User&background=0d6efd&color=fff&rounded=true"
+                className="rounded-circle shadow border border-2"
+                width={40}
+                height={40}
+                alt="Admin"
+              />
             </button>
-
-            <ul className="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 p-0 overflow-hidden" aria-labelledby="dropdownUser" style={{ minWidth: "220px" }}>
+            <ul className="dropdown-menu dropdown-menu-end shadow p-0 overflow-hidden">
               <li className="bg-light p-3 border-bottom text-center">
                 <div className="fw-semibold">Admin User</div>
                 <small className="text-muted">Administrator</small>
               </li>
               <li>
-                <Link className="dropdown-item d-flex align-items-center gap-2 py-2" href="/admin/profile">
+                <Link
+                  className="dropdown-item d-flex align-items-center gap-2"
+                  href="/admin/profile"
+                >
                   <FaUserEdit /> Edit Profile
                 </Link>
               </li>
               <li>
-                <Link className="dropdown-item d-flex align-items-center gap-2 py-2" href="/admin/account">
+                <Link
+                  className="dropdown-item d-flex align-items-center gap-2"
+                  href="/admin/account"
+                >
                   <FaUserCog /> Account Settings
                 </Link>
               </li>
@@ -58,80 +182,69 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <hr className="dropdown-divider m-0" />
               </li>
               <li>
-                <a href="/" className="dropdown-item d-flex align-items-center gap-2 py-2 text-danger" type="button">
+                <Link
+                  href="/"
+                  className="dropdown-item d-flex align-items-center gap-2 text-danger"
+                >
                   <FaSignOutAlt /> Logout
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
         </div>
       </header>
 
+      {/* Sidebar + Content */}
       <div className="d-flex flex-grow-1">
-        <aside className="d-flex flex-column p-3 shadow-sm" style={{ width: 230, background: "linear-gradient(180deg, #1e293b, #0f172a)", color: "#f1f5f9" }}>
-        <nav>
+        {/* Sidebar */}
+        <aside
+          className="d-flex flex-column p-3 shadow-sm"
+          style={{
+            width: isSidebarCollapsed ? "70px" : "230px",
+            background: "linear-gradient(180deg, #1e293b, #0f172a)",
+            color: "#f1f5f9",
+            transition: "width 0.3s",
+          }}
+        >
+          <div className="d-flex justify-content-end mb-3">
+            <button
+              className="btn btn-sm btn-outline-light"
+              onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+              title="Toggle Sidebar"
+            >
+              ☰
+            </button>
+          </div>
+
+          <nav>
             <ul className="nav nav-pills flex-column gap-1">
-                <li>
-                <Link href="/admin" className="nav-link d-flex align-items-center gap-2 sidebar-link active">
-                    <MdDashboard size={18} className="text-info" /> Dashboard
-                </Link>
+              {navItems.map((item) => (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    className={`nav-link d-flex align-items-center gap-2 sidebar-link ${
+                      pathname === item.href
+                        ? "active bg-info text-white"
+                        : "text-light"
+                    }`}
+                    style={{ fontSize: "0.9rem" }}
+                  >
+                    <span className={item.color}>{item.icon}</span>
+                    {!isSidebarCollapsed && item.label}
+                  </Link>
                 </li>
-                <li>
-                <Link href="/admin/publication" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                    <BsFileEarmarkPlus size={16} className="text-primary" /> Add Publication
-                </Link>
-                </li>
-                <li>
-                <Link href="/admin/book" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                    <FaBook size={16} className="text-success" /> Add Book
-                </Link>
-                </li>
-                <li>
-                <Link href="/admin/bookreport" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                    <TbReportAnalytics size={16} className="text-warning" /> Book Report
-                </Link>
-                </li>
-                <li>
-                <Link href="/admin/branch" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                    <FaBuilding size={16} className="text-danger" /> Add Branch
-                </Link>
-                </li>
-                <li>
-                <Link href="/admin/student" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                    <FaUserGraduate size={16} className="text-info" /> Add Student
-                </Link>
-                </li>
-                <li>
-                <Link href="/admin/studentreport" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                    <FaClipboardList size={16} className="text-secondary" /> Student Report
-                </Link>
-                </li>
-                <li>
-                <Link href="/admin/issuebook" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                    <RiBookOpenLine size={16} className="text-success" /> Issue Book
-                </Link>
-                </li>
-                <li>
-                <Link href="/admin/issuereport" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                    <BsFileEarmarkText size={16} className="text-warning" /> Issue Report
-                </Link>
-                </li>
-                <li>
-                <Link href="/admin/returnbook" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                    <FaUndo size={16} className="text-primary" /> Return Book
-                </Link>
-                </li>
-                <li>
-                <Link href="/admin/penalty" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                    <FaMoneyBillWave size={16} className="text-danger" /> Penalty
-                </Link>
-                </li>
+              ))}
             </ul>
-            </nav>
-          <div className="mt-auto pt-3 border-top border-secondary text-center">
-            <small style={{ color: "#94a3b8" }}>© 2025 SS App</small>
+          </nav>
+
+          <div className="mt-auto pt-3 border-top text-center">
+            {!isSidebarCollapsed && (
+              <small style={{ color: "#94a3b8" }}>© 2025 SS App</small>
+            )}
           </div>
         </aside>
+
+        {/* Main Content */}
         <main className="flex-grow-1 p-4 bg-light">{children}</main>
       </div>
     </div>

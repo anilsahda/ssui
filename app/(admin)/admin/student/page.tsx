@@ -1,305 +1,263 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import axios from "axios";
+import { useEffect, useState } from "react";
 
-function StudentPage() {
-  const [students, setStudents] = useState<any[]>([]);
-  const [showModal, setShowModal] = useState(false);
-  const [branches, setBranches] = useState<any[]>([]);
-  const [editingStudent, setEditingStudent] = useState<any>(null);
-  const [formData, setFormData] = useState({
-    name: "",
-    branchId: 0,
-    mobile: "",
+type Student = {
+  id: number;
+  studentName: string;
+  email: string;
+  branchId: number;
+  branch?: {
+    id: number;
+    name: string;
+  };
+};
+
+type Branch = {
+  id: number;
+  name: string;
+};
+
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:7293";
+
+export default function StudentsPage() {
+  const [students, setStudents] = useState<Student[]>([]);
+  const [branches, setBranches] = useState<Branch[]>([]);
+  const [formData, setFormData] = useState<Omit<Student, "id" | "branch">>({
+    studentName: "",
     email: "",
-    dob: "",
-    address: "",
+    branchId: 0,
   });
+  const [editId, setEditId] = useState<number | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // 🔹 API base URL (change as per your backend)
-  const API_URL = "https://localhost:7293/api/Students";
-  const BRANCH_API_URL = "https://localhost:7293/api/Branches";
-
-  // 🔹 Fetch students on load
   useEffect(() => {
-    fetchStudents();
-    fetchBranches();
+    loadAll();
   }, []);
 
-  const fetchStudents = async () => {
+  const loadAll = async () => {
     try {
-      const res = await axios.get(API_URL + "/GetStudent");
-      setStudents(res.data);
-    } catch (err) {
-      console.error("Error fetching students:", err);
-    }
-  };
-  const fetchBranches = async () => {
-    try {
-      const res = await axios.get(BRANCH_API_URL + "/GetBranches");
-      setBranches(res.data);
-    } catch (err) {
-      console.error("Error fetching branches:", err);
+      setLoading(true);
+      const [studentRes, branchRes] = await Promise.all([
+        fetch(`${API_BASE}/api/Student`),
+        fetch(`${API_BASE}/api/Branch`),
+      ]);
+
+      if (!studentRes.ok || !branchRes.ok) {
+        throw new Error("Failed to fetch students or branches.");
+      }
+
+      const [studentsData, branchesData] = await Promise.all([
+        studentRes.json(),
+        branchRes.json(),
+      ]);
+
+      setStudents(studentsData);
+      setBranches(branchesData);
+      setError(null);
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || "Error loading data");
+    } finally {
+      setLoading(false);
     }
   };
 
-  // 🔹 Handle input changes
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: name === "branchId" ? parseInt(value) : value,
+    }));
   };
 
-  // 🔹 Open modal for new student
-  const handleOpenModal = () => {
-    setEditingStudent(null);
-    setFormData({
-      name: "",
-      branchId: 0,
-      mobile: "",
-      email: "",
-      dob: "",
-      address: "",
-    });
-    setShowModal(true);
-  };
-
-  // 🔹 Open modal for editing student
-  const handleEdit = (student: any) => {
-    setEditingStudent(student);
-    setFormData({
-      name: student.name,
-      branchId: student.branchId,
-      mobile: student.mobile,
-      email: student.email,
-      dob: student.dob,
-      address: student.address,
-    });
-    setShowModal(true);
-  };
-
-  // 🔹 Add / Update Student
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      if (editingStudent) {
-        // Update
-        await axios.put(`${API_URL}/UpdateStudent`, {
-          Id: editingStudent.id,
-          ...formData,
-        });
-      } else {
-        // Create
-        await axios.post(API_URL + "/AddStudent", formData);
+      const method = editId ? "PUT" : "POST";
+      const url = editId
+        ? `${API_BASE}/api/Student/${editId}`
+        : `${API_BASE}/api/Student`;
+
+      const payload = editId ? { ...formData, id: editId } : formData;
+
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`Server responded with ${res.status}: ${text}`);
       }
-      fetchStudents();
-      setShowModal(false);
-    } catch (err) {
-      console.error("Error saving student:", err);
+
+      setFormData({ studentName: "", email: "", branchId: 0 });
+      setEditId(null);
+      await loadAll();
+    } catch (err: any) {
+      alert("Failed to save: " + err.message);
     }
   };
 
-  // 🔹 Delete Student
+  const handleEdit = (student: Student) => {
+    setEditId(student.id);
+    setFormData({
+      studentName: student.studentName,
+      email: student.email,
+      branchId: student.branchId,
+    });
+  };
+
   const handleDelete = async (id: number) => {
-    if (!window.confirm("Are you sure you want to delete this student?")) return;
+    if (!confirm("Are you sure you want to delete this student?")) return;
+
     try {
-      await axios.delete(`${API_URL}/${id}`);
-      fetchStudents();
-    } catch (err) {
-      console.error("Error deleting student:", err);
+      const res = await fetch(`${API_BASE}/api/Student/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        throw new Error(`Delete failed: ${res.status}`);
+      }
+
+      await loadAll();
+    } catch (err: any) {
+      alert("Delete failed: " + err.message);
     }
   };
 
   return (
-    <div className="container mt-4">
-      <h2>Student Registration</h2>
+    <div className="container mt-5">
+      <h2>Students</h2>
 
-      {/* Button to open modal */}
-      <div className="mb-3 text-end">
-        <button className="btn btn-primary" onClick={handleOpenModal}>
-          + Add Student
-        </button>
+      {error && <div className="alert alert-danger">{error}</div>}
+
+      <div className="card mb-4">
+        <div className="card-header">
+          {editId ? `Edit Student #${editId}` : "Add Student"}
+        </div>
+        <div className="card-body">
+          <form onSubmit={handleSubmit}>
+            <div className="mb-3">
+              <label htmlFor="studentName" className="form-label">
+                Student Name
+              </label>
+              <input
+                type="text"
+                name="studentName"
+                className="form-control"
+                value={formData.studentName}
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            <div className="mb-3">
+              <label htmlFor="email" className="form-label">
+                Email
+              </label>
+              <input
+                type="email"
+                name="email"
+                className="form-control"
+                value={formData.email}
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            <div className="mb-3">
+              <label htmlFor="branchId" className="form-label">
+                Branch
+              </label>
+              <select
+                name="branchId"
+                className="form-select"
+                value={formData.branchId}
+                onChange={handleChange}
+                required
+              >
+                <option value={0} disabled>
+                  Select Branch
+                </option>
+                {branches.map((branch) => (
+                  <option key={branch.id} value={branch.id}>
+                    {branch.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <button type="submit" className="btn btn-primary me-2">
+              {editId ? "Update" : "Save"}
+            </button>
+            {editId && (
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => {
+                  setEditId(null);
+                  setFormData({ studentName: "", email: "", branchId: 0 });
+                }}
+              >
+                Cancel
+              </button>
+            )}
+          </form>
+        </div>
       </div>
 
-      {/* Student Form Modal */}
-      {showModal && (
-        <div
-          className="modal fade show d-block"
-          tabIndex={-1}
-          style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
-        >
-          <div className="modal-dialog modal-dialog-centered modal-lg">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">
-                  {editingStudent ? "Edit Student" : "Add Student"}
-                </h5>
-                <button
-                  type="button"
-                  className="btn-close"
-                  onClick={() => setShowModal(false)}
-                ></button>
-              </div>
-              <div className="modal-body">
-                <form onSubmit={handleSubmit}>
-                  <div className="row">
-                    <div className="col-md-6 mb-3">
-                      <label className="form-label">Student Name</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        name="name"
-                        value={formData.name}
-                        onChange={handleChange}
-                        required
-                      />
-                    </div>
-                    <div className="mb-3">
-                    <label className="form-label">Branch</label>
-                    <select
-                      className="form-select"
-                      name="branchId"
-                      value={formData.branchId}
-                      onChange={handleChange}
-                      required
-                    >
-                      <option value={0}>Select Branch</option>
-                      {branches.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                    <div className="col-md-6 mb-3">
-                      <label className="form-label">Mobile</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        name="mobile"
-                        value={formData.mobile}
-                        onChange={handleChange}
-                        required
-                      />
-                    </div>
-                    <div className="col-md-6 mb-3">
-                      <label className="form-label">Email</label>
-                      <input
-                        type="email"
-                        className="form-control"
-                        name="email"
-                        value={formData.email}
-                        onChange={handleChange}
-                        required
-                      />
-                    </div>
-                    <div className="col-md-6 mb-3">
-                      <label className="form-label">Date of Birth</label>
-                      <input
-                        type="date"
-                        className="form-control"
-                        name="dob"
-                        value={formData.dob}
-                        onChange={handleChange}
-                        required
-                      />
-                    </div>
-                    <div className="col-md-12 mb-3">
-                      <label className="form-label">Address</label>
-                      <textarea
-                        className="form-control"
-                        name="address"
-                        rows={2}
-                        value={formData.address}
-                        onChange={handleChange}
-                        required
-                      ></textarea>
-                    </div>
-                  </div>
-                  <div className="d-flex justify-content-end">
-                    <button
-                      type="button"
-                      className="btn btn-secondary me-2"
-                      onClick={() => setShowModal(false)}
-                    >
-                      Cancel
-                    </button>
-                    <button type="submit" className="btn btn-primary">
-                      {editingStudent ? "Update Student" : "Add Student"}
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Students Table */}
-      <table className="table table-bordered table-striped mt-4">
-        <thead className="table-light">
-          <tr>
-            <th>Id</th>
-            <th>Name</th>
-            <th>Branch</th>
-            <th>Mobile</th>
-            <th>Email</th>
-            <th>Date of Birth</th>
-            <th>Address</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {students.length > 0 ? (
-            students.map((student) => (
-              <tr key={student.id}>
-                <td>{student.id}</td>
-                <td>{student.name}</td>
-                  <td>
-                  {
-                    branches.find((b) => b.id === student.branchId)?.name ||
-                    student.branchId
-                  }
-                </td>
-                <td>{student.mobile}</td>
-                <td>{student.email}</td>
-                <td>{student.dob}</td>
-                <td>{student.address}</td>
-                <td>
-                  <button
-                    className="btn btn-warning btn-sm me-1"
-                    onClick={() => handleEdit(student)}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    className="btn btn-danger btn-sm me-1"
-                    onClick={() => handleDelete(student.id)}
-                  >
-                    Delete
-                  </button>
-                  <button
-                    className="btn btn-success btn-sm"
-                    onClick={() => alert(`Student: ${student.name}`)}
-                  >
-                    View
-                  </button>
+      {loading ? (
+        <p>Loading...</p>
+      ) : (
+        <table className="table table-bordered table-striped">
+          <thead className="table-dark">
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Branch</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {students.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="text-center">
+                  No students found.
                 </td>
               </tr>
-            ))
-          ) : (
-            <tr>
-              <td colSpan={8} className="text-center">
-                No Students Found
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+            ) : (
+              students.map((stud) => (
+                <tr key={stud.id}>
+                  <td>{stud.id}</td>
+                  <td>{stud.studentName}</td>
+                  <td>{stud.email}</td>
+                  <td>{stud.branch?.name || "N/A"}</td>
+                  <td>
+                    <button
+                      className="btn btn-sm btn-primary me-2"
+                      onClick={() => handleEdit(stud)}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      className="btn btn-sm btn-danger"
+                      onClick={() => handleDelete(stud.id)}
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 }
-
-export default StudentPage;

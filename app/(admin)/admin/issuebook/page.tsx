@@ -1,400 +1,353 @@
-"use client";
-import React, { useEffect, useState } from "react";
-import axios from "axios";
+// pages/issue-books.tsx
 
-function IssueBookPage() {
-  const [showPopup, setShowPopup] = useState(false);
-  const [issuedBooks, setIssuedBooks] = useState<any[]>([]);
-  const [editingIssue, setEditingIssue] = useState<any>(null);
+import { useEffect, useState } from "react";
 
-  // 🔹 Dropdown Data
-  const [publications, setPublications] = useState<any[]>([]);
-  const [books, setBooks] = useState<any[]>([]);
-  const [branches, setBranches] = useState<any[]>([]);
-  const [students, setStudents] = useState<any[]>([]);
+type IssueBook = {
+  id: number;
+  bookId: number;
+  studentId: number;
+  issueDate: string;
+  dueDate: string;
+  isReturned: boolean;
+  book?: { id: number; title: string };
+  student?: { id: number; name: string };
+};
 
-  const [formData, setFormData] = useState({
-    publicationId: 0,
+type Book = {
+  id: number;
+  title: string;
+};
+
+type Student = {
+  id: number;
+  name: string;
+};
+
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:7293";
+
+export default function IssueBooksPage() {
+  const [issues, setIssues] = useState<IssueBook[]>([]);
+  const [books, setBooks] = useState<Book[]>([]);
+  const [students, setStudents] = useState<Student[]>([]);
+  const [formData, setFormData] = useState<
+    Omit<IssueBook, "id" | "book" | "student">
+  >({
     bookId: 0,
-    branchId: 0,
     studentId: 0,
-    issueDays: "",
-    issueDate: "",
+    issueDate: new Date().toISOString().split("T")[0],
+    dueDate: new Date(new Date().setDate(new Date().getDate() + 14))
+      .toISOString()
+      .split("T")[0],
+    isReturned: false,
   });
+  const [editId, setEditId] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
 
-  // 🔹 Base URLs (adjust as per your backend)
-  const API_BASE = "https://localhost:7293/api";
-  const ISSUE_API = `${API_BASE}/IssueBook`;
-  const PUB_API = `${API_BASE}/Publications/GetPublications`;
-  const BOOK_API = `${API_BASE}/Books/GetBooks`;
-  const BRANCH_API = `${API_BASE}/Branches/GetBranches`;
-  const STUDENT_API = `${API_BASE}/Students/GetStudent`;
-
-  // 🔹 Fetch dropdown + issuedBooks
   useEffect(() => {
-    fetchIssuedBooks();
-    fetchBooks();
-    fetchBranches();
-    fetchPublications();
-    fetchStudents();
+    loadAll();
   }, []);
 
-  const fetchIssuedBooks = async () => {
+  const loadAll = async () => {
     try {
-      const res = await axios.get(`${ISSUE_API}/GetIssueBooks`);
-      setIssuedBooks(res.data);
-    } catch (err) {
-      console.error("Error fetching issued books:", err);
-    }
-  };
-  const fetchPublications = async () => {
-    try {
-      const res = await axios.get(PUB_API);
-      setPublications(res.data);
-    } catch (err) {
-      console.error("Error fetching publications:", err);
-    }
-  };
+      setLoading(true);
+      // Fetch books, students, and issued books in parallel
+      const [booksRes, studentsRes, issuesRes] = await Promise.all([
+        fetch(`${API_BASE}/api/Book`),
+        fetch(`${API_BASE}/api/Student`),
+        fetch(`${API_BASE}/api/IssueBooks`),
+      ]);
 
-  const fetchBranches = async () => {
-    try {
-      const res = await axios.get(BRANCH_API);
-      setBranches(res.data);
-    } catch (err) {
-      console.error("Error fetching branches:", err);
-    }
-  };
-  const fetchBooks = async () => {
-    try {
-      const res = await axios.get(BOOK_API);
-      setBooks(res.data);
-    } catch (err) {
-      console.error("Error fetching publications:", err);
-    }
-  };
-
-  const fetchStudents = async () => {
-    try {
-      const res = await axios.get(STUDENT_API);
-      setStudents(res.data);
-    } catch (err) {
-      console.error("Error fetching branches:", err);
-    }
-  };
-
-  
-
-  // 🔹 Input handler
-  const handleChange = (
-      e: React.ChangeEvent<
-        HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-      >
-    ) => {
-      let { name, value } = e.target;
-  
-      // Convert numbers properly
-      if (
-        name === "publicationId" ||
-        name === "branchId" ||
-        name === "studentId" ||
-        name === "bookId"
-      ) {
-        value = value === "" ? "" : Number(value);
+      if (!booksRes.ok || !studentsRes.ok || !issuesRes.ok) {
+        throw new Error("Failed to fetch data");
       }
-  
-      setFormData({ ...formData, [name]: value });
-    };
 
-  // 🔹 Open Modal
-  const handleOpenModal = () => {
-    setEditingIssue(null);
-    setFormData({
-      publicationId: 0,
-      bookId: 0,
-      branchId:0,
-      studentId: 0,
-      issueDays: "",
-      issueDate: "",
-    });
-    setShowPopup(true);
+      const [booksData, studentsData, issuesData] = await Promise.all([
+        booksRes.json(),
+        studentsRes.json(),
+        issuesRes.json(),
+      ]);
+
+      setBooks(booksData);
+      setStudents(studentsData);
+      setIssues(issuesData);
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || "Error loading data");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // 🔹 Edit
-  const handleEdit = (issue: any) => {
-    setEditingIssue(issue);
-    setFormData({
-      publicationId: issue.publicationId,
-      bookId: issue.bookId,
-      branchId: issue.branchId,
-      studentId: issue.studentId,
-      issueDays: issue.issueDays,
-      issueDate: issue.issueDate,
-    });
-    setShowPopup(true);
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const { name, value, type } = e.target;
+    let newValue: any = value;
+
+    // Since we removed `checked`, parse string value for checkbox manually
+    if (type === "checkbox") {
+      newValue = value === "true" ? true : false;
+    }
+
+    if (name === "bookId" || name === "studentId") {
+      newValue = parseInt(newValue);
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]: newValue,
+    }));
   };
 
-  // 🔹 Save
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      if (editingIssue) {
-        await axios.put(`${ISSUE_API}/UpdateIssueBook`, {
-          Id: editingIssue.id,
-          ...formData,
-        });
-      } else {
-        await axios.post(`${ISSUE_API}/AddIssueBook`, formData);
+      const method = editId ? "PUT" : "POST";
+      const url = editId
+        ? `${API_BASE}/api/IssueBooks/${editId}`
+        : `${API_BASE}/api/IssueBooks`;
+
+      // Build the payload
+      const payload = { ...formData, ...(editId ? { id: editId } : {}) };
+
+      const resp = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!resp.ok) {
+        const text = await resp.text();
+        throw new Error(`Server responded with ${resp.status}: ${text}`);
       }
-      fetchIssuedBooks();
-      setShowPopup(false);
-    } catch (err) {
-      console.error("Error saving issued book:", err);
+
+      // Reset form
+      setFormData({
+        bookId: 0,
+        studentId: 0,
+        issueDate: new Date().toISOString().split("T")[0],
+        dueDate: new Date(new Date().setDate(new Date().getDate() + 14))
+          .toISOString()
+          .split("T")[0],
+        isReturned: false,
+      });
+      setEditId(null);
+      await loadAll();
+    } catch (err: any) {
+      console.error(err);
+      alert("Save failed: " + err.message);
     }
   };
 
-  // 🔹 Delete
+  const handleEdit = (issue: IssueBook) => {
+    setEditId(issue.id);
+    setFormData({
+      bookId: issue.bookId,
+      studentId: issue.studentId,
+      issueDate: issue.issueDate.split("T")[0],
+      dueDate: issue.dueDate.split("T")[0],
+      isReturned: issue.isReturned,
+    });
+  };
+
   const handleDelete = async (id: number) => {
-    if (!window.confirm("Are you sure you want to delete this record?")) return;
+    if (!confirm("Are you sure to delete this record?")) return;
+
     try {
-      await axios.delete(`${ISSUE_API}/${id}`);
-      fetchIssuedBooks();
-    } catch (err) {
-      console.error("Error deleting issued book:", err);
+      const resp = await fetch(`${API_BASE}/api/IssueBooks/${id}`, {
+        method: "DELETE",
+      });
+      if (!resp.ok) {
+        throw new Error(`Delete failed: ${resp.status}`);
+      }
+      await loadAll();
+    } catch (err: any) {
+      console.error(err);
+      alert("Delete failed: " + err.message);
     }
   };
 
   return (
-    <div className="container mt-4">
-      <h2>Issue Book</h2>
+    <div className="container mt-5">
+      <h2>Issue Books</h2>
 
-      <button className="btn btn-primary mb-3" onClick={handleOpenModal}>
-        + Issue New Book
-      </button>
+      {error && <div className="alert alert-danger">{error}</div>}
 
-      {/* Modal */}
-      {showPopup && (
-        <div
-          className="modal fade show d-block"
-          tabIndex={-1}
-          style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
-        >
-          <div className="modal-dialog modal-lg">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">
-                  {editingIssue ? "Edit Issued Book" : "Issue Book"}
-                </h5>
-                <button
-                  type="button"
-                  className="btn-close"
-                  onClick={() => setShowPopup(false)}
-                ></button>
+      {/* Form */}
+      <div className="card my-4">
+        <div className="card-header">
+          {editId ? `Edit Issue #${editId}` : "New Issue Book"}
+        </div>
+        <div className="card-body">
+          <form onSubmit={handleSubmit}>
+            <div className="mb-3">
+              <label htmlFor="bookId" className="form-label">
+                Book
+              </label>
+              <select
+                className="form-select"
+                name="bookId"
+                value={formData.bookId}
+                onChange={handleChange}
+                required
+              >
+                <option value={0} disabled>
+                  Select Book
+                </option>
+                {books.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="mb-3">
+              <label htmlFor="studentId" className="form-label">
+                Student
+              </label>
+              <select
+                className="form-select"
+                name="studentId"
+                value={formData.studentId}
+                onChange={handleChange}
+                required
+              >
+                <option value={0} disabled>
+                  Select Student
+                </option>
+                {students.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="row">
+              <div className="col-md-6 mb-3">
+                <label htmlFor="issueDate" className="form-label">
+                  Issue Date
+                </label>
+                <input
+                  type="date"
+                  className="form-control"
+                  name="issueDate"
+                  value={formData.issueDate}
+                  onChange={handleChange}
+                  required
+                />
               </div>
-              <div className="modal-body">
-                <form onSubmit={handleSubmit}>
-                  {/* Publication */}
-                  <div className="mb-3">
-                    <label className="form-label">Publication</label>
-                    <select
-                      className="form-select"
-                      name="publicationId"
-                      value={formData.publicationId}
-                      onChange={handleChange}
-                      required
-                    >
-                      <option value={0}>Select Publication</option>
-                      {publications.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Branch */}
-                  <div className="mb-3">
-                    <label className="form-label">Branch</label>
-                    <select
-                      className="form-select"
-                      name="branchId"
-                      value={formData.branchId}
-                      onChange={handleChange}
-                      required
-                    >
-                      <option value={0}>Select Branch</option>
-                      {branches.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Book */}
-                    <div className="mb-3">
-                    <label className="form-label">Book</label>
-                    <select
-                      className="form-select"
-                      name="bookId"
-                      value={formData.bookId}
-                      onChange={handleChange}
-                      required
-                    >
-                      <option value={0}>Select Book</option>
-                      {books.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Student */}
-                  <div className="mb-3">
-                    <label className="form-label">Student</label>
-                    <select
-                      className="form-select"
-                      name="studentId"
-                      value={formData.studentId}
-                      onChange={handleChange}
-                      required
-                    >
-                      <option value={0}>Select Student</option>
-                      {students.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Days & Date */}
-                  <div className="mb-3">
-                    <label className="form-label">Issue Days</label>
-                    <input
-                      type="number"
-                      className="form-control"
-                      name="issueDays"
-                      value={formData.issueDays}
-                      onChange={handleChange}
-                      required
-                    />
-                  </div>
-                  <div className="mb-3">
-                    <label className="form-label">Issue Date</label>
-                    <input
-                      type="date"
-                      className="form-control"
-                      name="issueDate"
-                      value={formData.issueDate}
-                      onChange={handleChange}
-                      required
-                    />
-                  </div>
-
-                  <div className="d-flex justify-content-end">
-                    <button
-                      type="button"
-                      className="btn btn-secondary me-2"
-                      onClick={() => setShowPopup(false)}
-                    >
-                      Cancel
-                    </button>
-                    <button type="submit" className="btn btn-primary">
-                      {editingIssue ? "Update Issue" : "Issue Book"}
-                    </button>
-                  </div>
-                </form>
+              <div className="col-md-6 mb-3">
+                <label htmlFor="dueDate" className="form-label">
+                  Due Date
+                </label>
+                <input
+                  type="date"
+                  className="form-control"
+                  name="dueDate"
+                  value={formData.dueDate}
+                  onChange={handleChange}
+                  required
+                />
               </div>
             </div>
-          </div>
-        </div>
-      )}
 
-      {/* Issued Books Table */}
-      <div className="card shadow-sm p-4">
-        <h5 className="mb-3">Issued Books</h5>
+            <div className="form-check mb-3">
+              <input
+                type="checkbox"
+                className="form-check-input"
+                name="isReturned"
+                value={formData.isReturned ? "true" : "false"}
+                onChange={handleChange}
+                id="isReturned"
+              />
+              <label htmlFor="isReturned" className="form-check-label">
+                Returned
+              </label>
+            </div>
+
+            <button type="submit" className="btn btn-primary me-2">
+              {editId ? "Update" : "Issue"}
+            </button>
+            {editId && (
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => {
+                  setEditId(null);
+                  setFormData({
+                    bookId: 0,
+                    studentId: 0,
+                    issueDate: new Date().toISOString().split("T")[0],
+                    dueDate: new Date(
+                      new Date().setDate(new Date().getDate() + 14)
+                    )
+                      .toISOString()
+                      .split("T")[0],
+                    isReturned: false,
+                  });
+                }}
+              >
+                Cancel
+              </button>
+            )}
+          </form>
+        </div>
+      </div>
+
+      {/* Table */}
+      {loading ? (
+        <p>Loading...</p>
+      ) : (
         <table className="table table-bordered table-striped">
-          <thead className="table-light">
+          <thead className="table-dark">
             <tr>
-              <th>Id</th>
-              <th>Book Name</th>
-              <th>Publication</th>
-              <th>Branch</th>
+              <th>ID</th>
+              <th>Book</th>
               <th>Student</th>
               <th>Issue Date</th>
-              <th>Issue Days</th>
+              <th>Due Date</th>
+              <th>Returned</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {issuedBooks.length > 0 ? (
-              issuedBooks.map((book) => (
-                <tr key={book.id}>
-                  <td>{book.id}</td>
-                  <td>
-                  {
-                    books.find((p) => p.id === book.bookId)
-                      ?.name || book.bookId
-                  }
-                </td>
-                  <td>
-                  {
-                    publications.find((p) => p.id === book.publicationId)
-                      ?.name || book.publicationId
-                  }
-                </td>
-                <td>
-                  {
-                    branches.find((b) => b.id === book.branchId)?.name ||
-                    book.branchId
-                  }
-                </td>
-                  
-                <td>
-                  {
-                    students.find((b) => b.id === book.studentId)?.name ||
-                    book.studentId
-                  }
-                </td>
-                  <td>{book.issueDate}</td>
-                  <td>{book.issueDays}</td>
-                  <td>
-                    <button
-                      className="btn btn-warning btn-sm me-1"
-                      onClick={() => handleEdit(book)}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      className="btn btn-danger btn-sm me-1"
-                      onClick={() => handleDelete(book.id)}
-                    >
-                      Delete
-                    </button>
-                    <button
-                      className="btn btn-success btn-sm"
-                      onClick={() =>
-                        alert(`Returned book: ${book.bookName} by ${book.student}`)
-                      }
-                    >
-                      Return
-                    </button>
-                  </td>
-                </tr>
-              ))
-            ) : (
+            {issues.length === 0 && (
               <tr>
-                <td colSpan={8} className="text-center">
-                  No Issued Books Found
+                <td colSpan={7} className="text-center">
+                  No records
                 </td>
               </tr>
             )}
+            {issues.map((issue) => (
+              <tr key={issue.id}>
+                <td>{issue.id}</td>
+                <td>{issue.book?.title || "N/A"}</td>
+                <td>{issue.student?.name || "N/A"}</td>
+                <td>{issue.issueDate.split("T")[0]}</td>
+                <td>{issue.dueDate.split("T")[0]}</td>
+                <td>{issue.isReturned ? "✔️" : "❌"}</td>
+                <td>
+                  <button
+                    className="btn btn-sm btn-primary me-2"
+                    onClick={() => handleEdit(issue)}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    className="btn btn-sm btn-danger"
+                    onClick={() => handleDelete(issue.id)}
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
-      </div>
+      )}
     </div>
   );
 }
-
-export default IssueBookPage;
