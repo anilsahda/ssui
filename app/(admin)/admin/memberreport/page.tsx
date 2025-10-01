@@ -1,53 +1,44 @@
 "use client";
+import React, { useEffect, useState } from "react";
+import "bootstrap/dist/css/bootstrap.min.css";
 
-import React, { useEffect, useState, FormEvent } from "react";
-import {
-  Container,
-  Form,
-  Button,
-  Table,
-  Modal,
-  Alert,
-  Spinner,
-} from "react-bootstrap";
-
-type Member = {
-  _id: string;
+interface Member {
+  id: number;
   fullName: string;
-};
+}
 
-type Report = {
-  _id: string;
-  memberId: { _id: string; fullName: string } | string;
+interface MemberReport {
+  id: number;
+  memberId: number;
   reportDetails: string;
   reportDate: string;
-};
+  member?: Member;
+}
 
-const MemberReportsPage: React.FC = () => {
-  const [reports, setReports] = useState<Report[]>([]);
+const API_BASE = "https://localhost:7293/api/MemberReports";
+const MEMBERS_API = "https://localhost:7293/api/Members";
+
+const MemberReportsManager: React.FC = () => {
+  const [reports, setReports] = useState<MemberReport[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
-  const [loading, setLoading] = useState(false);
-
-  const [reportDetails, setReportDetails] = useState("");
-  const [memberId, setMemberId] = useState("");
-  const [editId, setEditId] = useState<string | null>(null);
-
+  const [loading, setLoading] = useState(true);
+  const [form, setForm] = useState<Partial<MemberReport>>({});
+  const [isEditing, setIsEditing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
-
-  const API_BASE = "http://localhost:5000/api";
+  useEffect(() => {
+    fetchReports();
+    fetchMembers();
+  }, []);
 
   const fetchReports = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/member-reports`);
+      const res = await fetch(API_BASE);
       const data = await res.json();
-      setReports(data || []);
-    } catch (err) {
-      setError("Failed to load reports.");
+      setReports(data);
+    } catch {
+      setError("Failed to fetch reports.");
     } finally {
       setLoading(false);
     }
@@ -55,231 +46,227 @@ const MemberReportsPage: React.FC = () => {
 
   const fetchMembers = async () => {
     try {
-      const res = await fetch(`${API_BASE}/members`);
+      const res = await fetch(MEMBERS_API);
       const data = await res.json();
-      setMembers(data.data || []);
+      setMembers(data);
     } catch {
-      setMembers([]);
+      setError("Failed to fetch members.");
     }
   };
 
-  useEffect(() => {
-    fetchReports();
-    fetchMembers();
-  }, []);
-
-  const resetForm = () => {
-    setReportDetails("");
-    setMemberId("");
-    setEditId(null);
-    setError(null);
-    setSuccessMsg(null);
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
+  ) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({
+      ...prev,
+      [name]: name === "memberId" ? parseInt(value) : value,
+    }));
   };
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setSuccessMsg(null);
 
-    if (!memberId || !reportDetails.trim()) {
-      setError("Please select a member and fill in report details.");
+    if (!form.memberId || !form.reportDetails) {
+      setError("Please select a member and enter report details.");
       return;
     }
 
+    const payload = {
+      ...form,
+      reportDate: new Date().toISOString(),
+    };
+
     try {
-      const method = editId ? "PUT" : "POST";
-      const url = editId
-        ? `${API_BASE}/member-reports/${editId}`
-        : `${API_BASE}/member-reports`;
+      if (isEditing && form.id) {
+        await fetch(`${API_BASE}/${form.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+      } else {
+        await fetch(API_BASE, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+      }
 
-      const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reportDetails, memberId }),
-      });
-
-      if (!res.ok) throw new Error("Failed to save report");
-
-      await fetchReports();
       resetForm();
-      setSuccessMsg(editId ? "Report updated successfully." : "Report added.");
-    } catch (err: any) {
-      setError(err.message || "Error saving report.");
-    }
-  };
-
-  const handleEdit = (report: Report) => {
-    setEditId(report._id);
-    setReportDetails(report.reportDetails);
-    setMemberId(
-      typeof report.memberId === "string"
-        ? report.memberId
-        : report.memberId?._id || ""
-    );
-  };
-
-  const confirmDelete = (id: string) => {
-    setDeleteId(id);
-    setShowDeleteModal(true);
-  };
-
-  const handleDelete = async () => {
-    if (!deleteId) return;
-    try {
-      await fetch(`${API_BASE}/member-reports/${deleteId}`, {
-        method: "DELETE",
-      });
-      await fetchReports();
-      setSuccessMsg("Report deleted.");
+      fetchReports();
     } catch {
-      setError("Failed to delete report.");
-    } finally {
-      setShowDeleteModal(false);
-      setDeleteId(null);
+      setError("Failed to save the report.");
     }
+  };
+
+  const handleEdit = (report: MemberReport) => {
+    setForm({
+      id: report.id,
+      memberId: report.memberId,
+      reportDetails: report.reportDetails,
+      reportDate: report.reportDate,
+    });
+    setIsEditing(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!window.confirm("Delete this report?")) return;
+
+    try {
+      await fetch(`${API_BASE}/${id}`, { method: "DELETE" });
+      fetchReports();
+    } catch {
+      setError("Failed to delete the report.");
+    }
+  };
+
+  const resetForm = () => {
+    setForm({});
+    setIsEditing(false);
+    setError(null);
   };
 
   return (
-    <Container className="my-5">
-      <h2 className="mb-4 text-center">📋 Member Reports</h2>
+    <div className="container py-4">
+      <div className="mb-4 text-center">
+        <h2 className="fw-bold"> Member Reports</h2>
+        <p className="text-muted">Manage and view member-generated reports.</p>
+      </div>
 
-      {error && (
-        <Alert variant="danger" onClose={() => setError(null)} dismissible>
-          {error}
-        </Alert>
-      )}
-      {successMsg && (
-        <Alert
-          variant="success"
-          onClose={() => setSuccessMsg(null)}
-          dismissible
-        >
-          {successMsg}
-        </Alert>
-      )}
-
-      <Form
+      <form
         onSubmit={handleSubmit}
-        className="bg-light p-4 rounded shadow-sm mb-4"
+        className="border p-4 mb-4 rounded bg-light shadow-sm"
       >
-        <h5>{editId ? "Edit Report" : "New Member Report"}</h5>
-        <Form.Group className="mb-3">
-          <Form.Label>Select Member</Form.Label>
-          <Form.Select
-            value={memberId}
-            onChange={(e) => setMemberId(e.target.value)}
+        <h5 className="mb-3">
+          {isEditing ? " Edit Report" : " Add New Report"}
+        </h5>
+
+        {error && (
+          <div className="alert alert-danger" role="alert">
+            {error}
+          </div>
+        )}
+
+        <div className="mb-3">
+          <label htmlFor="memberId" className="form-label">
+            Member
+          </label>
+          <select
+            className="form-select"
+            id="memberId"
+            name="memberId"
+            value={form.memberId ?? ""}
+            onChange={handleChange}
             required
           >
             <option value="">-- Select Member --</option>
             {members.map((m) => (
-              <option key={m._id} value={m._id}>
+              <option key={m.id} value={m.id}>
                 {m.fullName}
               </option>
             ))}
-          </Form.Select>
-        </Form.Group>
+          </select>
+        </div>
 
-        <Form.Group className="mb-3">
-          <Form.Label>Report Details</Form.Label>
-          <Form.Control
-            as="textarea"
-            rows={3}
-            value={reportDetails}
-            onChange={(e) => setReportDetails(e.target.value)}
+        <div className="mb-3">
+          <label htmlFor="reportDetails" className="form-label">
+            Report Details
+          </label>
+          <textarea
+            className="form-control"
+            id="reportDetails"
+            name="reportDetails"
+            rows={4}
+            value={form.reportDetails ?? ""}
+            onChange={handleChange}
             required
-          />
-        </Form.Group>
+          ></textarea>
+        </div>
 
-        <div className="text-end">
-          <Button type="submit" variant="primary">
-            {editId ? "Update Report" : "Add Report"}
-          </Button>
-          {editId && (
-            <Button
-              variant="outline-secondary"
-              className="ms-2"
+        <div>
+          <button type="submit" className="btn btn-success me-2">
+            <i
+              className={`bi ${
+                isEditing ? "bi-pencil-square" : "bi-plus-circle"
+              }`}
+            ></i>{" "}
+            {isEditing ? "Update Report" : "Add Report"}
+          </button>
+          {isEditing && (
+            <button
+              type="button"
+              className="btn btn-secondary"
               onClick={resetForm}
             >
-              Cancel
-            </Button>
+              <i className="bi bi-x-circle"></i> Cancel
+            </button>
           )}
         </div>
-      </Form>
+      </form>
 
       {loading ? (
-        <div className="text-center my-4">
-          <Spinner animation="border" />
+        <div className="text-center my-5">
+          <div className="spinner-border text-primary" role="status" />
+          <p className="mt-2">Loading reports...</p>
         </div>
-      ) : reports.length === 0 ? (
-        <Alert variant="info">No reports found.</Alert>
       ) : (
-        <Table bordered hover responsive className="shadow-sm">
-          <thead className="table-light">
-            <tr>
-              <th>Member</th>
-              <th>Report Details</th>
-              <th>Date</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {reports.map((r) => (
-              <tr key={r._id}>
-                <td>
-                  {typeof r.memberId === "string"
-                    ? r.memberId
-                    : r.memberId?.fullName || "Unknown"}
-                </td>
-                <td>{r.reportDetails}</td>
-                <td>
-                  {r.reportDate
-                    ? new Date(r.reportDate).toLocaleDateString()
-                    : "-"}
-                </td>
-                <td>
-                  <Button
-                    variant="outline-warning"
-                    size="sm"
-                    className="me-2"
-                    onClick={() => handleEdit(r)}
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    variant="outline-danger"
-                    size="sm"
-                    onClick={() => confirmDelete(r._id)}
-                  >
-                    Delete
-                  </Button>
-                </td>
+        <div className="table-responsive">
+          <table className="table table-hover table-bordered align-middle">
+            <thead className="table-dark">
+              <tr>
+                <th>ID</th>
+                <th>Member</th>
+                <th>Details</th>
+                <th>Date</th>
+                <th className="text-center">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </Table>
+            </thead>
+            <tbody>
+              {reports.map((report) => (
+                <tr key={report.id}>
+                  <td>
+                    <span className="badge bg-secondary">{report.id}</span>
+                  </td>
+                  <td>{report.member?.fullName ?? `#${report.memberId}`}</td>
+                  <td>{report.reportDetails}</td>
+                  <td>
+                    <span className="text-muted">
+                      {new Date(report.reportDate).toLocaleString()}
+                    </span>
+                  </td>
+                  <td className="text-center">
+                    <button
+                      className="btn btn-sm btn-outline-primary me-2"
+                      onClick={() => handleEdit(report)}
+                    >
+                      <i className="bi bi-pencil-fill"></i>
+                    </button>
+                    <button
+                      className="btn btn-sm btn-outline-danger"
+                      onClick={() => handleDelete(report.id)}
+                    >
+                      <i className="bi bi-trash-fill"></i>
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {reports.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="text-center text-muted">
+                    No reports available.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       )}
-
-      {/* Delete Confirmation Modal */}
-      <Modal
-        show={showDeleteModal}
-        onHide={() => setShowDeleteModal(false)}
-        centered
-      >
-        <Modal.Header closeButton>
-          <Modal.Title>Confirm Delete</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>Are you sure you want to delete this report?</Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
-            Cancel
-          </Button>
-          <Button variant="danger" onClick={handleDelete}>
-            Delete
-          </Button>
-        </Modal.Footer>
-      </Modal>
-    </Container>
+    </div>
   );
 };
 
-export default MemberReportsPage;
+export default MemberReportsManager;

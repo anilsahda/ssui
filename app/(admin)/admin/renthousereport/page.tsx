@@ -1,365 +1,285 @@
 "use client";
+import React, { useEffect, useState } from "react";
+import "bootstrap/dist/css/bootstrap.min.css";
 
-import React, { useState, useEffect, FormEvent } from "react";
-import {
-  Container,
-  Form,
-  Button,
-  Table,
-  Spinner,
-  Alert,
-  Modal,
-  Row,
-  Col,
-} from "react-bootstrap";
-
-interface RentHouseReport {
-  _id: string;
-  houseId: { _id: string } | string;
-  rentAmount: string;
-  rentStartDate: string;
-  rentEndDate: string | null;
-  renterName: string;
-  createdAt: string;
-  updatedAt: string;
+interface House {
+  id: number;
+  name: string;
 }
 
-export default function RentHouseReportsAdmin() {
+interface RentHouseReport {
+  id: number;
+  houseId: number;
+  rentAmount: number;
+  tenantName: string;
+  duration: string;
+  house?: House;
+}
+
+const RentHouseReportsManager: React.FC = () => {
   const [reports, setReports] = useState<RentHouseReport[]>([]);
-  const [houseId, setHouseId] = useState("");
-  const [rentAmount, setRentAmount] = useState("");
-  const [rentStartDate, setRentStartDate] = useState("");
-  const [rentEndDate, setRentEndDate] = useState("");
-  const [renterName, setRenterName] = useState("");
-  const [editId, setEditId] = useState<string | null>(null);
-
+  const [houses, setHouses] = useState<House[]>([]);
+  const [form, setForm] = useState<Partial<RentHouseReport>>({});
+  const [editing, setEditing] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
-  const [loading, setLoading] = useState<boolean>(false);
 
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const API_URL = "https://localhost:7293/api/RentHouseReports";
+  const HOUSES_API = "https://localhost:7293/api/Houses";
 
-  const API_BASE = "http://localhost:5000/api/rent-house-reports";
+  useEffect(() => {
+    fetchReports();
+    fetchHouses();
+  }, []);
 
   const fetchReports = async () => {
     setLoading(true);
-    setError(null);
     try {
-      const res = await fetch(API_BASE);
-      if (!res.ok) {
-        throw new Error("Failed to fetch reports");
-      }
-      const data = await res.json();
-      if (data.success) {
-        setReports(data.data);
-      } else {
-        // if your API returns differently
-        setReports(data.data || []);
-      }
-    } catch (err: any) {
-      setError(err.message);
-      setReports([]);
+      const response = await fetch(API_URL);
+      const data = await response.json();
+      setReports(data);
+    } catch (error) {
+      setError("Failed to fetch reports.");
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchReports();
-  }, []);
-
-  const resetForm = () => {
-    setHouseId("");
-    setRentAmount("");
-    setRentStartDate("");
-    setRentEndDate("");
-    setRenterName("");
-    setEditId(null);
-    setError(null);
-    setSuccessMsg(null);
+  const fetchHouses = async () => {
+    try {
+      const res = await fetch(HOUSES_API);
+      const data = await res.json();
+      setHouses(data);
+    } catch (error) {
+      setError("Failed to fetch houses.");
+    }
   };
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setSuccessMsg(null);
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({
+      ...prev,
+      [name]:
+        name === "houseId" || name === "rentAmount" ? parseInt(value) : value,
+    }));
+  };
 
-    // Basic validation
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
     if (
-      !houseId.trim() ||
-      !rentAmount.trim() ||
-      !rentStartDate.trim() ||
-      !renterName.trim()
+      !form.houseId ||
+      !form.rentAmount ||
+      !form.tenantName ||
+      !form.duration
     ) {
-      setError("Please fill in all required fields.");
+      setError("All fields are required.");
       return;
     }
 
-    const method = editId ? "PUT" : "POST";
-    const url = editId ? `${API_BASE}/${editId}` : API_BASE;
-
-    const body = {
-      houseId: houseId.trim(),
-      rentAmount: rentAmount.trim(),
-      rentStartDate,
-      rentEndDate: rentEndDate || null,
-      renterName: renterName.trim(),
-    };
-
     try {
-      const res = await fetch(url, {
+      const method = editing ? "PUT" : "POST";
+      const url = editing ? `${API_URL}/${form.id}` : API_URL;
+
+      const response = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify(form),
       });
-      if (!res.ok) {
-        const errResp = await res.json();
-        throw new Error(errResp.error || "Failed to save report");
+
+      if (!response.ok) {
+        throw new Error("Failed to save report.");
       }
+
       await fetchReports();
-      setSuccessMsg(
-        editId ? "Report updated successfully." : "Report added successfully."
-      );
       resetForm();
-    } catch (err: any) {
-      setError(err.message || "Error occurred.");
+    } catch (error) {
+      setError("Error saving report.");
     }
   };
 
   const handleEdit = (report: RentHouseReport) => {
-    setEditId(report._id);
-    const hid =
-      typeof report.houseId === "string" ? report.houseId : report.houseId._id;
-    setHouseId(hid);
-    setRentAmount(report.rentAmount);
-    setRentStartDate(report.rentStartDate.substring(0, 10));
-    setRentEndDate(
-      report.rentEndDate ? report.rentEndDate.substring(0, 10) : ""
-    );
-    setRenterName(report.renterName);
-
-    // Scroll to form (optional)
+    setForm(report);
+    setEditing(true);
+    setError(null);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const confirmDelete = (id: string) => {
-    setDeleteId(id);
-    setShowDeleteModal(true);
-  };
+  const handleDelete = async (id: number) => {
+    if (!window.confirm("Are you sure you want to delete this report?")) return;
 
-  const handleDelete = async () => {
-    if (!deleteId) return;
-    setShowDeleteModal(false);
-    setError(null);
-    setSuccessMsg(null);
     try {
-      const res = await fetch(`${API_BASE}/${deleteId}`, {
+      const response = await fetch(`${API_URL}/${id}`, {
         method: "DELETE",
       });
-      if (!res.ok) {
-        const errResp = await res.json();
-        throw new Error(errResp.error || "Failed to delete report");
+
+      if (!response.ok) {
+        throw new Error("Failed to delete report.");
       }
+
       await fetchReports();
-      setSuccessMsg("Report deleted successfully.");
-    } catch (err: any) {
-      setError(err.message || "Delete failed");
-    } finally {
-      setDeleteId(null);
+    } catch (error) {
+      setError("Failed to delete the report.");
     }
   };
 
+  const resetForm = () => {
+    setForm({});
+    setEditing(false);
+    setError(null);
+  };
+
   return (
-    <Container className="my-5">
-      <h2 className="mb-4 text-center">📝 Rent House Reports</h2>
+    <div className="container py-4">
+      <div className="mb-4 text-center">
+        <h2 className="fw-bold"> Rent House Reports</h2>
+        <p className="text-muted">Manage house rental records efficiently.</p>
+      </div>
 
-      {error && (
-        <Alert variant="danger" onClose={() => setError(null)} dismissible>
-          {error}
-        </Alert>
-      )}
-      {successMsg && (
-        <Alert
-          variant="success"
-          onClose={() => setSuccessMsg(null)}
-          dismissible
-        >
-          {successMsg}
-        </Alert>
-      )}
-
-      <Form
+      <form
+        className="border p-4 mb-5 rounded bg-light shadow-sm"
         onSubmit={handleSubmit}
-        className="bg-light p-4 rounded shadow-sm mb-5"
       >
-        <Row className="mb-3">
-          <Col md={6}>
-            <Form.Group>
-              <Form.Label>House ID *</Form.Label>
-              <Form.Control
-                type="text"
-                value={houseId}
-                onChange={(e) => setHouseId(e.target.value)}
-                placeholder="Enter House ID"
-                required
-              />
-            </Form.Group>
-          </Col>
-          <Col md={6}>
-            <Form.Group>
-              <Form.Label>Renter Name *</Form.Label>
-              <Form.Control
-                type="text"
-                value={renterName}
-                onChange={(e) => setRenterName(e.target.value)}
-                placeholder="Enter Renter Name"
-                required
-              />
-            </Form.Group>
-          </Col>
-        </Row>
+        <h5 className="mb-3">{editing ? " Edit Report" : " Add Report"}</h5>
 
-        <Row className="mb-3">
-          <Col md={4}>
-            <Form.Group>
-              <Form.Label>Rent Amount *</Form.Label>
-              <Form.Control
-                type="number"
-                step="0.01"
-                value={rentAmount}
-                onChange={(e) => setRentAmount(e.target.value)}
-                placeholder="Enter rent amount"
-                required
-              />
-            </Form.Group>
-          </Col>
-          <Col md={4}>
-            <Form.Group>
-              <Form.Label>Start Date *</Form.Label>
-              <Form.Control
-                type="date"
-                value={rentStartDate}
-                onChange={(e) => setRentStartDate(e.target.value)}
-                required
-              />
-            </Form.Group>
-          </Col>
-          <Col md={4}>
-            <Form.Group>
-              <Form.Label>End Date</Form.Label>
-              <Form.Control
-                type="date"
-                value={rentEndDate}
-                onChange={(e) => setRentEndDate(e.target.value)}
-              />
-            </Form.Group>
-          </Col>
-        </Row>
+        {error && (
+          <div className="alert alert-danger" role="alert">
+            {error}
+          </div>
+        )}
 
-        <div className="text-end">
-          <Button variant="primary" type="submit">
-            {editId ? "Update Report" : "Add Report"}
-          </Button>
-          {editId && (
-            <Button
-              variant="outline-secondary"
-              className="ms-2"
+        <div className="row g-3">
+          <div className="col-md-6">
+            <label className="form-label">House</label>
+            <select
+              className="form-select"
+              name="houseId"
+              value={form.houseId || ""}
+              onChange={handleChange}
+              required
+            >
+              <option value="">-- Select House --</option>
+              {houses.map((h) => (
+                <option key={h.id} value={h.id}>
+                  {h.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="col-md-6">
+            <label className="form-label">Rent Amount</label>
+            <input
+              type="number"
+              className="form-control"
+              name="rentAmount"
+              value={form.rentAmount || ""}
+              onChange={handleChange}
+              required
+            />
+          </div>
+
+          <div className="col-md-6">
+            <label className="form-label">Tenant Name</label>
+            <input
+              type="text"
+              className="form-control"
+              name="tenantName"
+              value={form.tenantName || ""}
+              onChange={handleChange}
+              required
+            />
+          </div>
+
+          <div className="col-md-6">
+            <label className="form-label">Duration</label>
+            <input
+              type="text"
+              className="form-control"
+              name="duration"
+              value={form.duration || ""}
+              onChange={handleChange}
+              required
+            />
+          </div>
+        </div>
+
+        <div className="mt-4">
+          <button type="submit" className="btn btn-success me-2">
+            <i
+              className={`bi ${
+                editing ? "bi-pencil-square" : "bi-plus-circle"
+              }`}
+            ></i>{" "}
+            {editing ? "Update Report" : "Create Report"}
+          </button>
+          {editing && (
+            <button
+              type="button"
+              className="btn btn-secondary"
               onClick={resetForm}
             >
-              Cancel
-            </Button>
+              <i className="bi bi-x-circle"></i> Cancel
+            </button>
           )}
         </div>
-      </Form>
+      </form>
 
+      <h5 className="mb-3"> Existing Reports</h5>
       {loading ? (
-        <div className="text-center">
-          <Spinner animation="border" />
+        <div className="text-center my-5">
+          <div className="spinner-border text-primary" role="status" />
+          <p className="mt-2">Loading reports...</p>
         </div>
+      ) : reports.length === 0 ? (
+        <p className="text-muted">No reports found.</p>
       ) : (
-        <Table striped bordered hover responsive className="shadow-sm">
-          <thead className="table-light">
-            <tr>
-              <th>#</th>
-              <th>House ID</th>
-              <th>Rent Amount</th>
-              <th>Start Date</th>
-              <th>End Date</th>
-              <th>Renter Name</th>
-              <th>Created At</th>
-              <th>Updated At</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {reports.length === 0 && (
+        <div className="table-responsive">
+          <table className="table table-hover table-bordered align-middle">
+            <thead className="table-dark">
               <tr>
-                <td colSpan={9} className="text-center">
-                  No reports found
-                </td>
+                <th>ID</th>
+                <th>House</th>
+                <th>Rent</th>
+                <th>Tenant</th>
+                <th>Duration</th>
+                <th className="text-center">Actions</th>
               </tr>
-            )}
-            {reports.map((r, idx) => {
-              const hid =
-                typeof r.houseId === "string" ? r.houseId : r.houseId._id;
-              return (
-                <tr key={r._id}>
-                  <td>{idx + 1}</td>
-                  <td>{hid}</td>
-                  <td>{parseFloat(r.rentAmount).toFixed(2)}</td>
-                  <td>{new Date(r.rentStartDate).toLocaleDateString()}</td>
+            </thead>
+            <tbody>
+              {reports.map((r) => (
+                <tr key={r.id}>
                   <td>
-                    {r.rentEndDate
-                      ? new Date(r.rentEndDate).toLocaleDateString()
-                      : "-"}
+                    <span className="badge bg-secondary">{r.id}</span>
                   </td>
-                  <td>{r.renterName}</td>
-                  <td>{new Date(r.createdAt).toLocaleString()}</td>
-                  <td>{new Date(r.updatedAt).toLocaleString()}</td>
-                  <td>
-                    <Button
-                      variant="outline-primary"
-                      size="sm"
-                      className="me-2"
+                  <td>{r.house?.name || `#${r.houseId}`}</td>
+                  <td>${r.rentAmount.toLocaleString()}</td>
+                  <td>{r.tenantName}</td>
+                  <td>{r.duration}</td>
+                  <td className="text-center">
+                    <button
+                      className="btn btn-sm btn-outline-primary me-2"
                       onClick={() => handleEdit(r)}
                     >
-                      Edit
-                    </Button>
-                    <Button
-                      variant="outline-danger"
-                      size="sm"
-                      onClick={() => confirmDelete(r._id)}
+                      <i className="bi bi-pencil-fill"></i>
+                    </button>
+                    <button
+                      className="btn btn-sm btn-outline-danger"
+                      onClick={() => handleDelete(r.id)}
                     >
-                      Delete
-                    </Button>
+                      <i className="bi bi-trash-fill"></i>
+                    </button>
                   </td>
                 </tr>
-              );
-            })}
-          </tbody>
-        </Table>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
-
-      {/* Delete Confirmation Modal */}
-      <Modal
-        show={showDeleteModal}
-        onHide={() => setShowDeleteModal(false)}
-        centered
-      >
-        <Modal.Header closeButton>
-          <Modal.Title>Confirm Deletion</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>Are you sure you want to delete this report?</Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
-            Cancel
-          </Button>
-          <Button variant="danger" onClick={handleDelete}>
-            Delete
-          </Button>
-        </Modal.Footer>
-      </Modal>
-    </Container>
+    </div>
   );
-}
+};
+
+export default RentHouseReportsManager;

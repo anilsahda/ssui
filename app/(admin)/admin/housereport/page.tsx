@@ -1,338 +1,284 @@
 "use client";
+import React, { useEffect, useState } from "react";
+import "bootstrap/dist/css/bootstrap.min.css";
 
-import React, { useEffect, useState, FormEvent } from "react";
-import {
-  Container,
-  Form,
-  Button,
-  Table,
-  Spinner,
-  Alert,
-  Badge,
-  Modal,
-  Row,
-  Col,
-} from "react-bootstrap";
-
-type House = {
-  _id: string;
-  houseNumber: string;
-  // add more fields as needed (e.g. address, societyName, etc.)
-};
-
-type HouseReport = {
-  _id: string;
-  houseId: House;
+interface HouseReport {
+  id: number;
+  houseId: number;
   reportDetails: string;
-  reportDate: string; // ISO
-};
+  reportDate: string;
+}
 
-const HouseReportsPage: React.FC = () => {
+const API_BASE = "https://localhost:7293/api/HouseReports";
+
+const HouseReportsManager: React.FC = () => {
   const [reports, setReports] = useState<HouseReport[]>([]);
-  const [houses, setHouses] = useState<House[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  // Form state
-  const [houseId, setHouseId] = useState<string>("");
-  const [reportDetails, setReportDetails] = useState<string>("");
-  const [reportDate, setReportDate] = useState<string>("");
+  const [form, setForm] = useState<Partial<HouseReport>>({
+    houseId: undefined,
+    reportDetails: "",
+    reportDate: new Date().toISOString(),
+  });
+  const [isEditing, setIsEditing] = useState(false);
 
-  // For editing (if you want to support editing reports later)
-  const [editId, setEditId] = useState<string | null>(null);
+  useEffect(() => {
+    fetchReports();
+  }, []);
 
-  const API_BASE = "http://localhost:5000/api/house-reports";
-  const HOUSES_API = "http://localhost:5000/api/houses";
-
-  const fetchData = async () => {
-    setLoading(true);
-    setError(null);
+  const fetchReports = async () => {
     try {
-      const [reportsRes, housesRes] = await Promise.all([
-        fetch(API_BASE),
-        fetch(HOUSES_API),
-      ]);
-
-      if (!reportsRes.ok) throw new Error("Failed to fetch house reports");
-      if (!housesRes.ok) throw new Error("Failed to fetch houses");
-
-      const reportsJson = await reportsRes.json();
-      const housesJson = await housesRes.json();
-
-      setReports(reportsJson.data || []);
-      setHouses(housesJson.data || housesJson);
+      setLoading(true);
+      const response = await fetch(API_BASE);
+      if (!response.ok) throw new Error("Failed to fetch reports.");
+      const data: HouseReport[] = await response.json();
+      setReports(data);
+      setError(null);
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || "Error loading reports");
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const resetForm = () => {
-    setHouseId("");
-    setReportDetails("");
-    setReportDate("");
-    setEditId(null);
-    setError(null);
-    setSuccessMsg(null);
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    setSuccessMsg(null);
 
-    if (!houseId || !reportDetails.trim()) {
-      setError("House and report details are required.");
+    if (!form.houseId || !form.reportDetails) {
+      alert("House ID and Report Details are required.");
       return;
     }
 
     try {
-      const payload: any = {
-        houseId,
-        reportDetails,
-      };
-      if (reportDate) {
-        payload.reportDate = reportDate;
-      }
+      const method = isEditing ? "PUT" : "POST";
+      const url = isEditing ? `${API_BASE}/${form.id}` : API_BASE;
 
-      const url = editId ? `${API_BASE}/${editId}` : API_BASE;
-      const method = editId ? "PUT" : "POST";
-
-      const res = await fetch(url, {
+      const response = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(form),
       });
 
-      if (!res.ok) {
-        const errJson = await res.json();
-        throw new Error(errJson.error || "Failed to save report");
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText);
       }
 
+      await fetchReports();
       resetForm();
-      setSuccessMsg(
-        editId
-          ? "Report updated successfully!"
-          : "Report submitted successfully!"
-      );
-      await fetchData();
     } catch (err: any) {
-      setError(err.message);
+      alert(err.message || "Error submitting the form");
     }
   };
 
-  // (Optionally) support editing a report
-  const handleEdit = (rep: HouseReport) => {
-    setEditId(rep._id);
-    setHouseId(rep.houseId._id);
-    setReportDetails(rep.reportDetails);
-    // convert ISO to yyyy-MM-dd for <input type="date">
-    if (rep.reportDate) {
-      const dt = new Date(rep.reportDate);
-      const iso = dt.toISOString().substring(0, 10);
-      setReportDate(iso);
-    } else {
-      setReportDate("");
-    }
-    window.scrollTo({ top: 0, behavior: "smooth" });
+  const handleEdit = (report: HouseReport) => {
+    setForm({
+      id: report.id,
+      houseId: report.houseId,
+      reportDetails: report.reportDetails,
+      reportDate: report.reportDate,
+    });
+    setIsEditing(true);
   };
 
-  // (Optionally) support deleting a report via modal
-  const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const handleDelete = async (id: number) => {
+    if (!window.confirm("Are you sure you want to delete this report?")) return;
 
-  const confirmDelete = (id: string) => {
-    setDeleteId(id);
-    setShowDeleteModal(true);
-  };
-
-  const handleDelete = async () => {
-    if (!deleteId) return;
-    setError(null);
-    setSuccessMsg(null);
-    setShowDeleteModal(false);
     try {
-      const res = await fetch(`${API_BASE}/${deleteId}`, {
+      const response = await fetch(`${API_BASE}/${id}`, {
         method: "DELETE",
       });
-      if (!res.ok) {
-        const errJson = await res.json();
-        throw new Error(errJson.error || "Failed to delete report");
-      }
-      setSuccessMsg("Report deleted successfully!");
-      await fetchData();
+
+      if (!response.ok) throw new Error("Failed to delete");
+
+      await fetchReports();
     } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setDeleteId(null);
+      alert(err.message || "Delete failed");
     }
+  };
+
+  const resetForm = () => {
+    setForm({
+      houseId: undefined,
+      reportDetails: "",
+      reportDate: new Date().toISOString(),
+    });
+    setIsEditing(false);
   };
 
   return (
-    <Container className="my-5">
-      <h2 className="mb-4 text-center">🏗️ House Reports</h2>
+    <div className="container mt-5">
+      <h2 className="mb-4 text-center"> House Reports Manager</h2>
 
-      {/* Alerts */}
       {error && (
-        <Alert variant="danger" onClose={() => setError(null)} dismissible>
+        <div className="alert alert-danger shadow-sm" role="alert">
           {error}
-        </Alert>
-      )}
-      {successMsg && (
-        <Alert
-          variant="success"
-          onClose={() => setSuccessMsg(null)}
-          dismissible
-        >
-          {successMsg}
-        </Alert>
-      )}
-
-      {/* Form */}
-      <Form
-        onSubmit={handleSubmit}
-        className="bg-light p-4 rounded shadow-sm mb-5"
-      >
-        <Row>
-          <Col md={6}>
-            <Form.Group className="mb-3" controlId="formHouse">
-              <Form.Label>House</Form.Label>
-              <Form.Select
-                value={houseId}
-                onChange={(e) => setHouseId(e.target.value)}
-                required
-              >
-                <option value="">Select a house</option>
-                {houses.map((h) => (
-                  <option key={h._id} value={h._id}>
-                    {h.houseNumber}
-                  </option>
-                ))}
-              </Form.Select>
-            </Form.Group>
-          </Col>
-          <Col md={6}>
-            <Form.Group className="mb-3" controlId="formReportDate">
-              <Form.Label>Report Date</Form.Label>
-              <Form.Control
-                type="date"
-                value={reportDate}
-                onChange={(e) => setReportDate(e.target.value)}
-              />
-            </Form.Group>
-          </Col>
-        </Row>
-
-        <Form.Group className="mb-3" controlId="formDetails">
-          <Form.Label>Report Details</Form.Label>
-          <Form.Control
-            as="textarea"
-            rows={4}
-            placeholder="Describe the issue or observation..."
-            value={reportDetails}
-            onChange={(e) => setReportDetails(e.target.value)}
-            required
-          />
-        </Form.Group>
-
-        <div className="text-end">
-          <Button variant="primary" type="submit">
-            {editId ? "Update Report" : "Submit Report"}
-          </Button>
-          {editId && (
-            <Button
-              variant="outline-secondary"
-              className="ms-2"
-              onClick={resetForm}
-            >
-              Cancel
-            </Button>
-          )}
         </div>
-      </Form>
+      )}
 
-      {/* Table / List */}
+      <div className="card shadow-sm mb-5">
+        <div className="card-header bg-primary text-white">
+          <h4 className="mb-0">
+            {isEditing ? "Edit Report" : "Add New Report"}
+          </h4>
+        </div>
+        <div className="card-body">
+          <form onSubmit={handleSubmit}>
+            <div className="row g-3">
+              <div className="col-md-3">
+                <label htmlFor="houseId" className="form-label fw-semibold">
+                  House ID <span className="text-danger">*</span>
+                </label>
+                <input
+                  type="number"
+                  className="form-control"
+                  id="houseId"
+                  name="houseId"
+                  value={form.houseId ?? ""}
+                  onChange={handleInputChange}
+                  placeholder="Enter House ID"
+                  required
+                />
+              </div>
+
+              <div className="col-md-5">
+                <label
+                  htmlFor="reportDetails"
+                  className="form-label fw-semibold"
+                >
+                  Report Details <span className="text-danger">*</span>
+                </label>
+                <textarea
+                  className="form-control"
+                  id="reportDetails"
+                  name="reportDetails"
+                  rows={3}
+                  value={form.reportDetails ?? ""}
+                  onChange={handleInputChange}
+                  placeholder="Describe the report details"
+                  required
+                />
+              </div>
+
+              <div className="col-md-4">
+                <label htmlFor="reportDate" className="form-label fw-semibold">
+                  Report Date
+                </label>
+                <input
+                  type="datetime-local"
+                  className="form-control"
+                  id="reportDate"
+                  name="reportDate"
+                  value={form.reportDate?.substring(0, 16) || ""}
+                  onChange={handleInputChange}
+                />
+              </div>
+            </div>
+
+            <div className="mt-4 d-flex align-items-center">
+              <button type="submit" className="btn btn-success me-3">
+                {isEditing ? (
+                  <>
+                    <i className="bi bi-pencil-square me-1"></i> Update
+                  </>
+                ) : (
+                  <>
+                    <i className="bi bi-plus-circle me-1"></i> Create
+                  </>
+                )}
+              </button>
+              {isEditing && (
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary"
+                  onClick={resetForm}
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <h4 className="mb-3">Existing House Reports</h4>
+
       {loading ? (
-        <div className="text-center">
-          <Spinner animation="border" />
-          <p className="mt-2">Loading reports...</p>
+        <div className="text-center my-5">
+          <div
+            className="spinner-border text-primary"
+            role="status"
+            aria-hidden="true"
+          ></div>
+          <div className="mt-2">Loading reports...</div>
         </div>
       ) : reports.length === 0 ? (
-        <Alert variant="info">No reports found.</Alert>
+        <div className="alert alert-info text-center">
+          No reports available. Add a new report above.
+        </div>
       ) : (
-        <Table striped bordered hover responsive className="shadow-sm">
-          <thead className="table-light">
-            <tr>
-              <th>#</th>
-              <th>House</th>
-              <th>Details</th>
-              <th>Report Date</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {reports.map((rep, idx) => (
-              <tr key={rep._id}>
-                <td>{idx + 1}</td>
-                <td>{rep.houseId?.houseNumber ?? "—"}</td>
-                <td style={{ whiteSpace: "pre-wrap" }}>{rep.reportDetails}</td>
-                <td>
-                  {rep.reportDate
-                    ? new Date(rep.reportDate).toLocaleDateString()
-                    : "-"}
-                </td>
-                <td>
-                  <Button
-                    variant="outline-primary"
-                    size="sm"
-                    className="me-2"
-                    onClick={() => handleEdit(rep)}
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    variant="outline-danger"
-                    size="sm"
-                    onClick={() => confirmDelete(rep._id)}
-                  >
-                    Delete
-                  </Button>
-                </td>
+        <div className="table-responsive shadow-sm rounded">
+          <table className="table table-hover align-middle">
+            <thead className="table-primary">
+              <tr>
+                <th scope="col" style={{ width: "5%" }}>
+                  ID
+                </th>
+                <th scope="col" style={{ width: "10%" }}>
+                  House ID
+                </th>
+                <th scope="col" style={{ width: "50%" }}>
+                  Details
+                </th>
+                <th scope="col" style={{ width: "20%" }}>
+                  Date
+                </th>
+                <th scope="col" style={{ width: "15%" }}>
+                  Actions
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </Table>
+            </thead>
+            <tbody>
+              {reports.map((r) => (
+                <tr key={r.id}>
+                  <td>{r.id}</td>
+                  <td>
+                    <span className="badge bg-info text-dark">{r.houseId}</span>
+                  </td>
+                  <td>{r.reportDetails}</td>
+                  <td>{new Date(r.reportDate).toLocaleString()}</td>
+                  <td>
+                    <button
+                      className="btn btn-sm btn-outline-primary me-2"
+                      onClick={() => handleEdit(r)}
+                      title="Edit Report"
+                    >
+                      <i className="bi bi-pencil"></i>
+                    </button>
+                    <button
+                      className="btn btn-sm btn-outline-danger"
+                      onClick={() => handleDelete(r.id)}
+                      title="Delete Report"
+                    >
+                      <i className="bi bi-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
-
-      {/* Delete Confirmation Modal */}
-      <Modal
-        show={showDeleteModal}
-        onHide={() => setShowDeleteModal(false)}
-        centered
-      >
-        <Modal.Header closeButton>
-          <Modal.Title>Confirm Delete</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          Are you sure you want to delete this house report?
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
-            Cancel
-          </Button>
-          <Button variant="danger" onClick={handleDelete}>
-            Delete
-          </Button>
-        </Modal.Footer>
-      </Modal>
-    </Container>
+    </div>
   );
 };
 
-export default HouseReportsPage;
+export default HouseReportsManager;

@@ -14,6 +14,8 @@ import {
 import { FiSearch, FiBell, FiMoon, FiUserCheck } from "react-icons/fi";
 
 import "bootstrap/dist/css/bootstrap.min.css";
+import AOS from "aos";
+import "aos/dist/aos.css";
 
 export default function OwnerLayout({
   children,
@@ -22,25 +24,22 @@ export default function OwnerLayout({
 }) {
   const pathname = usePathname();
 
-  // Load Bootstrap JS only on client side
   useEffect(() => {
+    // Load Bootstrap JS on client only
     if (typeof window !== "undefined") {
-      import("bootstrap/dist/js/bootstrap.bundle.min.js")
-        .then(() => {
-          // Bootstrap JS loaded successfully
-        })
-        .catch((err) => {
-          console.error("Failed to load Bootstrap JS:", err);
-        });
+      import("bootstrap/dist/js/bootstrap.bundle.min.js").catch((err) =>
+        console.error("Failed to load Bootstrap JS:", err)
+      );
     }
+    // Initialize AOS
+    AOS.init({ duration: 600, once: true });
   }, []);
 
   const isActive = (path: string) => (pathname === path ? "active" : "");
 
-  // Dummy logout handler
   const handleLogout = () => {
     console.log("Logging out...");
-    // Replace this with actual logout logic
+    // Implement actual logout logic
   };
 
   return (
@@ -49,7 +48,10 @@ export default function OwnerLayout({
       style={{ fontFamily: "Inter, sans-serif" }}
     >
       {/* Header */}
-      <header className="d-flex justify-content-between align-items-center px-4 py-2 shadow-sm bg-white border-bottom">
+      <header
+        className="d-flex justify-content-between align-items-center px-4 py-2 shadow-sm bg-white border-bottom"
+        data-aos="fade-down"
+      >
         <h1
           className="m-0 text-primary"
           style={{ fontSize: "1.6rem", fontWeight: 600 }}
@@ -173,6 +175,7 @@ export default function OwnerLayout({
             background: "linear-gradient(180deg, #1e293b, #0f172a)",
             color: "#f1f5f9",
           }}
+          data-aos="fade-right"
         >
           <nav>
             <ul className="nav nav-pills flex-column gap-1">
@@ -188,9 +191,20 @@ export default function OwnerLayout({
               </li>
               <li>
                 <Link
+                  href="/owner/owners"
+                  className={`nav-link d-flex align-items-center gap-2 sidebar-link ${isActive(
+                    "/owner/owners"
+                  )}`}
+                >
+                  <FaUsers size={16} className="text-warning" />
+                  Add Owner
+                </Link>
+              </li>
+              <li>
+                <Link
                   href="/owner/posthouse"
                   className={`nav-link d-flex align-items-center gap-2 sidebar-link ${isActive(
-                    "/owner/post house"
+                    "/owner/posthouse"
                   )}`}
                 >
                   <FaUsers size={16} className="text-warning" /> Post House
@@ -225,7 +239,9 @@ export default function OwnerLayout({
         </aside>
 
         {/* Main Content */}
-        <main className="flex-grow-1 p-4 bg-light">{children}</main>
+        <main className="flex-grow-1 p-4 bg-light" data-aos="fade-up">
+          {children}
+        </main>
       </div>
     </div>
   );

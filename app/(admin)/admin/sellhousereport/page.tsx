@@ -1,308 +1,288 @@
 "use client";
+import React, { useEffect, useState } from "react";
+import "bootstrap/dist/css/bootstrap.min.css";
 
-import React, { useState, useEffect, FormEvent } from "react";
-import {
-  Container,
-  Form,
-  Button,
-  Table,
-  Alert,
-  Modal,
-  Spinner,
-  Row,
-  Col,
-} from "react-bootstrap";
-
-interface SellHouseReport {
-  _id: string;
-  houseId: { _id: string } | string;
-  sellPrice: string;
-  sellDate: string;
-  buyerName: string;
+interface House {
+  id: number;
+  name: string;
 }
 
-export default function SellHouseReportsAdmin() {
+interface SellHouseReport {
+  id: number;
+  houseId: number;
+  sellPrice: number;
+  buyerName: string;
+  sellDate?: string;
+  house?: House;
+}
+
+const SellHouseReportsManager: React.FC = () => {
   const [reports, setReports] = useState<SellHouseReport[]>([]);
-  const [houseId, setHouseId] = useState("");
-  const [sellPrice, setSellPrice] = useState("");
-  const [sellDate, setSellDate] = useState("");
-  const [buyerName, setBuyerName] = useState("");
-  const [editId, setEditId] = useState<string | null>(null);
-
+  const [houses, setHouses] = useState<House[]>([]);
+  const [form, setForm] = useState<Partial<SellHouseReport>>({});
+  const [editing, setEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
 
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const API_URL = "https://localhost:7293/api/SellHouseReports";
+  const HOUSES_API = "https://localhost:7293/api/Houses";
 
-  const API_BASE = "http://localhost:5000/api/sell-house-reports";
+  useEffect(() => {
+    fetchReports();
+    fetchHouses();
+  }, []);
 
   const fetchReports = async () => {
     setLoading(true);
     try {
-      const res = await fetch(API_BASE);
-      const data = await res.json();
-      if (data.success) {
-        setReports(data.data);
-      } else {
-        setError("Failed to load reports");
-      }
+      const response = await fetch(API_URL);
+      const data = await response.json();
+      setReports(data);
     } catch (err) {
-      setError("Error fetching reports");
+      setError("Error fetching sell house reports.");
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchReports();
-  }, []);
-
-  const resetForm = () => {
-    setHouseId("");
-    setSellPrice("");
-    setSellDate("");
-    setBuyerName("");
-    setEditId(null);
-    setError(null);
-    setSuccess(null);
+  const fetchHouses = async () => {
+    try {
+      const res = await fetch(HOUSES_API);
+      const data = await res.json();
+      setHouses(data);
+    } catch (err) {
+      setError("Error fetching house data.");
+    }
   };
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setSuccess(null);
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({
+      ...prev,
+      [name]:
+        name === "houseId" || name === "sellPrice" ? Number(value) : value,
+    }));
+  };
 
-    if (!houseId || !sellPrice || !buyerName) {
-      setError("Please fill in all required fields");
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!form.houseId || !form.sellPrice || !form.buyerName) {
+      setError("Please fill in all fields.");
       return;
     }
 
-    const method = editId ? "PUT" : "POST";
-    const url = editId ? `${API_BASE}/${editId}` : API_BASE;
-
-    const body = {
-      houseId,
-      sellPrice,
-      sellDate: sellDate || new Date().toISOString(),
-      buyerName,
-    };
-
     try {
-      const res = await fetch(url, {
+      const method = editing ? "PUT" : "POST";
+      const url = editing ? `${API_URL}/${form.id}` : API_URL;
+
+      const response = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify(form),
       });
 
-      if (!res.ok) throw new Error("Failed to save report");
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || "Failed to save report.");
+      }
 
       await fetchReports();
-      setSuccess(
-        editId ? "Report updated successfully" : "Report added successfully"
-      );
       resetForm();
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError("Error saving report.");
     }
   };
 
   const handleEdit = (report: SellHouseReport) => {
-    setEditId(report._id);
-    setHouseId(
-      typeof report.houseId === "string" ? report.houseId : report.houseId._id
-    );
-    setSellPrice(report.sellPrice);
-    setSellDate(report.sellDate.substring(0, 10));
-    setBuyerName(report.buyerName);
+    setForm(report);
+    setEditing(true);
+    setError(null);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const confirmDelete = (id: string) => {
-    setDeleteId(id);
-    setShowDeleteModal(true);
-  };
+  const handleDelete = async (id: number) => {
+    if (!window.confirm("Are you sure you want to delete this report?")) return;
 
-  const handleDelete = async () => {
-    if (!deleteId) return;
-    setShowDeleteModal(false);
     try {
-      const res = await fetch(`${API_BASE}/${deleteId}`, { method: "DELETE" });
-      if (!res.ok) throw new Error();
+      const response = await fetch(`${API_URL}/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) throw new Error("Failed to delete");
+
       await fetchReports();
-      setSuccess("Report deleted successfully");
-    } catch {
-      setError("Failed to delete report");
-    } finally {
-      setDeleteId(null);
+    } catch (err) {
+      setError("Error deleting report.");
     }
   };
 
+  const resetForm = () => {
+    setForm({});
+    setEditing(false);
+    setError(null);
+  };
+
   return (
-    <Container className="my-5">
-      <h2 className="text-center mb-4">🏠 Sell House Reports</h2>
+    <div className="container py-4">
+      <div className="text-center mb-4">
+        <h2 className="fw-bold"> Sell House Reports</h2>
+        <p className="text-muted">
+          Track property sales and buyers efficiently.
+        </p>
+      </div>
 
-      {error && (
-        <Alert variant="danger" onClose={() => setError(null)} dismissible>
-          {error}
-        </Alert>
-      )}
-
-      {success && (
-        <Alert variant="success" onClose={() => setSuccess(null)} dismissible>
-          {success}
-        </Alert>
-      )}
-
-      {/* Form */}
-      <Form
+      <form
+        className="border p-4 mb-5 rounded bg-light shadow-sm"
         onSubmit={handleSubmit}
-        className="bg-light p-4 rounded shadow-sm mb-5"
       >
-        <Row className="mb-3">
-          <Col md={6}>
-            <Form.Group controlId="houseId">
-              <Form.Label>House ID *</Form.Label>
-              <Form.Control
-                type="text"
-                value={houseId}
-                onChange={(e) => setHouseId(e.target.value)}
-                required
-              />
-            </Form.Group>
-          </Col>
-          <Col md={6}>
-            <Form.Group controlId="buyerName">
-              <Form.Label>Buyer Name *</Form.Label>
-              <Form.Control
-                type="text"
-                value={buyerName}
-                onChange={(e) => setBuyerName(e.target.value)}
-                required
-              />
-            </Form.Group>
-          </Col>
-        </Row>
+        <h5 className="mb-3">
+          {editing ? " Edit Report" : " Add Sell Report"}
+        </h5>
 
-        <Row className="mb-3">
-          <Col md={6}>
-            <Form.Group controlId="sellPrice">
-              <Form.Label>Sell Price *</Form.Label>
-              <Form.Control
-                type="number"
-                step="0.01"
-                value={sellPrice}
-                onChange={(e) => setSellPrice(e.target.value)}
-                required
-              />
-            </Form.Group>
-          </Col>
-          <Col md={6}>
-            <Form.Group controlId="sellDate">
-              <Form.Label>Sell Date</Form.Label>
-              <Form.Control
-                type="date"
-                value={sellDate}
-                onChange={(e) => setSellDate(e.target.value)}
-              />
-            </Form.Group>
-          </Col>
-        </Row>
+        {error && <div className="alert alert-danger">{error}</div>}
 
-        <div className="text-end">
-          <Button type="submit" variant="primary">
-            {editId ? "Update Report" : "Add Report"}
-          </Button>
-          {editId && (
-            <Button
-              variant="outline-secondary"
-              className="ms-2"
+        <div className="row g-3">
+          <div className="col-md-6">
+            <label htmlFor="houseId" className="form-label">
+              House
+            </label>
+            <select
+              id="houseId"
+              name="houseId"
+              className="form-select"
+              value={form.houseId || ""}
+              onChange={handleChange}
+              required
+            >
+              <option value="">-- Select House --</option>
+              {houses.map((h) => (
+                <option key={h.id} value={h.id}>
+                  {h.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="col-md-6">
+            <label htmlFor="sellPrice" className="form-label">
+              Sell Price
+            </label>
+            <input
+              id="sellPrice"
+              name="sellPrice"
+              type="number"
+              className="form-control"
+              value={form.sellPrice ?? ""}
+              onChange={handleChange}
+              required
+              min={0}
+            />
+          </div>
+
+          <div className="col-md-6">
+            <label htmlFor="buyerName" className="form-label">
+              Buyer Name
+            </label>
+            <input
+              id="buyerName"
+              name="buyerName"
+              type="text"
+              className="form-control"
+              value={form.buyerName || ""}
+              onChange={handleChange}
+              required
+            />
+          </div>
+        </div>
+
+        <div className="mt-4">
+          <button type="submit" className="btn btn-success me-2">
+            <i
+              className={`bi ${
+                editing ? "bi-pencil-square" : "bi-plus-circle"
+              }`}
+            ></i>{" "}
+            {editing ? "Update Report" : "Create Report"}
+          </button>
+          {editing && (
+            <button
+              type="button"
+              className="btn btn-secondary"
               onClick={resetForm}
             >
-              Cancel
-            </Button>
+              <i className="bi bi-x-circle"></i> Cancel
+            </button>
           )}
         </div>
-      </Form>
+      </form>
 
-      {/* Table */}
+      <h5 className="mb-3"> Existing Sell Reports</h5>
+
       {loading ? (
-        <div className="text-center my-4">
-          <Spinner animation="border" />
+        <div className="text-center my-5">
+          <div className="spinner-border text-primary" role="status" />
+          <p className="mt-2">Loading reports...</p>
         </div>
       ) : (
-        <Table striped bordered hover responsive className="shadow-sm">
-          <thead className="table-light">
-            <tr>
-              <th>#</th>
-              <th>House ID</th>
-              <th>Sell Price</th>
-              <th>Sell Date</th>
-              <th>Buyer Name</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {reports.length === 0 ? (
+        <div className="table-responsive">
+          <table className="table table-bordered table-hover align-middle">
+            <thead className="table-dark">
               <tr>
-                <td colSpan={6} className="text-center">
-                  No reports found
-                </td>
+                <th>ID</th>
+                <th>House</th>
+                <th>Price</th>
+                <th>Buyer</th>
+                <th>Date</th>
+                <th className="text-center">Actions</th>
               </tr>
-            ) : (
-              reports.map((r, idx) => (
-                <tr key={r._id}>
-                  <td>{idx + 1}</td>
-                  <td>
-                    {typeof r.houseId === "string" ? r.houseId : r.houseId._id}
-                  </td>
-                  <td>${parseFloat(r.sellPrice).toFixed(2)}</td>
-                  <td>{new Date(r.sellDate).toLocaleDateString()}</td>
-                  <td>{r.buyerName}</td>
-                  <td>
-                    <Button
-                      size="sm"
-                      variant="outline-primary"
-                      className="me-2"
-                      onClick={() => handleEdit(r)}
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline-danger"
-                      onClick={() => confirmDelete(r._id)}
-                    >
-                      Delete
-                    </Button>
+            </thead>
+            <tbody>
+              {reports.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="text-center text-muted">
+                    No sell house reports found.
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </Table>
+              ) : (
+                reports.map((report) => (
+                  <tr key={report.id}>
+                    <td>
+                      <span className="badge bg-secondary">{report.id}</span>
+                    </td>
+                    <td>{report.house?.name || `#${report.houseId}`}</td>
+                    <td>${report.sellPrice.toLocaleString()}</td>
+                    <td>{report.buyerName}</td>
+                    <td>
+                      {report.sellDate
+                        ? new Date(report.sellDate).toLocaleString()
+                        : "-"}
+                    </td>
+                    <td className="text-center">
+                      <button
+                        className="btn btn-sm btn-outline-primary me-2"
+                        onClick={() => handleEdit(report)}
+                      >
+                        <i className="bi bi-pencil-square"></i>
+                      </button>
+                      <button
+                        className="btn btn-sm btn-outline-danger"
+                        onClick={() => handleDelete(report.id)}
+                      >
+                        <i className="bi bi-trash-fill"></i>
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       )}
-
-      {/* Delete Modal */}
-      <Modal
-        show={showDeleteModal}
-        onHide={() => setShowDeleteModal(false)}
-        centered
-      >
-        <Modal.Header closeButton>
-          <Modal.Title>Delete Report</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>Are you sure you want to delete this report?</Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
-            Cancel
-          </Button>
-          <Button variant="danger" onClick={handleDelete}>
-            Delete
-          </Button>
-        </Modal.Footer>
-      </Modal>
-    </Container>
+    </div>
   );
-}
+};
+
+export default SellHouseReportsManager;

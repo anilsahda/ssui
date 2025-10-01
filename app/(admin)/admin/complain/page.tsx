@@ -1,268 +1,317 @@
 "use client";
+import React, { useEffect, useState } from "react";
+import "bootstrap/dist/css/bootstrap.min.css";
 
-import React, { useEffect, useState, FormEvent } from "react";
-import {
-  Container,
-  Form,
-  Button,
-  Table,
-  Spinner,
-  Alert,
-  Row,
-  Col,
-  Badge,
-} from "react-bootstrap";
-
-type House = {
-  _id: string;
-  houseNumber: string;
-};
-
-type Member = {
-  _id: string;
-  fullName: string;
-};
-
-type Complain = {
-  _id: string;
-  houseId: House;
-  memberId: Member | null;
+interface Complain {
+  id: number;
+  houseId: number;
+  memberId?: number | null;
   description: string;
   complainDate: string;
   isResolved: boolean;
-};
+}
 
-const ComplainsPage: React.FC = () => {
+const ComplainManager: React.FC = () => {
+  const API_URL = "https://localhost:7293/api/Complain";
+
   const [complains, setComplains] = useState<Complain[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [form, setForm] = useState<Partial<Complain>>({
+    houseId: undefined,
+    memberId: undefined,
+    description: "",
+    complainDate: new Date().toISOString(),
+    isResolved: false,
+  });
+  const [isEditing, setIsEditing] = useState<boolean>(false);
 
-  // Form state
-  const [houseId, setHouseId] = useState<string>("");
-  const [memberId, setMemberId] = useState<string | null>(null);
-  const [description, setDescription] = useState<string>("");
-  const [complainDate, setComplainDate] = useState<string>("");
-  const [isResolved, setIsResolved] = useState<boolean>(false);
+  useEffect(() => {
+    fetchComplains();
+  }, []);
 
-  // Data sets
-  const [houses, setHouses] = useState<House[]>([]);
-  const [members, setMembers] = useState<Member[]>([]);
-
-  const API_BASE = "http://localhost:5000/api/complain";
-  const HOUSES_API = "http://localhost:5000/api/houses";
-  const MEMBERS_API = "http://localhost:5000/api/members";
-
-  const fetchData = async () => {
-    setLoading(true);
-    setError(null);
+  const fetchComplains = async () => {
     try {
-      const [compRes, houseRes, memberRes] = await Promise.all([
-        fetch(API_BASE),
-        fetch(HOUSES_API),
-        fetch(MEMBERS_API),
-      ]);
-
-      if (!compRes.ok || !houseRes.ok || !memberRes.ok) {
-        throw new Error("Error fetching data");
-      }
-
-      const compData = await compRes.json();
-      const houseData = await houseRes.json();
-      const memberData = await memberRes.json();
-
-      setComplains(compData.data || []);
-      setHouses(houseData.data || houseData);
-      setMembers(memberData.data || memberData);
+      setLoading(true);
+      const res = await fetch(API_URL);
+      if (!res.ok) throw new Error("Failed to load complains.");
+      const data = await res.json();
+      setComplains(data);
+      setError(null);
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || "Error fetching complains");
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value, type, checked } = e.target;
+    setForm((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
+
+    if (!form.houseId || !form.description.trim()) {
+      alert("House ID and Description are required.");
+      return;
+    }
 
     try {
-      const payload = {
-        houseId,
-        memberId,
-        description,
-        complainDate: complainDate || undefined,
-        isResolved,
-      };
+      const method = isEditing ? "PUT" : "POST";
+      const url = isEditing ? `${API_URL}/${form.id}` : API_URL;
 
-      const res = await fetch(API_BASE, {
-        method: "POST",
+      const res = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(form),
       });
 
       if (!res.ok) {
-        const errJson = await res.json();
-        throw new Error(errJson.error || "Failed to create complaint.");
+        const errorText = await res.text();
+        throw new Error(errorText);
       }
 
-      // Reset
-      setHouseId("");
-      setMemberId(null);
-      setDescription("");
-      setComplainDate("");
-      setIsResolved(false);
-
-      await fetchData();
+      await fetchComplains();
+      resetForm();
     } catch (err: any) {
-      setError(err.message);
+      alert(err.message || "Error submitting form");
     }
   };
 
+  const handleEdit = (complain: Complain) => {
+    setForm({ ...complain });
+    setIsEditing(true);
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!window.confirm("Are you sure you want to delete this complain?"))
+      return;
+
+    try {
+      const res = await fetch(`${API_URL}/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Delete failed.");
+      await fetchComplains();
+    } catch (err: any) {
+      alert(err.message || "Error deleting complain");
+    }
+  };
+
+  const resetForm = () => {
+    setForm({
+      houseId: undefined,
+      memberId: undefined,
+      description: "",
+      complainDate: new Date().toISOString(),
+      isResolved: false,
+    });
+    setIsEditing(false);
+  };
+
   return (
-    <Container className="my-5">
-      <h2 className="mb-4 text-center">🛠️ Complaints Management</h2>
+    <div className="container my-5">
+      <h2 className="mb-4 text-primary fw-bold">Complain Manager</h2>
 
       {error && (
-        <Alert variant="danger" dismissible onClose={() => setError(null)}>
+        <div className="alert alert-danger shadow-sm" role="alert">
           {error}
-        </Alert>
+        </div>
       )}
 
-      <Form
+      {/* Form */}
+      <form
         onSubmit={handleSubmit}
-        className="bg-light p-4 rounded shadow-sm mb-4"
+        className="border rounded-3 p-4 mb-5 shadow-sm bg-white"
       >
-        <Row>
-          <Col md={6}>
-            <Form.Group className="mb-3" controlId="formHouse">
-              <Form.Label>🏠 House</Form.Label>
-              <Form.Select
-                value={houseId}
-                onChange={(e) => setHouseId(e.target.value)}
-                required
-              >
-                <option value="">Select a house</option>
-                {houses.map((h) => (
-                  <option key={h._id} value={h._id}>
-                    {h.houseNumber}
-                  </option>
-                ))}
-              </Form.Select>
-            </Form.Group>
-          </Col>
+        <h4 className="mb-4 text-secondary">
+          {isEditing ? "Edit Complain" : "Add New Complain"}
+        </h4>
 
-          <Col md={6}>
-            <Form.Group className="mb-3" controlId="formMember">
-              <Form.Label>👤 Member (optional)</Form.Label>
-              <Form.Select
-                value={memberId ?? ""}
-                onChange={(e) =>
-                  setMemberId(e.target.value === "" ? null : e.target.value)
-                }
-              >
-                <option value="">Anonymous / Not linked</option>
-                {members.map((m) => (
-                  <option key={m._id} value={m._id}>
-                    {m.fullName}
-                  </option>
-                ))}
-              </Form.Select>
-            </Form.Group>
-          </Col>
-        </Row>
-
-        <Form.Group className="mb-3" controlId="formDescription">
-          <Form.Label>📝 Description</Form.Label>
-          <Form.Control
-            as="textarea"
-            rows={3}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            required
-            placeholder="Enter details of the complaint..."
-          />
-        </Form.Group>
-
-        <Row>
-          <Col md={6}>
-            <Form.Group className="mb-3" controlId="formDate">
-              <Form.Label>📅 Complaint Date</Form.Label>
-              <Form.Control
-                type="date"
-                value={complainDate}
-                onChange={(e) => setComplainDate(e.target.value)}
-              />
-            </Form.Group>
-          </Col>
-
-          <Col md={6} className="d-flex align-items-center">
-            <Form.Check
-              type="checkbox"
-              id="isResolved"
-              label="Mark as Resolved"
-              checked={isResolved}
-              onChange={(e) => setIsResolved(e.target.checked)}
+        <div className="row g-3">
+          <div className="col-md-4">
+            <label htmlFor="houseId" className="form-label fw-semibold">
+              House ID <span className="text-danger">*</span>
+            </label>
+            <input
+              type="number"
+              className="form-control"
+              id="houseId"
+              name="houseId"
+              value={form.houseId ?? ""}
+              onChange={handleInputChange}
+              required
+              placeholder="Enter House ID"
+              min={1}
             />
-          </Col>
-        </Row>
+          </div>
 
-        <div className="text-end">
-          <Button variant="primary" type="submit">
-            Submit Complaint
-          </Button>
+          <div className="col-md-4">
+            <label htmlFor="memberId" className="form-label fw-semibold">
+              Member ID (optional)
+            </label>
+            <input
+              type="number"
+              className="form-control"
+              id="memberId"
+              name="memberId"
+              value={form.memberId ?? ""}
+              onChange={handleInputChange}
+              placeholder="Enter Member ID"
+              min={1}
+            />
+          </div>
+
+          <div className="col-md-4">
+            <label htmlFor="complainDate" className="form-label fw-semibold">
+              Complain Date
+            </label>
+            <input
+              type="datetime-local"
+              className="form-control"
+              id="complainDate"
+              name="complainDate"
+              value={form.complainDate?.substring(0, 16) || ""}
+              onChange={handleInputChange}
+              max={new Date().toISOString().substring(0, 16)}
+            />
+          </div>
         </div>
-      </Form>
 
-      <h4 className="mb-3">📄 Complaint Records</h4>
+        <div className="mt-3">
+          <label htmlFor="description" className="form-label fw-semibold">
+            Description <span className="text-danger">*</span>
+          </label>
+          <textarea
+            className="form-control"
+            id="description"
+            name="description"
+            rows={4}
+            value={form.description}
+            onChange={handleInputChange}
+            required
+            placeholder="Describe the complain in detail"
+          ></textarea>
+        </div>
+
+        <div className="form-check form-switch mt-4 mb-4">
+          <input
+            className="form-check-input"
+            type="checkbox"
+            id="isResolved"
+            name="isResolved"
+            checked={form.isResolved}
+            onChange={handleInputChange}
+          />
+          <label className="form-check-label fw-semibold" htmlFor="isResolved">
+            Mark as Resolved
+          </label>
+        </div>
+
+        <div>
+          <button type="submit" className="btn btn-primary me-3 shadow-sm">
+            {isEditing ? (
+              <>
+                <i className="bi bi-pencil-square me-2"></i> Update
+              </>
+            ) : (
+              <>
+                <i className="bi bi-plus-circle me-2"></i> Create
+              </>
+            )}
+          </button>
+          {isEditing && (
+            <button
+              type="button"
+              className="btn btn-outline-secondary shadow-sm"
+              onClick={resetForm}
+            >
+              Cancel
+            </button>
+          )}
+        </div>
+      </form>
+
+      {/* Table */}
+      <h4 className="mb-3 text-secondary">All Complains</h4>
 
       {loading ? (
-        <div className="text-center my-4">
-          <Spinner animation="border" />
-          <p>Loading complaints...</p>
+        <div className="text-center py-5">
+          <div
+            className="spinner-border text-primary"
+            role="status"
+            aria-hidden="true"
+          ></div>
+          <span className="visually-hidden">Loading...</span>
         </div>
       ) : complains.length === 0 ? (
-        <Alert variant="info">No complaints found.</Alert>
+        <p className="text-muted fst-italic">No complains found.</p>
       ) : (
-        <Table striped bordered hover responsive className="shadow-sm">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>House</th>
-              <th>Member</th>
-              <th>Description</th>
-              <th>Complaint Date</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {complains.map((comp, idx) => (
-              <tr key={comp._id}>
-                <td>{idx + 1}</td>
-                <td>{comp.houseId?.houseNumber || "N/A"}</td>
-                <td>{comp.memberId?.fullName || "Anonymous"}</td>
-                <td>{comp.description}</td>
-                <td>
-                  {comp.complainDate
-                    ? new Date(comp.complainDate).toLocaleDateString()
-                    : "-"}
-                </td>
-                <td>
-                  {comp.isResolved ? (
-                    <Badge bg="success">Resolved</Badge>
-                  ) : (
-                    <Badge bg="warning">Pending</Badge>
-                  )}
-                </td>
+        <div className="table-responsive shadow-sm rounded">
+          <table className="table table-striped table-hover align-middle mb-0 bg-white">
+            <thead className="table-primary text-primary">
+              <tr>
+                <th>ID</th>
+                <th>House ID</th>
+                <th>Member ID</th>
+                <th>Description</th>
+                <th>Date</th>
+                <th>Resolved</th>
+                <th>Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </Table>
+            </thead>
+            <tbody>
+              {complains.map((c) => (
+                <tr key={c.id}>
+                  <td className="fw-semibold">{c.id}</td>
+                  <td>{c.houseId}</td>
+                  <td>
+                    {c.memberId ?? <span className="text-muted">N/A</span>}
+                  </td>
+                  <td style={{ maxWidth: "300px", whiteSpace: "normal" }}>
+                    {c.description}
+                  </td>
+                  <td>{new Date(c.complainDate).toLocaleString()}</td>
+                  <td>
+                    {c.isResolved ? (
+                      <span className="text-success" title="Resolved">
+                        <i className="bi bi-check-circle-fill fs-5"></i>
+                      </span>
+                    ) : (
+                      <span className="text-danger" title="Not resolved">
+                        <i className="bi bi-x-circle-fill fs-5"></i>
+                      </span>
+                    )}
+                  </td>
+                  <td>
+                    <button
+                      className="btn btn-sm btn-info me-2 shadow-sm"
+                      title="Edit"
+                      onClick={() => handleEdit(c)}
+                    >
+                      <i className="bi bi-pencil"></i>
+                    </button>
+                    <button
+                      className="btn btn-sm btn-danger shadow-sm"
+                      title="Delete"
+                      onClick={() => handleDelete(c.id)}
+                    >
+                      <i className="bi bi-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
-    </Container>
+    </div>
   );
 };
 
-export default ComplainsPage;
+export default ComplainManager;

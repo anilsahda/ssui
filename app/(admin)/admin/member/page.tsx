@@ -1,296 +1,256 @@
 "use client";
+import React, { useEffect, useState } from "react";
+import "bootstrap/dist/css/bootstrap.min.css";
 
-import React, { useEffect, useState, FormEvent, useRef } from "react";
-import {
-  Container,
-  Form,
-  Button,
-  Table,
-  Spinner,
-  Alert,
-  Modal,
-  Badge,
-  OverlayTrigger,
-  Tooltip,
-} from "react-bootstrap";
-
-type House = {
-  _id: string;
-  houseNumber: string;
-};
-
-type AllocatedHouse = {
-  _id: string;
-  houseId?: House;
-};
-
-type Member = {
-  _id: string;
+interface Member {
+  id: number;
   fullName: string;
   email: string;
-  allocatedHouses: AllocatedHouse[];
-};
+  phoneNumber: string;
+}
 
-const MembersPage: React.FC = () => {
+const MembersManager: React.FC = () => {
   const [members, setMembers] = useState<Member[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [form, setForm] = useState<Partial<Member>>({});
+  const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
-  const [editId, setEditId] = useState<string | null>(null);
+  const API_BASE = "https://localhost:7293/api/Members";
 
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
-
-  const API_BASE = "http://localhost:5000/api/members";
-  const formRef = useRef<HTMLFormElement>(null);
+  useEffect(() => {
+    fetchMembers();
+  }, []);
 
   const fetchMembers = async () => {
     setLoading(true);
     setError(null);
     try {
       const res = await fetch(API_BASE);
-      if (!res.ok) throw new Error("Failed to fetch members");
-      const json = await res.json();
-      setMembers(json.data || []);
-    } catch (err: any) {
-      setError(err.message);
-      setMembers([]);
+      const data = await res.json();
+      setMembers(data);
+    } catch (err) {
+      console.error("Failed to fetch members", err);
+      setError("Failed to load members.");
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchMembers();
-  }, []);
-
-  const resetForm = () => {
-    setFullName("");
-    setEmail("");
-    setEditId(null);
-    setError(null);
-    setSuccessMsg(null);
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setSuccessMsg(null);
 
-    if (!fullName.trim() || !email.trim()) {
-      setError("Name and Email are required.");
+    if (!form.fullName || !form.email || !form.phoneNumber) {
+      setError("Please fill all fields.");
       return;
     }
 
-    const payload = { fullName: fullName.trim(), email: email.trim() };
-    const url = editId ? `${API_BASE}/${editId}` : API_BASE;
-    const method = editId ? "PUT" : "POST";
+    const payload = {
+      fullName: form.fullName,
+      email: form.email,
+      phoneNumber: form.phoneNumber,
+    };
 
     try {
-      const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Failed to save member");
+      if (isEditing && form.id !== undefined) {
+        await fetch(`${API_BASE}/${form.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...form }),
+        });
+      } else {
+        await fetch(API_BASE, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
       }
 
-      await fetchMembers();
       resetForm();
-      setSuccessMsg(
-        editId ? "Member updated successfully." : "Member added successfully."
-      );
-    } catch (err: any) {
-      setError(err.message);
+      fetchMembers();
+    } catch (err) {
+      console.error("Error saving member", err);
+      setError("Failed to save member.");
     }
   };
 
   const handleEdit = (member: Member) => {
-    setEditId(member._id);
-    setFullName(member.fullName);
-    setEmail(member.email);
-    formRef.current?.scrollIntoView({ behavior: "smooth" });
+    setForm(member);
+    setIsEditing(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const confirmDelete = (id: string) => {
-    setDeleteId(id);
-    setShowDeleteModal(true);
-  };
+  const handleDelete = async (id: number) => {
+    if (!window.confirm("Are you sure you want to delete this member?")) return;
 
-  const handleDelete = async () => {
-    if (!deleteId) return;
-    setError(null);
     try {
-      const res = await fetch(`${API_BASE}/${deleteId}`, { method: "DELETE" });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Failed to delete member");
-      }
-      await fetchMembers();
-      setSuccessMsg("Member deleted successfully.");
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setDeleteId(null);
-      setShowDeleteModal(false);
+      await fetch(`${API_BASE}/${id}`, {
+        method: "DELETE",
+      });
+      fetchMembers();
+    } catch (err) {
+      console.error("Delete failed", err);
+      setError("Failed to delete member.");
     }
   };
 
+  const resetForm = () => {
+    setForm({});
+    setIsEditing(false);
+    setError(null);
+  };
+
   return (
-    <Container className="my-5">
-      <h2 className="mb-4 text-center">👤 Members Management</h2>
+    <div className="container py-4">
+      <div className="mb-4">
+        <h2 className="text-center"> Member Management</h2>
+      </div>
 
-      {error && (
-        <Alert variant="danger" onClose={() => setError(null)} dismissible>
-          {error}
-        </Alert>
-      )}
-
-      {successMsg && (
-        <Alert
-          variant="success"
-          onClose={() => setSuccessMsg(null)}
-          dismissible
-        >
-          {successMsg}
-        </Alert>
-      )}
-
-      <Form
+      <form
         onSubmit={handleSubmit}
-        ref={formRef}
-        className="bg-light p-4 rounded shadow-sm mb-5"
+        className="mb-4 p-4 border rounded bg-light shadow-sm"
       >
-        <h5>{editId ? "Edit Member" : "Add New Member"}</h5>
-        <Form.Group className="mb-3">
-          <Form.Label>Full Name</Form.Label>
-          <Form.Control
-            type="text"
-            value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
-            placeholder="Enter full name"
-            required
-          />
-        </Form.Group>
+        <h5 className="mb-3">
+          {isEditing ? " Edit Member" : " Add New Member"}
+        </h5>
 
-        <Form.Group className="mb-3">
-          <Form.Label>Email address</Form.Label>
-          <Form.Control
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="e.g. user@example.com"
-            required
-          />
-        </Form.Group>
+        {error && (
+          <div className="alert alert-danger" role="alert">
+            {error}
+          </div>
+        )}
 
-        <div className="text-end">
-          <Button variant="primary" type="submit">
-            {editId ? "Update Member" : "Add Member"}
-          </Button>
-          {editId && (
-            <Button
-              variant="outline-secondary"
-              className="ms-2"
+        <div className="row g-3">
+          <div className="col-md-4">
+            <label htmlFor="fullName" className="form-label">
+              Full Name
+            </label>
+            <input
+              type="text"
+              id="fullName"
+              name="fullName"
+              className="form-control"
+              value={form.fullName ?? ""}
+              onChange={handleChange}
+              disabled={loading}
+            />
+          </div>
+          <div className="col-md-4">
+            <label htmlFor="email" className="form-label">
+              Email
+            </label>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              className="form-control"
+              value={form.email ?? ""}
+              onChange={handleChange}
+              disabled={loading}
+            />
+          </div>
+          <div className="col-md-4">
+            <label htmlFor="phoneNumber" className="form-label">
+              Phone Number
+            </label>
+            <input
+              type="text"
+              id="phoneNumber"
+              name="phoneNumber"
+              className="form-control"
+              value={form.phoneNumber ?? ""}
+              onChange={handleChange}
+              disabled={loading}
+            />
+          </div>
+        </div>
+
+        <div className="mt-4">
+          <button type="submit" className="btn btn-success me-2">
+            <i
+              className={`bi ${
+                isEditing ? "bi-pencil-square" : "bi-plus-circle"
+              }`}
+            ></i>{" "}
+            {isEditing ? "Update Member" : "Add Member"}
+          </button>
+          {isEditing && (
+            <button
+              type="button"
+              className="btn btn-secondary"
               onClick={resetForm}
             >
-              Cancel
-            </Button>
+              <i className="bi bi-x-circle"></i> Cancel
+            </button>
           )}
         </div>
-      </Form>
+      </form>
 
       {loading ? (
-        <div className="text-center">
-          <Spinner animation="border" />
+        <div className="text-center my-5">
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+          <p className="mt-2">Fetching members...</p>
         </div>
-      ) : members.length === 0 ? (
-        <Alert variant="info">No members found.</Alert>
       ) : (
-        <Table bordered hover responsive className="shadow-sm">
-          <thead className="table-light">
-            <tr>
-              <th>#</th>
-              <th>Full Name</th>
-              <th>Email</th>
-              <th>Allocated Houses</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {members.map((m, index) => (
-              <tr key={m._id}>
-                <td>{index + 1}</td>
-                <td>{m.fullName}</td>
-                <td>
-                  <OverlayTrigger
-                    placement="top"
-                    overlay={<Tooltip>{m.email}</Tooltip>}
-                  >
-                    <span>{m.email}</span>
-                  </OverlayTrigger>
-                </td>
-                <td>
-                  {m.allocatedHouses && m.allocatedHouses.length > 0 ? (
-                    m.allocatedHouses.map((ah) => (
-                      <Badge bg="info" className="me-1" key={ah._id}>
-                        {ah.houseId?.houseNumber ?? "?"}
-                      </Badge>
-                    ))
-                  ) : (
-                    <Badge bg="secondary">None</Badge>
-                  )}
-                </td>
-                <td>
-                  <Button
-                    variant="outline-primary"
-                    size="sm"
-                    className="me-2"
-                    onClick={() => handleEdit(m)}
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    variant="outline-danger"
-                    size="sm"
-                    onClick={() => confirmDelete(m._id)}
-                  >
-                    Delete
-                  </Button>
-                </td>
+        <div className="table-responsive">
+          <table className="table table-hover table-bordered align-middle">
+            <thead className="table-dark">
+              <tr>
+                <th>#ID</th>
+                <th>Full Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th className="text-center" style={{ width: "160px" }}>
+                  Actions
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </Table>
+            </thead>
+            <tbody>
+              {members.map((m) => (
+                <tr key={m.id}>
+                  <td>
+                    <span className="badge bg-secondary">{m.id}</span>
+                  </td>
+                  <td>{m.fullName}</td>
+                  <td>{m.email}</td>
+                  <td>{m.phoneNumber}</td>
+                  <td className="text-center">
+                    <button
+                      className="btn btn-sm btn-outline-primary me-2"
+                      onClick={() => handleEdit(m)}
+                    >
+                      <i className="bi bi-pencil-fill"></i>
+                    </button>
+                    <button
+                      className="btn btn-sm btn-outline-danger"
+                      onClick={() => handleDelete(m.id)}
+                    >
+                      <i className="bi bi-trash-fill"></i>
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {members.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="text-center text-muted">
+                    No members found.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       )}
-
-      {/* Delete Confirmation Modal */}
-      <Modal
-        show={showDeleteModal}
-        onHide={() => setShowDeleteModal(false)}
-        centered
-      >
-        <Modal.Header closeButton>
-          <Modal.Title>Confirm Deletion</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>Are you sure you want to delete this member?</Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
-            Cancel
-          </Button>
-          <Button variant="danger" onClick={handleDelete}>
-            Delete
-          </Button>
-        </Modal.Footer>
-      </Modal>
-    </Container>
+    </div>
   );
 };
 
-export default MembersPage;
+export default MembersManager;
