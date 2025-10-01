@@ -8,11 +8,17 @@ function Page() {
   ]);
 
   const [returnedBooks, setReturnedBooks] = useState([
-    { id: 1, name: "Machine Learning", issueDate: "2025-07-20", days: 15, returnDate: "2025-08-04" },
+    {
+      id: 1,
+      name: "Machine Learning",
+      issueDate: "2025-07-20",
+      days: 15,
+      returnDate: "2025-08-04",
+    },
   ]);
 
   // Remove ": any" — JS doesn't support types
-  const handleReturn = (book :any ) => {
+  const handleReturn = (book: any) => {
     const today = new Date().toISOString().split("T")[0];
     setReturnedBooks([...returnedBooks, { ...book, returnDate: today }]);
     setBorrowedBooks(borrowedBooks.filter((b) => b.id !== book.id));
@@ -41,7 +47,10 @@ function Page() {
                 <td>{book.issueDate}</td>
                 <td>{book.days}</td>
                 <td>
-                  <button className="btn btn-primary btn-sm" onClick={() => handleReturn(book)}>
+                  <button
+                    className="btn btn-primary btn-sm"
+                    onClick={() => handleReturn(book)}
+                  >
                     Return
                   </button>
                 </td>
@@ -49,7 +58,9 @@ function Page() {
             ))}
             {borrowedBooks.length === 0 && (
               <tr>
-                <td colSpan={4} className="text-center">No borrowed books</td>
+                <td colSpan={4} className="text-center">
+                  No borrowed books
+                </td>
               </tr>
             )}
           </tbody>
@@ -83,7 +94,9 @@ function Page() {
             ))}
             {returnedBooks.length === 0 && (
               <tr>
-                <td colSpan={5} className="text-center">No returned books</td>
+                <td colSpan={5} className="text-center">
+                  No returned books
+                </td>
               </tr>
             )}
           </tbody>

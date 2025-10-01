@@ -29,7 +29,10 @@ export default function Register() {
 
     try {
       // Assuming your API endpoint for registration is /auths/register
-      const res = await API.post("/auths/register", form);
+      const res = await API.post(
+        "https://localhost:7024/api/UserRoles/AssignRole",
+        form
+      );
 
       if (res.data.user && res.data.token) {
         login(res.data.user, res.data.token);
