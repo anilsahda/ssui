@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 type Student = {
   id: number;
@@ -23,14 +25,15 @@ const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:7293";
 export default function StudentsPage() {
   const [students, setStudents] = useState<Student[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editId, setEditId] = useState<number | null>(null);
+  const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
+
   const [formData, setFormData] = useState<Omit<Student, "id" | "branch">>({
     studentName: "",
     email: "",
     branchId: 0,
   });
-  const [editId, setEditId] = useState<number | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     loadAll();
@@ -39,29 +42,36 @@ export default function StudentsPage() {
   const loadAll = async () => {
     try {
       setLoading(true);
-      const [studentRes, branchRes] = await Promise.all([
+      const [studentsRes, branchesRes] = await Promise.all([
         fetch(`${API_BASE}/api/Student`),
         fetch(`${API_BASE}/api/Branch`),
       ]);
-
-      if (!studentRes.ok || !branchRes.ok) {
-        throw new Error("Failed to fetch students or branches.");
+      if (!studentsRes.ok || !branchesRes.ok) {
+        throw new Error("Failed to fetch data");
       }
 
       const [studentsData, branchesData] = await Promise.all([
-        studentRes.json(),
-        branchRes.json(),
+        studentsRes.json(),
+        branchesRes.json(),
       ]);
 
       setStudents(studentsData);
       setBranches(branchesData);
-      setError(null);
     } catch (err: any) {
-      console.error(err);
-      setError(err.message || "Error loading data");
+      toast.error(err.message || "Error loading data");
     } finally {
       setLoading(false);
     }
+  };
+
+  const validate = () => {
+    const errors: { [key: string]: string } = {};
+    if (!formData.studentName.trim()) errors.studentName = "Name is required";
+    if (!formData.email.trim()) errors.email = "Email is required";
+    if (!formData.email.includes("@")) errors.email = "Invalid email";
+    if (!formData.branchId) errors.branchId = "Select a branch";
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const handleChange = (
@@ -74,8 +84,19 @@ export default function StudentsPage() {
     }));
   };
 
+  const resetForm = () => {
+    setEditId(null);
+    setFormErrors({});
+    setFormData({ studentName: "", email: "", branchId: 0 });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validate()) {
+      toast.warning("Please fix form errors.");
+      return;
+    }
+
     try {
       const method = editId ? "PUT" : "POST";
       const url = editId
@@ -92,14 +113,14 @@ export default function StudentsPage() {
 
       if (!res.ok) {
         const text = await res.text();
-        throw new Error(`Server responded with ${res.status}: ${text}`);
+        throw new Error(`Server responded: ${res.status} - ${text}`);
       }
 
-      setFormData({ studentName: "", email: "", branchId: 0 });
-      setEditId(null);
+      toast.success(`Student ${editId ? "updated" : "created"} successfully.`);
+      resetForm();
       await loadAll();
     } catch (err: any) {
-      alert("Failed to save: " + err.message);
+      toast.error("Save failed: " + err.message);
     }
   };
 
@@ -110,153 +131,164 @@ export default function StudentsPage() {
       email: student.email,
       branchId: student.branchId,
     });
+    setFormErrors({});
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleDelete = async (id: number) => {
     if (!confirm("Are you sure you want to delete this student?")) return;
-
     try {
       const res = await fetch(`${API_BASE}/api/Student/${id}`, {
         method: "DELETE",
       });
 
-      if (!res.ok) {
-        throw new Error(`Delete failed: ${res.status}`);
-      }
+      if (!res.ok) throw new Error(`Delete failed: ${res.status}`);
 
-      await loadAll();
+      toast.success("Student deleted");
+      setStudents((prev) => prev.filter((s) => s.id !== id));
     } catch (err: any) {
-      alert("Delete failed: " + err.message);
+      toast.error("Delete failed: " + err.message);
     }
   };
 
   return (
-    <div className="container mt-5">
-      <h2>Students</h2>
+    <div className="max-w-5xl mx-auto p-6">
+      <ToastContainer />
+      <h2 className="text-3xl font-bold mb-6 text-center">Manage Students</h2>
 
-      {error && <div className="alert alert-danger">{error}</div>}
+      <div className="bg-white shadow rounded-lg p-6 mb-8">
+        <h3 className="text-xl font-semibold mb-4">
+          {editId ? `Edit Student #${editId}` : "Add New Student"}
+        </h3>
+        <form
+          onSubmit={handleSubmit}
+          className="grid grid-cols-1 md:grid-cols-2 gap-4"
+        >
+          <div>
+            <label className="block mb-1 font-medium">Name</label>
+            <input
+              type="text"
+              name="studentName"
+              value={formData.studentName}
+              onChange={handleChange}
+              className={`w-full border px-3 py-2 rounded ${
+                formErrors.studentName ? "border-red-500" : "border-gray-300"
+              }`}
+            />
+            {formErrors.studentName && (
+              <p className="text-red-500 text-sm">{formErrors.studentName}</p>
+            )}
+          </div>
 
-      <div className="card mb-4">
-        <div className="card-header">
-          {editId ? `Edit Student #${editId}` : "Add Student"}
-        </div>
-        <div className="card-body">
-          <form onSubmit={handleSubmit}>
-            <div className="mb-3">
-              <label htmlFor="studentName" className="form-label">
-                Student Name
-              </label>
-              <input
-                type="text"
-                name="studentName"
-                className="form-control"
-                value={formData.studentName}
-                onChange={handleChange}
-                required
-              />
-            </div>
+          <div>
+            <label className="block mb-1 font-medium">Email</label>
+            <input
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              className={`w-full border px-3 py-2 rounded ${
+                formErrors.email ? "border-red-500" : "border-gray-300"
+              }`}
+            />
+            {formErrors.email && (
+              <p className="text-red-500 text-sm">{formErrors.email}</p>
+            )}
+          </div>
 
-            <div className="mb-3">
-              <label htmlFor="email" className="form-label">
-                Email
-              </label>
-              <input
-                type="email"
-                name="email"
-                className="form-control"
-                value={formData.email}
-                onChange={handleChange}
-                required
-              />
-            </div>
-
-            <div className="mb-3">
-              <label htmlFor="branchId" className="form-label">
-                Branch
-              </label>
-              <select
-                name="branchId"
-                className="form-select"
-                value={formData.branchId}
-                onChange={handleChange}
-                required
-              >
-                <option value={0} disabled>
-                  Select Branch
+          <div>
+            <label className="block mb-1 font-medium">Branch</label>
+            <select
+              name="branchId"
+              value={formData.branchId}
+              onChange={handleChange}
+              className={`w-full border px-3 py-2 rounded ${
+                formErrors.branchId ? "border-red-500" : "border-gray-300"
+              }`}
+            >
+              <option value={0}>Select Branch</option>
+              {branches.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name}
                 </option>
-                {branches.map((branch) => (
-                  <option key={branch.id} value={branch.id}>
-                    {branch.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+              ))}
+            </select>
+            {formErrors.branchId && (
+              <p className="text-red-500 text-sm">{formErrors.branchId}</p>
+            )}
+          </div>
 
-            <button type="submit" className="btn btn-primary me-2">
+          <div className="flex items-end gap-4">
+            <button
+              type="submit"
+              className="bg-blue-600 text-white px-5 py-2 rounded hover:bg-blue-700"
+            >
               {editId ? "Update" : "Save"}
             </button>
             {editId && (
               <button
                 type="button"
-                className="btn btn-secondary"
-                onClick={() => {
-                  setEditId(null);
-                  setFormData({ studentName: "", email: "", branchId: 0 });
-                }}
+                onClick={resetForm}
+                className="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500"
               >
                 Cancel
               </button>
             )}
-          </form>
-        </div>
+          </div>
+        </form>
       </div>
 
+      {/* Student Table */}
       {loading ? (
-        <p>Loading...</p>
+        <div className="text-center text-gray-500">Loading students...</div>
       ) : (
-        <table className="table table-bordered table-striped">
-          <thead className="table-dark">
-            <tr>
-              <th>ID</th>
-              <th>Name</th>
-              <th>Email</th>
-              <th>Branch</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {students.length === 0 ? (
+        <div className="overflow-x-auto">
+          <table className="min-w-full table-auto border border-gray-300 text-sm">
+            <thead className="bg-gray-100">
               <tr>
-                <td colSpan={5} className="text-center">
-                  No students found.
-                </td>
+                <th className="px-4 py-2 border">ID</th>
+                <th className="px-4 py-2 border">Name</th>
+                <th className="px-4 py-2 border">Email</th>
+                <th className="px-4 py-2 border">Branch</th>
+                <th className="px-4 py-2 border">Actions</th>
               </tr>
-            ) : (
-              students.map((stud) => (
-                <tr key={stud.id}>
-                  <td>{stud.id}</td>
-                  <td>{stud.studentName}</td>
-                  <td>{stud.email}</td>
-                  <td>{stud.branch?.name || "N/A"}</td>
-                  <td>
-                    <button
-                      className="btn btn-sm btn-primary me-2"
-                      onClick={() => handleEdit(stud)}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      className="btn btn-sm btn-danger"
-                      onClick={() => handleDelete(stud.id)}
-                    >
-                      Delete
-                    </button>
+            </thead>
+            <tbody>
+              {students.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="text-center py-4 text-gray-500">
+                    No students found.
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                students.map((s) => (
+                  <tr key={s.id} className="text-center">
+                    <td className="px-4 py-2 border">{s.id}</td>
+                    <td className="px-4 py-2 border">{s.studentName}</td>
+                    <td className="px-4 py-2 border">{s.email}</td>
+                    <td className="px-4 py-2 border">
+                      {s.branch?.name || "N/A"}
+                    </td>
+                    <td className="px-4 py-2 border flex justify-center gap-2">
+                      <button
+                        onClick={() => handleEdit(s)}
+                        className="bg-green-500 text-white px-3 py-1 rounded text-xs hover:bg-green-600"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(s.id)}
+                        className="bg-red-500 text-white px-3 py-1 rounded text-xs hover:bg-red-600"
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );

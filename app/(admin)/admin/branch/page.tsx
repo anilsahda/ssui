@@ -1,5 +1,8 @@
 "use client";
+
 import { useEffect, useState } from "react";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 type Branch = {
   id: number;
@@ -20,16 +23,20 @@ export default function BranchesPage() {
   const [editId, setEditId] = useState<number | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  // Load branches on page load
-  useEffect(() => {
-    loadBranches();
-  }, []);
+  const resetForm = () => {
+    setFormData({ name: "", location: "" });
+    setEditId(null);
+  };
 
+  // Load branches
   const loadBranches = async () => {
     try {
       setLoading(true);
+      setError(null);
       const res = await fetch(`${API_BASE}/api/Branch`);
+      if (!res.ok) throw new Error("Failed to fetch branches");
       const data = await res.json();
       setBranches(data);
     } catch (err) {
@@ -39,6 +46,10 @@ export default function BranchesPage() {
     }
   };
 
+  useEffect(() => {
+    loadBranches();
+  }, []);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -47,149 +58,188 @@ export default function BranchesPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const url = editId
-      ? `${API_BASE}/api/Branch/${editId}`
-      : `${API_BASE}/api/Branch`;
-    const method = editId ? "PUT" : "POST";
-
-    const res = await fetch(url, {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(formData),
-    });
-
-    if (!res.ok) {
-      alert("Failed to save branch.");
+    if (!formData.name.trim() || !formData.location.trim()) {
+      toast.warning("Please fill in all fields.");
       return;
     }
 
-    setFormData({ name: "", location: "" });
-    setEditId(null);
-    await loadBranches();
+    try {
+      setSubmitting(true);
+      const url = editId
+        ? `${API_BASE}/api/Branch/${editId}`
+        : `${API_BASE}/api/Branch`;
+      const method = editId ? "PUT" : "POST";
+
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      if (!res.ok) throw new Error("Failed to save branch");
+
+      toast.success(editId ? "Branch updated!" : "Branch created!");
+      resetForm();
+      await loadBranches();
+    } catch {
+      toast.error("Error submitting branch.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleEdit = (branch: Branch) => {
     setFormData({ name: branch.name, location: branch.location });
     setEditId(branch.id);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this branch?")) return;
+    const confirmed = confirm("Are you sure you want to delete this branch?");
+    if (!confirmed) return;
 
-    const res = await fetch(`${API_BASE}/api/Branch/${id}`, {
-      method: "DELETE",
-    });
-
-    if (!res.ok) {
-      alert("Delete failed.");
-      return;
+    try {
+      const res = await fetch(`${API_BASE}/api/Branch/${id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Delete failed");
+      toast.success("Branch deleted.");
+      await loadBranches();
+    } catch {
+      toast.error("Failed to delete branch.");
     }
-
-    await loadBranches();
   };
 
   return (
-    <div className="container mt-5">
-      <h2 className="mb-4">Branch Manager</h2>
+    <div className="max-w-4xl mx-auto p-6">
+      <ToastContainer />
+      <h2 className="text-3xl font-bold text-center mb-6">Branch Manager</h2>
 
       {/* FORM */}
-      <div className="card mb-4">
-        <div className="card-header">
-          {editId ? "Edit Branch" : "Add Branch"}
-        </div>
-        <div className="card-body">
-          <form onSubmit={handleSubmit}>
-            <div className="mb-3">
-              <label className="form-label">Branch Name</label>
-              <input
-                type="text"
-                name="name"
-                className="form-control"
-                value={formData.name}
-                onChange={handleChange}
-                required
-              />
-            </div>
+      <div className="bg-white shadow rounded-lg p-6 mb-8">
+        <h3 className="text-xl font-semibold mb-4">
+          {editId ? "Edit Branch" : "Add New Branch"}
+        </h3>
+        <form
+          onSubmit={handleSubmit}
+          className="grid grid-cols-1 md:grid-cols-2 gap-4"
+          noValidate
+        >
+          <div>
+            <label htmlFor="name" className="block text-sm font-medium mb-1">
+              Branch Name
+            </label>
+            <input
+              type="text"
+              id="name"
+              name="name"
+              className="w-full border px-3 py-2 rounded"
+              value={formData.name}
+              onChange={handleChange}
+              required
+              disabled={submitting}
+              autoComplete="off"
+            />
+          </div>
 
-            <div className="mb-3">
-              <label className="form-label">Location</label>
-              <input
-                type="text"
-                name="location"
-                className="form-control"
-                value={formData.location}
-                onChange={handleChange}
-                required
-              />
-            </div>
+          <div>
+            <label
+              htmlFor="location"
+              className="block text-sm font-medium mb-1"
+            >
+              Location
+            </label>
+            <input
+              type="text"
+              id="location"
+              name="location"
+              className="w-full border px-3 py-2 rounded"
+              value={formData.location}
+              onChange={handleChange}
+              required
+              disabled={submitting}
+              autoComplete="off"
+            />
+          </div>
 
-            <button type="submit" className="btn btn-primary me-2">
+          <div className="md:col-span-2 flex items-center gap-4 mt-4">
+            <button
+              type="submit"
+              disabled={submitting}
+              className={`bg-blue-600 text-white px-5 py-2 rounded hover:bg-blue-700 ${
+                submitting ? "opacity-50 cursor-not-allowed" : ""
+              }`}
+            >
               {editId ? "Update" : "Create"}
             </button>
             {editId && (
               <button
                 type="button"
-                className="btn btn-secondary"
-                onClick={() => {
-                  setEditId(null);
-                  setFormData({ name: "", location: "" });
-                }}
+                className="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500"
+                onClick={resetForm}
+                disabled={submitting}
               >
                 Cancel
               </button>
             )}
-          </form>
-        </div>
+          </div>
+        </form>
       </div>
 
       {/* TABLE */}
-      <h4>All Branches</h4>
-      {error && <div className="alert alert-danger">{error}</div>}
-      {loading ? (
-        <p>Loading branches...</p>
-      ) : (
-        <table className="table table-bordered table-striped">
-          <thead className="table-dark">
-            <tr>
-              <th>ID</th>
-              <th>Name</th>
-              <th>Location</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {branches.length > 0 ? (
-              branches.map((branch) => (
-                <tr key={branch.id}>
-                  <td>{branch.id}</td>
-                  <td>{branch.name}</td>
-                  <td>{branch.location}</td>
-                  <td>
-                    <button
-                      className="btn btn-sm btn-primary me-2"
-                      onClick={() => handleEdit(branch)}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      className="btn btn-sm btn-danger"
-                      onClick={() => handleDelete(branch.id)}
-                    >
-                      Delete
-                    </button>
+      <div className="overflow-x-auto">
+        <h4 className="text-xl font-semibold mb-3">Branch List</h4>
+        {error && <div className="text-red-600 mb-4">{error}</div>}
+        {loading ? (
+          <div className="text-gray-500">Loading branches...</div>
+        ) : (
+          <table className="w-full table-auto border border-gray-300 shadow-sm text-sm">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="border px-4 py-2">ID</th>
+                <th className="border px-4 py-2">Name</th>
+                <th className="border px-4 py-2">Location</th>
+                <th className="border px-4 py-2">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {branches.length > 0 ? (
+                branches.map((branch) => (
+                  <tr key={branch.id} className="text-center">
+                    <td className="border px-4 py-2">{branch.id}</td>
+                    <td className="border px-4 py-2">{branch.name}</td>
+                    <td className="border px-4 py-2">{branch.location}</td>
+                    <td className="border px-4 py-2 flex justify-center gap-2">
+                      <button
+                        onClick={() => handleEdit(branch)}
+                        className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs"
+                        aria-label={`Edit branch ${branch.name}`}
+                        disabled={submitting}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(branch.id)}
+                        className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs"
+                        aria-label={`Delete branch ${branch.name}`}
+                        disabled={submitting}
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={4} className="text-center text-gray-500 py-4">
+                    No branches found.
                   </td>
                 </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={4} className="text-center text-muted">
-                  No branches available.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      )}
+              )}
+            </tbody>
+          </table>
+        )}
+      </div>
     </div>
   );
 }
