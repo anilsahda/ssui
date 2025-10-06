@@ -17,7 +17,7 @@ import {
   FaUndo,
   FaMoneyBillWave,
 } from "react-icons/fa";
-import { FiSearch, FiBell, FiMoon } from "react-icons/fi";
+import { FiSearch, FiBell, FiMoon, FiSun } from "react-icons/fi";
 import { BsFileEarmarkPlus, BsFileEarmarkText } from "react-icons/bs";
 import { TbReportAnalytics } from "react-icons/tb";
 import { RiBookOpenLine } from "react-icons/ri";
@@ -29,10 +29,15 @@ export default function AdminLayout({
 }) {
   const pathname = usePathname();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(true);
 
   useEffect(() => {
     import("bootstrap/dist/js/bootstrap.bundle.min.js");
   }, []);
+
+  const toggleTheme = () => {
+    setIsDarkMode(!isDarkMode);
+  };
 
   const navItems = [
     {
@@ -105,11 +110,17 @@ export default function AdminLayout({
 
   return (
     <div
-      className="d-flex flex-column min-vh-100 bg-light"
+      className={`d-flex flex-column min-vh-100 ${
+        isDarkMode ? "bg-dark text-light" : "bg-light text-dark"
+      }`}
       style={{ fontFamily: "Inter, sans-serif" }}
     >
       {/* Header */}
-      <header className="d-flex justify-content-between align-items-center px-4 py-2 bg-white border-bottom shadow-sm sticky-top">
+      <header
+        className={`d-flex justify-content-between align-items-center px-4 py-2 ${
+          isDarkMode ? "bg-secondary" : "bg-white"
+        } border-bottom shadow-sm sticky-top`}
+      >
         <h1 className="m-0 text-primary fs-4 fw-bold">Digital Library Admin</h1>
 
         <div className="d-none d-md-block w-50 px-3">
@@ -124,9 +135,14 @@ export default function AdminLayout({
         </div>
 
         <div className="d-flex align-items-center gap-3">
-          <button className="btn btn-light rounded-circle p-2">
-            <FiMoon size={18} />
+          <button
+            className="btn btn-light rounded-circle p-2"
+            onClick={toggleTheme}
+            title="Toggle Theme"
+          >
+            {isDarkMode ? <FiSun size={18} /> : <FiMoon size={18} />}
           </button>
+
           <button className="btn btn-light rounded-circle p-2">
             <MdHelpOutline size={18} />
           </button>
@@ -194,16 +210,18 @@ export default function AdminLayout({
         </div>
       </header>
 
-      {/* Sidebar + Content */}
+      {/* Sidebar + Main */}
       <div className="d-flex flex-grow-1">
         {/* Sidebar */}
         <aside
           className="d-flex flex-column p-3 shadow-sm"
           style={{
-            width: isSidebarCollapsed ? "70px" : "230px",
-            background: "linear-gradient(180deg, #1e293b, #0f172a)",
-            color: "#f1f5f9",
-            transition: "width 0.3s",
+            width: isSidebarCollapsed ? "72px" : "240px",
+            background: isDarkMode
+              ? "linear-gradient(180deg, #1e293b, #0f172a)"
+              : "#f8f9fa",
+            color: isDarkMode ? "#f1f5f9" : "#1f2937",
+            transition: "width 0.3s ease",
           }}
         >
           <div className="d-flex justify-content-end mb-3">
@@ -225,9 +243,14 @@ export default function AdminLayout({
                     className={`nav-link d-flex align-items-center gap-2 sidebar-link ${
                       pathname === item.href
                         ? "active bg-info text-white"
-                        : "text-light"
+                        : isDarkMode
+                        ? "text-light"
+                        : "text-dark"
                     }`}
-                    style={{ fontSize: "0.9rem" }}
+                    style={{
+                      fontSize: "0.9rem",
+                      transition: "background 0.2s ease",
+                    }}
                   >
                     <span className={item.color}>{item.icon}</span>
                     {!isSidebarCollapsed && item.label}
@@ -239,13 +262,15 @@ export default function AdminLayout({
 
           <div className="mt-auto pt-3 border-top text-center">
             {!isSidebarCollapsed && (
-              <small style={{ color: "#94a3b8" }}>© 2025 SS App</small>
+              <small style={{ color: isDarkMode ? "#94a3b8" : "#6c757d" }}>
+                © {new Date().getFullYear()} SS App
+              </small>
             )}
           </div>
         </aside>
 
         {/* Main Content */}
-        <main className="flex-grow-1 p-4 bg-light">{children}</main>
+        <main className="flex-grow-1 p-4">{children}</main>
       </div>
     </div>
   );

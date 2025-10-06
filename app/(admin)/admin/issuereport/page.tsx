@@ -9,15 +9,14 @@ type IssueReport = {
   issueBookId: number;
   reportDate: string;
   message: string;
-  issueBook?: { id: number }; // optional extra data
+  issueBook?: { id: number };
 };
 
 type IssueBook = {
   id: number;
-  // you can expand with more fields (e.g. book title, student) if needed
 };
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:7293";
+const API_BASE = "https://localhost:7293";
 
 const getTodayISO = () => new Date().toISOString().split("T")[0];
 
@@ -54,10 +53,16 @@ export default function IssueReportsPage() {
         throw new Error("Failed to fetch data");
       }
 
-      const [reportsData, issueBooksData] = await Promise.all([
+      const [reportsData, issueBooksDataRaw] = await Promise.all([
         reportsRes.json(),
         issueBooksRes.json(),
       ]);
+
+      // ✅ Validate data from API
+      console.log("issueBooksDataRaw:", issueBooksDataRaw); // remove later
+      const issueBooksData = Array.isArray(issueBooksDataRaw)
+        ? issueBooksDataRaw
+        : [];
 
       setReports(reportsData);
       setIssueBooks(issueBooksData);
@@ -207,11 +212,12 @@ export default function IssueReportsPage() {
               disabled={submitting}
             >
               <option value="">Select Issue Book</option>
-              {issueBooks.map((ib) => (
-                <option key={ib.id} value={ib.id}>
-                  #{ib.id}
-                </option>
-              ))}
+              {Array.isArray(issueBooks) &&
+                issueBooks.map((ib) => (
+                  <option key={ib.id} value={ib.id}>
+                    #{ib.id}
+                  </option>
+                ))}
             </select>
             {formErrors.issueBookId && (
               <p className="text-red-500 text-sm mt-1">

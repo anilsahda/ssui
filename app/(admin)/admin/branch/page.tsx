@@ -12,7 +12,7 @@ type Branch = {
 
 type BranchDto = Omit<Branch, "id">;
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:7293";
+const API_BASE = "https://localhost:7293";
 
 export default function BranchesPage() {
   const [branches, setBranches] = useState<Branch[]>([]);

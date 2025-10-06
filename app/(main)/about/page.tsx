@@ -4,6 +4,7 @@ import React, { useEffect } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import AOS from "aos";
 import "aos/dist/aos.css";
+
 import {
   FaBookReader,
   FaUsers,
@@ -21,32 +22,38 @@ export default function AboutPage() {
 
   const features = [
     {
-      icon: <FaBookReader size={32} className="text-primary" />,
+      icon: <FaBookReader size={28} />,
+      color: "primary",
       title: "Centralized Resources",
       desc: "Access books, journals, and research materials — all in one intuitive platform.",
     },
     {
-      icon: <FaUsers size={32} className="text-success" />,
+      icon: <FaUsers size={28} />,
+      color: "success",
       title: "Student-Centric Design",
       desc: "Crafted for seamless use by students, educators, and administrators.",
     },
     {
-      icon: <FaLaptopCode size={32} className="text-warning" />,
+      icon: <FaLaptopCode size={28} />,
+      color: "warning",
       title: "Powered by Tech",
-      desc: "Built on modern tech stack for speed, scalability, and performance.",
+      desc: "Built on a modern tech stack for speed, scalability, and performance.",
     },
     {
-      icon: <FaCheckCircle size={32} className="text-info" />,
+      icon: <FaCheckCircle size={28} />,
+      color: "info",
       title: "Smart Management",
       desc: "Advanced dashboards, analytics, and automated workflows.",
     },
     {
-      icon: <FaRocket size={32} className="text-danger" />,
+      icon: <FaRocket size={28} />,
+      color: "danger",
       title: "Lightning Performance",
       desc: "Instant search, real-time tracking, and zero-lag interfaces.",
     },
     {
-      icon: <FaShieldAlt size={32} className="text-secondary" />,
+      icon: <FaShieldAlt size={28} />,
+      color: "secondary",
       title: "Built-In Security",
       desc: "Role-based access and data protection baked into the system.",
     },
@@ -60,7 +67,9 @@ export default function AboutPage() {
       {/* Hero */}
       <section
         className="py-5 text-center text-white"
-        style={{ background: "linear-gradient(to right, #0d6efd, #6610f2)" }}
+        style={{
+          background: "linear-gradient(to right, #0d6efd, #6610f2)",
+        }}
       >
         <div className="container">
           <h1 className="display-4 fw-bold mb-3" data-aos="fade-up">
@@ -90,15 +99,20 @@ export default function AboutPage() {
           </div>
 
           <div className="row g-4">
-            {features.map((feature, i) => (
+            {features.map((feature, index) => (
               <div
-                key={i}
-                className="col-md-4"
+                key={index}
+                className="col-sm-6 col-lg-4"
                 data-aos="zoom-in"
-                data-aos-delay={i * 100}
+                data-aos-delay={index * 100}
               >
-                <div className="bg-white p-4 rounded-4 shadow-sm h-100 border-start border-4 border-primary transition">
-                  <div className="mb-3">{feature.icon}</div>
+                <div className="bg-white p-4 rounded-4 shadow-sm h-100 position-relative transition border-start border-4 border-primary hover-shadow">
+                  <div
+                    className={`icon-circle bg-${feature.color} text-white d-flex align-items-center justify-content-center mb-3`}
+                    style={{ width: 48, height: 48, borderRadius: "50%" }}
+                  >
+                    {feature.icon}
+                  </div>
                   <h5 className="fw-semibold">{feature.title}</h5>
                   <p className="text-muted">{feature.desc}</p>
                 </div>
@@ -108,7 +122,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Image and Info Section */}
+      {/* Info Section with Image */}
       <section className="py-5 bg-white">
         <div className="container">
           <div className="row align-items-center g-5">
@@ -122,9 +136,8 @@ export default function AboutPage() {
             <div className="col-md-6" data-aos="fade-left">
               <h3 className="fw-bold mb-3">Bridging Students with Knowledge</h3>
               <p className="text-muted">
-                We’re on a mission to empower educational institutions with an
-                intelligent, robust, and user-friendly library management
-                system.
+                We empower educational institutions with an intelligent, robust,
+                and user-friendly library management system.
               </p>
               <ul className="list-unstyled">
                 <li className="mb-2">✅ Streamlined book issue and return</li>
@@ -133,7 +146,7 @@ export default function AboutPage() {
               </ul>
               <a
                 href="/contact"
-                className="btn btn-primary mt-3 rounded-pill px-4 shadow"
+                className="btn btn-primary mt-3 rounded-pill px-4 shadow-sm"
               >
                 Contact Our Team
               </a>

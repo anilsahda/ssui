@@ -20,7 +20,7 @@ type Branch = {
   name: string;
 };
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:7293";
+const API_BASE = "https://localhost:7293";
 
 export default function StudentsPage() {
   const [students, setStudents] = useState<Student[]>([]);
@@ -46,14 +46,22 @@ export default function StudentsPage() {
         fetch(`${API_BASE}/api/Student`),
         fetch(`${API_BASE}/api/Branch`),
       ]);
+
       if (!studentsRes.ok || !branchesRes.ok) {
         throw new Error("Failed to fetch data");
       }
 
-      const [studentsData, branchesData] = await Promise.all([
+      const [studentsDataRaw, branchesDataRaw] = await Promise.all([
         studentsRes.json(),
         branchesRes.json(),
       ]);
+
+      const studentsData = Array.isArray(studentsDataRaw)
+        ? studentsDataRaw
+        : [];
+      const branchesData = Array.isArray(branchesDataRaw)
+        ? branchesDataRaw
+        : [];
 
       setStudents(studentsData);
       setBranches(branchesData);
@@ -207,11 +215,12 @@ export default function StudentsPage() {
               }`}
             >
               <option value={0}>Select Branch</option>
-              {branches.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name}
-                </option>
-              ))}
+              {Array.isArray(branches) &&
+                branches.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.name}
+                  </option>
+                ))}
             </select>
             {formErrors.branchId && (
               <p className="text-red-500 text-sm">{formErrors.branchId}</p>
@@ -254,13 +263,14 @@ export default function StudentsPage() {
               </tr>
             </thead>
             <tbody>
-              {students.length === 0 ? (
+              {Array.isArray(students) && students.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="text-center py-4 text-gray-500">
                     No students found.
                   </td>
                 </tr>
               ) : (
+                Array.isArray(students) &&
                 students.map((s) => (
                   <tr key={s.id} className="text-center">
                     <td className="px-4 py-2 border">{s.id}</td>

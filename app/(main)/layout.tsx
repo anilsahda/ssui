@@ -1,41 +1,100 @@
 "use client";
 
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { FaFacebook, FaGoogle, FaLinkedin } from "react-icons/fa";
+import { usePathname } from "next/navigation";
+import {
+  FaFacebook,
+  FaGoogle,
+  FaLinkedin,
+  FaMoon,
+  FaSun,
+} from "react-icons/fa";
 import "bootstrap/dist/css/bootstrap.min.css";
-import { useEffect } from "react";
 
-export default function MainLayout({
-  children,
-}: {
+interface LayoutProps {
   children: React.ReactNode;
-}) {
+}
+
+const Layout: React.FC<LayoutProps> = ({ children }) => {
+  const pathname = usePathname();
+  const [theme, setTheme] = useState<"light" | "dark">("dark");
+
   useEffect(() => {
     import("bootstrap/dist/js/bootstrap.bundle.min.js");
   }, []);
 
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
+  };
+
+  const isDark = theme === "dark";
+
+  const navLinks = [
+    { href: "/", label: "Home" },
+    { href: "/about", label: "About" },
+    { href: "/service", label: "Services" },
+    { href: "/contact", label: "Contact Us" },
+  ];
+
+  const socialIcons = [
+    {
+      icon: FaGoogle,
+      href: "#",
+      title: "Login with Google",
+      color: "text-danger",
+    },
+    {
+      icon: FaFacebook,
+      href: "#",
+      title: "Visit Facebook",
+      color: "text-primary",
+    },
+    {
+      icon: FaLinkedin,
+      href: "#",
+      title: "Connect on LinkedIn",
+      color: "text-info",
+    },
+  ];
+
+  const backgroundStyle = {
+    background: isDark
+      ? "linear-gradient(135deg, #1e3a8a, #0f172a, #1e3a8a)"
+      : "linear-gradient(135deg, #f8f9fa, #e9ecef, #f8f9fa)",
+    color: isDark ? "#f8f9fa" : "#212529",
+    transition: "all 0.4s ease-in-out",
+    fontFamily: "Inter, sans-serif",
+  };
+
+  const navBackground = isDark
+    ? "rgba(23, 42, 69, 0.85)"
+    : "rgba(255, 255, 255, 0.9)";
+
   return (
     <div
       className="d-flex flex-column min-vh-100"
-      style={{
-        fontFamily: "Inter, sans-serif",
-        background:
-          "linear-gradient(135deg, #1e3a8a 0%, #0f172a 50%, #1e3a8a 100%)",
-        color: "#f8f9fa",
-      }}
+      style={backgroundStyle}
+      data-theme={theme}
     >
       {/* Navbar */}
       <nav
-        className="navbar navbar-expand-lg sticky-top shadow-lg"
+        className="navbar navbar-expand-lg sticky-top shadow-sm"
         style={{
-          background: "rgba(23, 42, 69, 0.85)", // semi-transparent navy
+          background: navBackground,
           backdropFilter: "blur(10px)",
         }}
       >
         <div className="container-fluid px-lg-5">
-          <Link href="/" className="navbar-brand fw-bold fs-3 text-warning">
+          <Link
+            href="/"
+            className={`navbar-brand fs-3 fw-bold ${
+              isDark ? "text-warning" : "text-primary"
+            }`}
+          >
             Digital Library
           </Link>
+
           <button
             className="navbar-toggler border-0"
             type="button"
@@ -47,7 +106,7 @@ export default function MainLayout({
           >
             <span
               className="navbar-toggler-icon"
-              style={{ filter: "invert(1)" }}
+              style={{ filter: isDark ? "invert(1)" : "none" }}
             />
           </button>
 
@@ -55,82 +114,82 @@ export default function MainLayout({
             className="collapse navbar-collapse justify-content-between"
             id="navbarNav"
           >
-            {/* Left nav links */}
+            {/* Nav Links */}
             <ul className="navbar-nav fw-semibold fs-6">
-              {[
-                { href: "/", label: "Home" },
-                { href: "/about", label: "About" },
-                { href: "/service", label: "Services" },
-                { href: "/contact", label: "Contact Us" },
-              ].map(({ href, label }) => (
-                <li className="nav-item" key={label}>
-                  <Link href={href} className="nav-link text-light px-3">
-                    <span className="position-relative">
-                      {label}
-                      <span className="underline-effect"></span>
-                    </span>
-                  </Link>
-                </li>
-              ))}
+              {navLinks.map(({ href, label }) => {
+                const active = pathname === href;
+                return (
+                  <li key={label} className="nav-item">
+                    <Link
+                      href={href}
+                      className={`nav-link px-3 ${
+                        active
+                          ? isDark
+                            ? "text-warning"
+                            : "text-primary"
+                          : isDark
+                          ? "text-light"
+                          : "text-dark"
+                      }`}
+                    >
+                      <span className="position-relative">
+                        {label}
+                        <span className="underline-effect"></span>
+                      </span>
+                    </Link>
+                  </li>
+                );
+              })}
             </ul>
 
-            {/* Right actions */}
+            {/* Actions */}
             <div className="d-flex align-items-center gap-3">
               <Link
                 href="/login"
-                className="btn btn-outline-warning btn-sm rounded-pill px-4 fw-semibold"
+                className={`btn btn-outline-${
+                  isDark ? "warning" : "primary"
+                } btn-sm rounded-pill px-4 fw-semibold`}
               >
                 Login
               </Link>
+
               <Link
                 href="/register"
-                className="btn btn-warning btn-sm rounded-pill px-4 fw-semibold text-dark"
+                className={`btn btn-${
+                  isDark ? "warning" : "primary"
+                } btn-sm rounded-pill px-4 fw-semibold ${
+                  isDark ? "text-dark" : "text-light"
+                }`}
               >
                 Register
               </Link>
 
-              {/* Social Icons */}
-              {[
-                {
-                  icon: FaGoogle,
-                  href: "#",
-                  title: "Login with Google",
-                  color: "text-danger",
-                },
-                {
-                  icon: FaFacebook,
-                  href: "#",
-                  title: "Visit Facebook",
-                  color: "text-primary",
-                },
-                {
-                  icon: FaLinkedin,
-                  href: "#",
-                  title: "Connect on LinkedIn",
-                  color: "text-info",
-                },
-              ].map(({ icon: Icon, href, title, color }, i) => (
+              <button
+                className="btn btn-light btn-sm rounded-circle shadow-sm"
+                style={{ width: "36px", height: "36px" }}
+                onClick={toggleTheme}
+                title="Toggle Theme"
+              >
+                {isDark ? <FaSun className="text-warning" /> : <FaMoon />}
+              </button>
+
+              {socialIcons.map(({ icon: Icon, href, title, color }, i) => (
                 <a
                   key={i}
                   href={href}
-                  className="btn btn-light btn-sm rounded-circle d-flex justify-content-center align-items-center shadow-sm"
-                  style={{
-                    width: "36px",
-                    height: "36px",
-                    transition: "all 0.3s",
-                  }}
-                  title={title}
                   target="_blank"
                   rel="noopener noreferrer"
+                  title={title}
+                  className="btn btn-light btn-sm rounded-circle d-flex justify-content-center align-items-center shadow-sm"
+                  style={{ width: "36px", height: "36px" }}
                   onMouseEnter={(e) => {
-                    const target = e.currentTarget;
-                    target.style.transform = "scale(1.15)";
-                    target.style.boxShadow = "0 4px 12px rgba(0,0,0,0.2)";
+                    e.currentTarget.style.transform = "scale(1.15)";
+                    e.currentTarget.style.boxShadow =
+                      "0 4px 12px rgba(0,0,0,0.2)";
                   }}
                   onMouseLeave={(e) => {
-                    const target = e.currentTarget;
-                    target.style.transform = "scale(1)";
-                    target.style.boxShadow = "none";
+                    e.currentTarget.style.transform = "scale(1)";
+                    e.currentTarget.style.boxShadow = "none";
                   }}
                 >
                   <Icon className={`${color} fs-5`} />
@@ -141,51 +200,29 @@ export default function MainLayout({
         </div>
       </nav>
 
-      {/* Main content */}
+      {/* Main Content */}
       <main className="container flex-grow-1 py-4 px-3 px-lg-5">
         {children}
       </main>
 
       {/* Footer */}
       <footer
-        className="text-center py-3"
+        className="text-center py-3 mt-auto"
         style={{
-          background:
-            "linear-gradient(135deg, #1e3a8a 0%, #0f172a 50%, #1e3a8a 100%)",
-          color: "#f8f9fa",
-          boxShadow: "inset 0 1px 5px rgba(255,255,255,0.1)",
-          fontSize: "0.9rem",
+          background: navBackground,
+          color: isDark ? "#ccc" : "#333",
+          boxShadow: "inset 0 1px 5px rgba(0,0,0,0.1)",
         }}
       >
         <div className="mb-2">
-          {/* Optional footer social icons */}
-          {[
-            {
-              icon: FaGoogle,
-              href: "#",
-              title: "Login with Google",
-              color: "text-danger",
-            },
-            {
-              icon: FaFacebook,
-              href: "#",
-              title: "Visit Facebook",
-              color: "text-primary",
-            },
-            {
-              icon: FaLinkedin,
-              href: "#",
-              title: "Connect on LinkedIn",
-              color: "text-info",
-            },
-          ].map(({ icon: Icon, href, title, color }, i) => (
+          {socialIcons.map(({ icon: Icon, href, title, color }, i) => (
             <a
               key={i}
               href={href}
-              title={title}
-              className={`${color} mx-2 fs-4`}
               target="_blank"
               rel="noopener noreferrer"
+              title={title}
+              className={`${color} mx-2 fs-4`}
               style={{ transition: "color 0.3s" }}
               onMouseEnter={(e) => (e.currentTarget.style.color = "#ffc107")}
               onMouseLeave={(e) => (e.currentTarget.style.color = "")}
@@ -194,19 +231,24 @@ export default function MainLayout({
             </a>
           ))}
         </div>
-        <small>© 2025 Digital Library. All rights reserved.</small>
+        <small>
+          © {new Date().getFullYear()} Digital Library. All rights reserved.
+        </small>
       </footer>
 
+      {/* Styles */}
       <style jsx>{`
         .nav-link {
           position: relative;
           transition: color 0.3s ease;
         }
+
         .nav-link:hover,
         .nav-link:focus {
-          color: #ffc107 !important; /* Bootstrap warning color */
+          color: #ffc107 !important;
           text-decoration: none;
         }
+
         .underline-effect {
           position: absolute;
           bottom: 0;
@@ -217,6 +259,7 @@ export default function MainLayout({
           transition: width 0.3s ease;
           border-radius: 2px;
         }
+
         .nav-link:hover .underline-effect,
         .nav-link:focus .underline-effect {
           width: 100%;
@@ -224,4 +267,6 @@ export default function MainLayout({
       `}</style>
     </div>
   );
-}
+};
+
+export default Layout;

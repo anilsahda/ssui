@@ -21,7 +21,7 @@ type Book = {
   title: string;
 };
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
+const API_BASE = "https://localhost:7293";
 
 export default function BookReportsPage() {
   const [reports, setReports] = useState<BookReport[]>([]);
@@ -51,10 +51,17 @@ export default function BookReportsPage() {
       setLoading(true);
       const res = await fetch(`${API_BASE}/api/BookReports`);
       if (!res.ok) throw new Error("Failed to fetch reports");
-      const data: BookReport[] = await res.json();
-      setReports(data);
+      const data = await res.json();
+
+      // Ensure the response is an array before using it
+      if (Array.isArray(data)) {
+        setReports(data);
+      } else {
+        throw new Error("Reports API returned unexpected data format.");
+      }
     } catch (err: any) {
       toast.error("Failed to load reports: " + err.message);
+      setReports([]); // fallback to empty array to avoid crash
     } finally {
       setLoading(false);
     }
@@ -64,10 +71,17 @@ export default function BookReportsPage() {
     try {
       const res = await fetch(`${API_BASE}/api/Book`);
       if (!res.ok) throw new Error("Failed to fetch books");
-      const data: Book[] = await res.json();
-      setBooks(data);
+      const data = await res.json();
+
+      // Ensure it's an array
+      if (Array.isArray(data)) {
+        setBooks(data);
+      } else {
+        throw new Error("Books API returned unexpected data format.");
+      }
     } catch (err: any) {
       toast.error("Failed to load books: " + err.message);
+      setBooks([]); // Fallback to empty array to avoid crashing .map
     }
   };
 
@@ -165,13 +179,14 @@ export default function BookReportsPage() {
   };
 
   const filtered = useMemo(() => {
-    return reports.filter((r) => {
-      const search = searchQuery.toLowerCase();
-      return (
+    if (!Array.isArray(reports)) return [];
+
+    const search = searchQuery.toLowerCase();
+    return reports.filter(
+      (r) =>
         (r.book?.title || "").toLowerCase().includes(search) ||
         r.remarks.toLowerCase().includes(search)
-      );
-    });
+    );
   }, [reports, searchQuery]);
 
   const totalPages = Math.ceil(filtered.length / pageSize);

@@ -28,7 +28,7 @@ type Book = {
 
 type BookDto = Omit<Book, "id">;
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:5000";
+const API_BASE = "https://localhost:7293";
 
 export default function BookManager() {
   const [books, setBooks] = useState<Book[]>([]);
@@ -60,9 +60,18 @@ export default function BookManager() {
     try {
       const res = await fetch(`${API_BASE}/api/Book`);
       const data = await res.json();
-      setBooks(data);
-      setError(null);
-    } catch {
+
+      // ✅ Ensure the data is an array before setting it
+      if (Array.isArray(data)) {
+        setBooks(data);
+        setError(null);
+      } else {
+        console.error("Expected an array but got:", data);
+        setBooks([]);
+        setError("Invalid data format received from API.");
+      }
+    } catch (err) {
+      console.error("Fetch error:", err);
       setError("Failed to load books.");
     } finally {
       setLoading(false);
@@ -149,6 +158,9 @@ export default function BookManager() {
   };
 
   const filteredBooks = useMemo(() => {
+    // ✅ Extra safety check
+    if (!Array.isArray(books)) return [];
+
     return books.filter(
       (b) =>
         b.title.toLowerCase().includes(searchQuery.toLowerCase()) ||

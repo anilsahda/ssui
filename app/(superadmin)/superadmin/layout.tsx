@@ -1,52 +1,195 @@
 "use client";
 
 import Link from "next/link";
-import { MdDashboard, MdHelpOutline } from "react-icons/md";
-import { FaUsers, FaUserEdit, FaSignOutAlt, FaUserCog, FaUserShield } from "react-icons/fa";
-import { FiSearch, FiBell, FiMoon, FiUserCheck } from "react-icons/fi";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import "bootstrap/dist/css/bootstrap.min.css";
 
-export default function SuperAdminLayout({ children }: { children: React.ReactNode }) {
+import { MdDashboard, MdHelpOutline } from "react-icons/md";
+import {
+  FaUsers,
+  FaUserEdit,
+  FaSignOutAlt,
+  FaUserCog,
+  FaUserShield,
+} from "react-icons/fa";
+import { FiSearch, FiBell, FiMoon, FiSun, FiUserCheck } from "react-icons/fi";
+
+export default function SuperAdminLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const pathname = usePathname();
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [isSidebarOpen, setSidebarOpen] = useState(true);
+
   useEffect(() => {
     import("bootstrap/dist/js/bootstrap.bundle.min.js");
+
+    // Load theme from localStorage
+    const savedTheme = localStorage.getItem("darkMode");
+    if (savedTheme) {
+      setIsDarkMode(savedTheme === "true");
+    }
+
+    // Close sidebar on small screens
+    const handleResize = () => {
+      setSidebarOpen(window.innerWidth >= 768);
+    };
+    window.addEventListener("resize", handleResize);
+    handleResize();
+
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  const toggleTheme = () => {
+    setIsDarkMode((prev) => {
+      localStorage.setItem("darkMode", String(!prev));
+      return !prev;
+    });
+  };
+
+  const toggleSidebar = () => setSidebarOpen((prev) => !prev);
+
+  const navItems = [
+    {
+      href: "/admin",
+      label: "Dashboard",
+      icon: <MdDashboard size={18} className="text-info" />,
+    },
+    {
+      href: "/superadmin/user",
+      label: "Users",
+      icon: <FaUsers size={16} className="text-warning" />,
+    },
+    {
+      href: "/superadmin/role",
+      label: "Role",
+      icon: <FaUserShield size={16} className="text-success" />,
+    },
+    {
+      href: "/superadmin/userrole",
+      label: "User Role",
+      icon: <FiUserCheck size={16} className="text-primary" />,
+    },
+  ];
+
   return (
-    <div className="d-flex flex-column min-vh-100 bg-light" style={{ fontFamily: "Inter, sans-serif" }}>
-      <header className="d-flex justify-content-between align-items-center px-4 py-2 shadow-sm bg-white border-bottom">
-        <h1 className="m-0 text-primary" style={{ fontSize: "1.6rem", fontWeight: 600 }}>SS Admin</h1>
-        <div className="flex-grow-1 px-4 d-none d-md-block">
-          <div className="position-relative mx-auto" style={{ width: "50%" }}>
-            <FiSearch size={18} className="position-absolute top-50 start-0 translate-middle-y ms-3 text-muted" />
-            <input type="text" className="form-control rounded-pill ps-5 shadow-sm" placeholder="Search..." />
+    <div
+      className={`d-flex flex-column min-vh-100 ${
+        isDarkMode ? "bg-dark text-light" : "bg-light text-dark"
+      }`}
+      style={{ fontFamily: "Inter, sans-serif" }}
+    >
+      {/* Header */}
+      <header
+        className={`d-flex justify-content-between align-items-center px-3 px-md-4 py-2 shadow-sm ${
+          isDarkMode ? "bg-secondary" : "bg-white"
+        } border-bottom sticky-top`}
+      >
+        <div className="d-flex align-items-center gap-3">
+          {/* Sidebar Toggle for Small Screens */}
+          <button
+            className="btn btn-outline-primary d-md-none"
+            onClick={toggleSidebar}
+          >
+            ☰
+          </button>
+          <h1 className="m-0 text-primary fs-4 fw-bold">Super Admin Panel</h1>
+        </div>
+
+        {/* Search Bar */}
+        <div className="flex-grow-1 px-3 d-none d-md-block">
+          <div className="position-relative mx-auto" style={{ width: "60%" }}>
+            <FiSearch
+              size={18}
+              className="position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"
+            />
+            <input
+              type="text"
+              className="form-control rounded-pill ps-5 shadow-sm"
+              placeholder="Search users, roles..."
+            />
           </div>
         </div>
 
+        {/* Action Buttons */}
         <div className="d-flex align-items-center gap-3">
-          <button className="btn btn-light rounded-circle shadow-sm p-2 action-btn"><FiMoon size={18} /></button>
-          <button className="btn btn-light rounded-circle shadow-sm p-2 action-btn"><MdHelpOutline size={18} /></button>
+          {/* Theme Toggle */}
+          <button
+            className="btn btn-light rounded-circle p-2"
+            onClick={toggleTheme}
+            title="Toggle Theme"
+          >
+            {isDarkMode ? <FiSun size={18} /> : <FiMoon size={18} />}
+          </button>
+
+          {/* Help */}
+          <button className="btn btn-light rounded-circle p-2">
+            <MdHelpOutline size={18} />
+          </button>
+
+          {/* Notification */}
           <div className="position-relative">
-            <button className="btn btn-light rounded-circle shadow-sm p-2 action-btn"><FiBell size={18} /></button>
-            <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style={{ fontSize: "0.65rem" }}>5</span>
+            <button
+              className="btn btn-light rounded-circle p-2"
+              onClick={() => setShowNotifications((prev) => !prev)}
+            >
+              <FiBell size={18} />
+            </button>
+            <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+              5
+            </span>
+            {showNotifications && (
+              <div
+                className="position-absolute end-0 mt-2 bg-white border shadow rounded p-2"
+                style={{ width: 250, zIndex: 999 }}
+              >
+                <strong>Notifications</strong>
+                <ul className="list-unstyled small mt-2 mb-0">
+                  <li>🔔 New user registered</li>
+                  <li>📦 Role updated</li>
+                  <li>⚙️ Settings changed</li>
+                </ul>
+              </div>
+            )}
           </div>
 
+          {/* Profile Dropdown */}
           <div className="dropdown">
-            <button id="dropdownUser" className="btn p-0 d-flex align-items-center gap-2 dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" type="button">
-              <img src="https://ui-avatars.com/api/?name=Admin+User&background=0d6efd&color=fff&rounded=true" alt="profile" className="rounded-circle shadow-sm border border-2 border-light" width="40" height="40" />
+            <button
+              className="btn p-0 d-flex align-items-center gap-2 dropdown-toggle"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+            >
+              <img
+                src="https://ui-avatars.com/api/?name=Super+Admin&background=0d6efd&color=fff&rounded=true"
+                alt="profile"
+                className="rounded-circle border shadow-sm"
+                width="40"
+                height="40"
+              />
             </button>
-
-            <ul className="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 p-0 overflow-hidden" aria-labelledby="dropdownUser" style={{ minWidth: "220px" }}>
+            <ul className="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 p-0 overflow-hidden">
               <li className="bg-light p-3 border-bottom text-center">
-                <small className="text-muted">Super User</small>
+                <strong className="d-block">Super Admin</strong>
+                <small className="text-muted">Full Access</small>
               </li>
               <li>
-                <Link className="dropdown-item d-flex align-items-center gap-2 py-2" href="/superadmin/profile">
+                <Link
+                  href="/superadmin/profile"
+                  className="dropdown-item d-flex align-items-center gap-2 py-2"
+                >
                   <FaUserEdit /> Edit Profile
                 </Link>
               </li>
               <li>
-                <Link className="dropdown-item d-flex align-items-center gap-2 py-2" href="/superadmin/account">
+                <Link
+                  href="/superadmin/account"
+                  className="dropdown-item d-flex align-items-center gap-2 py-2"
+                >
                   <FaUserCog /> Account Settings
                 </Link>
               </li>
@@ -54,46 +197,66 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
                 <hr className="dropdown-divider m-0" />
               </li>
               <li>
-                <a href="/" className="dropdown-item d-flex align-items-center gap-2 py-2 text-danger" type="button">
+                <Link
+                  href="/"
+                  className="dropdown-item d-flex align-items-center gap-2 py-2 text-danger"
+                >
                   <FaSignOutAlt /> Logout
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
         </div>
       </header>
 
+      {/* Layout Content */}
       <div className="d-flex flex-grow-1">
-        <aside className="d-flex flex-column p-3 shadow-sm" style={{ width: 230, background: "linear-gradient(180deg, #1e293b, #0f172a)", color: "#f1f5f9" }}>
-          <nav>
-            <ul className="nav nav-pills flex-column gap-1">
-              <li>
-                <Link href="/admin" className="nav-link d-flex align-items-center gap-2 sidebar-link active">
-                  <MdDashboard size={18} className="text-info" /> Dashboard
-                </Link>
-              </li>
-              <li>
-                <Link href="/superadmin/user" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                  <FaUsers size={16} className="text-warning" /> Users
-                </Link>
-              </li>
-              <li>
-                <Link href="/superadmin/role" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                  <FaUserShield size={16} className="text-success" /> Role
-                </Link>
-              </li>
-              <li>
-                <Link href="/superadmin/userrole" className="nav-link d-flex align-items-center gap-2 sidebar-link">
-                  <FiUserCheck size={16} className="text-primary" /> User Role
-                </Link>
-              </li>
-            </ul>
-          </nav>
-          <div className="mt-auto pt-3 border-top border-secondary text-center">
-            <small style={{ color: "#94a3b8" }}>© 2025 SS App</small>
-          </div>
-        </aside>
-        <main className="flex-grow-1 p-4 bg-light">{children}</main>
+        {/* Sidebar */}
+        {isSidebarOpen && (
+          <aside
+            className="d-flex flex-column p-3 shadow-sm"
+            style={{
+              width: 230,
+              background: isDarkMode
+                ? "linear-gradient(180deg, #1e293b, #0f172a)"
+                : "#f8f9fa",
+              color: isDarkMode ? "#f1f5f9" : "#1f2937",
+            }}
+          >
+            <nav>
+              <ul className="nav nav-pills flex-column gap-1">
+                {navItems.map(({ href, label, icon }) => {
+                  const isActive = pathname?.startsWith(href);
+                  return (
+                    <li key={href}>
+                      <Link
+                        href={href}
+                        className={`nav-link d-flex align-items-center gap-2 ${
+                          isActive
+                            ? "active bg-info text-white"
+                            : isDarkMode
+                            ? "text-light"
+                            : "text-dark"
+                        }`}
+                        style={{ fontSize: "0.9rem" }}
+                      >
+                        {icon} {label}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </nav>
+            <div className="mt-auto pt-3 border-top text-center">
+              <small style={{ color: "#94a3b8" }}>
+                © {new Date().getFullYear()} SS App
+              </small>
+            </div>
+          </aside>
+        )}
+
+        {/* Main Content */}
+        <main className="flex-grow-1 p-4">{children}</main>
       </div>
     </div>
   );
