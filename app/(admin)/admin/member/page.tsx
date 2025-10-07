@@ -16,7 +16,7 @@ const MembersManager: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const API_BASE = "https://localhost:7293/api/Members";
+  const API_BASE = "https://localhost:7255/api/Member";
 
   useEffect(() => {
     fetchMembers();
@@ -28,7 +28,15 @@ const MembersManager: React.FC = () => {
     try {
       const res = await fetch(API_BASE);
       const data = await res.json();
-      setMembers(data);
+
+      console.log("Fetched data:", data); // ← Debug log
+
+      const safeMembers = Array.isArray(data.members)
+        ? data.members
+        : Array.isArray(data)
+        ? data
+        : [];
+      setMembers(safeMembers);
     } catch (err) {
       console.error("Failed to fetch members", err);
       setError("Failed to load members.");
@@ -109,16 +117,14 @@ const MembersManager: React.FC = () => {
   return (
     <div className="container py-4">
       <div className="mb-4">
-        <h2 className="text-center"> Member Management</h2>
+        <h2 className="text-center">Member Management</h2>
       </div>
 
       <form
         onSubmit={handleSubmit}
         className="mb-4 p-4 border rounded bg-light shadow-sm"
       >
-        <h5 className="mb-3">
-          {isEditing ? " Edit Member" : " Add New Member"}
-        </h5>
+        <h5 className="mb-3">{isEditing ? "Edit Member" : "Add New Member"}</h5>
 
         {error && (
           <div className="alert alert-danger" role="alert">
@@ -192,61 +198,10 @@ const MembersManager: React.FC = () => {
         </div>
       </form>
 
-      {loading ? (
-        <div className="text-center my-5">
-          <div className="spinner-border text-primary" role="status">
-            <span className="visually-hidden">Loading...</span>
-          </div>
-          <p className="mt-2">Fetching members...</p>
-        </div>
-      ) : (
-        <div className="table-responsive">
-          <table className="table table-hover table-bordered align-middle">
-            <thead className="table-dark">
-              <tr>
-                <th>#ID</th>
-                <th>Full Name</th>
-                <th>Email</th>
-                <th>Phone</th>
-                <th className="text-center" style={{ width: "160px" }}>
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {members.map((m) => (
-                <tr key={m.id}>
-                  <td>
-                    <span className="badge bg-secondary">{m.id}</span>
-                  </td>
-                  <td>{m.fullName}</td>
-                  <td>{m.email}</td>
-                  <td>{m.phoneNumber}</td>
-                  <td className="text-center">
-                    <button
-                      className="btn btn-sm btn-outline-primary me-2"
-                      onClick={() => handleEdit(m)}
-                    >
-                      <i className="bi bi-pencil-fill"></i>
-                    </button>
-                    <button
-                      className="btn btn-sm btn-outline-danger"
-                      onClick={() => handleDelete(m.id)}
-                    >
-                      <i className="bi bi-trash-fill"></i>
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {members.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="text-center text-muted">
-                    No members found.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+      {/* Optionally show a message or list without table */}
+      {!loading && members.length > 0 && (
+        <div className="alert alert-info">
+          {members.length} member(s) available in the system.
         </div>
       )}
     </div>

@@ -9,7 +9,7 @@ interface HouseReport {
   reportDate: string;
 }
 
-const API_BASE = "https://localhost:7293/api/HouseReports";
+const API_BASE = "https://localhost:7255/api/HouseReport";
 
 const HouseReportsManager: React.FC = () => {
   const [reports, setReports] = useState<HouseReport[]>([]);
@@ -32,11 +32,19 @@ const HouseReportsManager: React.FC = () => {
       setLoading(true);
       const response = await fetch(API_BASE);
       if (!response.ok) throw new Error("Failed to fetch reports.");
-      const data: HouseReport[] = await response.json();
+
+      const data = await response.json();
+
+      // ✅ Ensure it's an array
+      if (!Array.isArray(data)) {
+        throw new Error("Unexpected response format: data is not an array.");
+      }
+
       setReports(data);
       setError(null);
     } catch (err: any) {
       setError(err.message || "Error loading reports");
+      setReports([]); // fallback to avoid further runtime errors
     } finally {
       setLoading(false);
     }

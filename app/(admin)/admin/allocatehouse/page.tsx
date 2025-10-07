@@ -11,7 +11,7 @@ interface AllocateHouse {
 }
 
 const AllocateHouseManager: React.FC = () => {
-  const API_URL = "https://localhost:7293/api/AllocateHouse";
+  const API_URL = "https://localhost:7255/api/AllocateHouse";
 
   const [allocations, setAllocations] = useState<AllocateHouse[]>([]);
   const [form, setForm] = useState<Partial<AllocateHouse>>({
@@ -30,11 +30,21 @@ const AllocateHouseManager: React.FC = () => {
     try {
       const res = await fetch(API_URL);
       if (!res.ok) throw new Error("Failed to fetch allocations");
+
       const data = await res.json();
-      setAllocations(data);
+
+      // ✅ FIX: ensure data is an array before setting state
+      const safeAllocations = Array.isArray(data)
+        ? data
+        : Array.isArray(data.allocations)
+        ? data.allocations
+        : [];
+
+      setAllocations(safeAllocations);
       setError(null);
       setShowError(false);
     } catch (err: any) {
+      console.error("Fetch error:", err);
       setError(err.message || "Unknown error");
       setShowError(true);
     } finally {
@@ -56,7 +66,6 @@ const AllocateHouseManager: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!form.houseId || !form.memberId) {
       alert("House ID and Member ID are required.");
       return;
@@ -73,17 +82,16 @@ const AllocateHouseManager: React.FC = () => {
         },
         body: JSON.stringify(form),
       });
-
       if (!res.ok) {
         const msg = await res.text();
         throw new Error(`Error: ${res.status} - ${msg}`);
       }
-
       await fetchAllocations();
       setForm({
         houseId: undefined,
         memberId: undefined,
         allocationDate: new Date().toISOString(),
+        releaseDate: "",
       });
       setIsEditing(false);
     } catch (err: any) {
@@ -256,11 +264,7 @@ const AllocateHouseManager: React.FC = () => {
             <div className="card-body p-0">
               {loading ? (
                 <div className="d-flex justify-content-center align-items-center p-5">
-                  <div
-                    className="spinner-border text-primary"
-                    role="status"
-                    aria-hidden="true"
-                  ></div>
+                  <div className="spinner-border text-primary" role="status" />
                   <span className="ms-3 fw-semibold">
                     Loading allocations...
                   </span>
@@ -303,7 +307,6 @@ const AllocateHouseManager: React.FC = () => {
                               className="btn btn-sm btn-outline-primary me-2"
                               onClick={() => handleEdit(alloc)}
                               title="Edit"
-                              aria-label="Edit allocation"
                             >
                               <i className="bi bi-pencil-fill"></i>
                             </button>
@@ -311,7 +314,6 @@ const AllocateHouseManager: React.FC = () => {
                               className="btn btn-sm btn-outline-danger"
                               onClick={() => handleDelete(alloc.id)}
                               title="Delete"
-                              aria-label="Delete allocation"
                             >
                               <i className="bi bi-trash-fill"></i>
                             </button>

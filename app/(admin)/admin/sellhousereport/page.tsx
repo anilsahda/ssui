@@ -1,4 +1,5 @@
 "use client";
+
 import React, { useEffect, useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 
@@ -24,8 +25,8 @@ const SellHouseReportsManager: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const API_URL = "https://localhost:7293/api/SellHouseReports";
-  const HOUSES_API = "https://localhost:7293/api/Houses";
+  const API_URL = "https://localhost:7255/api/SellHouseReport";
+  const HOUSES_API = "https://localhost:7255/api/House";
 
   useEffect(() => {
     fetchReports();
@@ -37,9 +38,18 @@ const SellHouseReportsManager: React.FC = () => {
     try {
       const response = await fetch(API_URL);
       const data = await response.json();
-      setReports(data);
+
+      if (Array.isArray(data)) {
+        setReports(data);
+      } else {
+        console.error("Unexpected API response for reports:", data);
+        setReports([]);
+        setError("Unexpected response format for sell house reports.");
+      }
     } catch (err) {
+      console.error("Error fetching reports:", err);
       setError("Error fetching sell house reports.");
+      setReports([]);
     } finally {
       setLoading(false);
     }
@@ -49,8 +59,16 @@ const SellHouseReportsManager: React.FC = () => {
     try {
       const res = await fetch(HOUSES_API);
       const data = await res.json();
-      setHouses(data);
+
+      if (Array.isArray(data)) {
+        setHouses(data);
+      } else {
+        console.error("Unexpected API response for houses:", data);
+        setHouses([]);
+        setError("Unexpected response format for houses.");
+      }
     } catch (err) {
+      console.error("Error fetching houses:", err);
       setError("Error fetching house data.");
     }
   };
@@ -68,6 +86,7 @@ const SellHouseReportsManager: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
 
     if (!form.houseId || !form.sellPrice || !form.buyerName) {
       setError("Please fill in all fields.");
@@ -92,6 +111,7 @@ const SellHouseReportsManager: React.FC = () => {
       await fetchReports();
       resetForm();
     } catch (err) {
+      console.error("Error saving report:", err);
       setError("Error saving report.");
     }
   };
@@ -115,6 +135,7 @@ const SellHouseReportsManager: React.FC = () => {
 
       await fetchReports();
     } catch (err) {
+      console.error("Error deleting report:", err);
       setError("Error deleting report.");
     }
   };
@@ -128,7 +149,7 @@ const SellHouseReportsManager: React.FC = () => {
   return (
     <div className="container py-4">
       <div className="text-center mb-4">
-        <h2 className="fw-bold"> Sell House Reports</h2>
+        <h2 className="fw-bold">Sell House Reports</h2>
         <p className="text-muted">
           Track property sales and buyers efficiently.
         </p>
@@ -138,9 +159,7 @@ const SellHouseReportsManager: React.FC = () => {
         className="border p-4 mb-5 rounded bg-light shadow-sm"
         onSubmit={handleSubmit}
       >
-        <h5 className="mb-3">
-          {editing ? " Edit Report" : " Add Sell Report"}
-        </h5>
+        <h5 className="mb-3">{editing ? "Edit Report" : "Add Sell Report"}</h5>
 
         {error && <div className="alert alert-danger">{error}</div>}
 
@@ -219,66 +238,53 @@ const SellHouseReportsManager: React.FC = () => {
         </div>
       </form>
 
-      <h5 className="mb-3"> Existing Sell Reports</h5>
+      <h5 className="mb-3">Existing Sell Reports</h5>
 
       {loading ? (
         <div className="text-center my-5">
           <div className="spinner-border text-primary" role="status" />
           <p className="mt-2">Loading reports...</p>
         </div>
+      ) : reports.length === 0 ? (
+        <p className="text-center text-muted">No sell house reports found.</p>
       ) : (
-        <div className="table-responsive">
-          <table className="table table-bordered table-hover align-middle">
-            <thead className="table-dark">
-              <tr>
-                <th>ID</th>
-                <th>House</th>
-                <th>Price</th>
-                <th>Buyer</th>
-                <th>Date</th>
-                <th className="text-center">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {reports.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="text-center text-muted">
-                    No sell house reports found.
-                  </td>
-                </tr>
-              ) : (
-                reports.map((report) => (
-                  <tr key={report.id}>
-                    <td>
-                      <span className="badge bg-secondary">{report.id}</span>
-                    </td>
-                    <td>{report.house?.name || `#${report.houseId}`}</td>
-                    <td>${report.sellPrice.toLocaleString()}</td>
-                    <td>{report.buyerName}</td>
-                    <td>
-                      {report.sellDate
-                        ? new Date(report.sellDate).toLocaleString()
-                        : "-"}
-                    </td>
-                    <td className="text-center">
-                      <button
-                        className="btn btn-sm btn-outline-primary me-2"
-                        onClick={() => handleEdit(report)}
-                      >
-                        <i className="bi bi-pencil-square"></i>
-                      </button>
-                      <button
-                        className="btn btn-sm btn-outline-danger"
-                        onClick={() => handleDelete(report.id)}
-                      >
-                        <i className="bi bi-trash-fill"></i>
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+        <div className="row g-3">
+          {reports.map((report) => (
+            <div key={report.id} className="col-md-6">
+              <div className="card shadow-sm">
+                <div className="card-body">
+                  <h6 className="card-title">
+                    {report.house?.name || `House #${report.houseId}`}{" "}
+                    <span className="badge bg-secondary">{report.id}</span>
+                  </h6>
+                  <p className="card-text mb-1">
+                    <strong>Price:</strong> ${report.sellPrice.toLocaleString()}
+                  </p>
+                  <p className="card-text mb-1">
+                    <strong>Buyer:</strong> {report.buyerName}
+                  </p>
+                  <p className="card-text mb-3">
+                    <strong>Date:</strong>{" "}
+                    {report.sellDate
+                      ? new Date(report.sellDate).toLocaleString()
+                      : "-"}
+                  </p>
+                  <button
+                    className="btn btn-sm btn-outline-primary me-2"
+                    onClick={() => handleEdit(report)}
+                  >
+                    <i className="bi bi-pencil-square"></i> Edit
+                  </button>
+                  <button
+                    className="btn btn-sm btn-outline-danger"
+                    onClick={() => handleDelete(report.id)}
+                  >
+                    <i className="bi bi-trash-fill"></i> Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>

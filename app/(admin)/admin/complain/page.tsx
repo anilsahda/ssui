@@ -12,7 +12,7 @@ interface Complain {
 }
 
 const ComplainManager: React.FC = () => {
-  const API_URL = "https://localhost:7293/api/Complain";
+  const API_URL = "https://localhost:7255/api/Complain";
 
   const [complains, setComplains] = useState<Complain[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -35,11 +35,24 @@ const ComplainManager: React.FC = () => {
       setLoading(true);
       const res = await fetch(API_URL);
       if (!res.ok) throw new Error("Failed to load complains.");
+
       const data = await res.json();
-      setComplains(data);
+
+      // Ensure data is an array before setting state
+      if (Array.isArray(data)) {
+        setComplains(data);
+      } else if (data && Array.isArray(data.complains)) {
+        // If API response wraps the array in an object, adjust here
+        setComplains(data.complains);
+      } else {
+        // Fallback to empty array if data shape unexpected
+        setComplains([]);
+        setError("Unexpected data format received from server.");
+      }
       setError(null);
     } catch (err: any) {
       setError(err.message || "Error fetching complains");
+      setComplains([]);
     } finally {
       setLoading(false);
     }
@@ -58,7 +71,7 @@ const ComplainManager: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!form.houseId || !form.description.trim()) {
+    if (!form.houseId || !form.description?.trim()) {
       alert("House ID and Description are required.");
       return;
     }
@@ -249,7 +262,7 @@ const ComplainManager: React.FC = () => {
           ></div>
           <span className="visually-hidden">Loading...</span>
         </div>
-      ) : complains.length === 0 ? (
+      ) : !Array.isArray(complains) || complains.length === 0 ? (
         <p className="text-muted fst-italic">No complains found.</p>
       ) : (
         <div className="table-responsive shadow-sm rounded">

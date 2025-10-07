@@ -1,4 +1,5 @@
 "use client";
+
 import React, { useEffect, useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 
@@ -24,8 +25,8 @@ const RentHouseReportsManager: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  const API_URL = "https://localhost:7293/api/RentHouseReports";
-  const HOUSES_API = "https://localhost:7293/api/Houses";
+  const API_URL = "https://localhost:7255/api/SellHouseReport"; // <-- double check if this is the right URL for rent reports
+  const HOUSES_API = "https://localhost:7255/api/House";
 
   useEffect(() => {
     fetchReports();
@@ -34,24 +35,52 @@ const RentHouseReportsManager: React.FC = () => {
 
   const fetchReports = async () => {
     setLoading(true);
+    setError(null);
     try {
       const response = await fetch(API_URL);
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
       const data = await response.json();
-      setReports(data);
-    } catch (error) {
+
+      // Check if data is array
+      if (Array.isArray(data)) {
+        setReports(data);
+      } else {
+        // If data is not an array, set empty and show error
+        setReports([]);
+        setError("Unexpected response format for reports.");
+        console.error("Reports API returned non-array:", data);
+      }
+    } catch (err) {
       setError("Failed to fetch reports.");
+      setReports([]);
+      console.error("Fetch reports error:", err);
     } finally {
       setLoading(false);
     }
   };
 
   const fetchHouses = async () => {
+    setError(null);
     try {
       const res = await fetch(HOUSES_API);
+      if (!res.ok) {
+        throw new Error(`API error: ${res.status}`);
+      }
       const data = await res.json();
-      setHouses(data);
-    } catch (error) {
+
+      if (Array.isArray(data)) {
+        setHouses(data);
+      } else {
+        setHouses([]);
+        setError("Unexpected response format for houses.");
+        console.error("Houses API returned non-array:", data);
+      }
+    } catch (err) {
       setError("Failed to fetch houses.");
+      setHouses([]);
+      console.error("Fetch houses error:", err);
     }
   };
 
@@ -68,6 +97,7 @@ const RentHouseReportsManager: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
 
     if (
       !form.houseId ||
@@ -90,13 +120,15 @@ const RentHouseReportsManager: React.FC = () => {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to save report.");
+        const errorText = await response.text();
+        throw new Error(errorText || "Failed to save report.");
       }
 
       await fetchReports();
       resetForm();
-    } catch (error) {
+    } catch (err) {
       setError("Error saving report.");
+      console.error("Save report error:", err);
     }
   };
 
@@ -120,8 +152,9 @@ const RentHouseReportsManager: React.FC = () => {
       }
 
       await fetchReports();
-    } catch (error) {
+    } catch (err) {
       setError("Failed to delete the report.");
+      console.error("Delete report error:", err);
     }
   };
 
@@ -134,7 +167,7 @@ const RentHouseReportsManager: React.FC = () => {
   return (
     <div className="container py-4">
       <div className="mb-4 text-center">
-        <h2 className="fw-bold"> Rent House Reports</h2>
+        <h2 className="fw-bold">Rent House Reports</h2>
         <p className="text-muted">Manage house rental records efficiently.</p>
       </div>
 
@@ -142,7 +175,7 @@ const RentHouseReportsManager: React.FC = () => {
         className="border p-4 mb-5 rounded bg-light shadow-sm"
         onSubmit={handleSubmit}
       >
-        <h5 className="mb-3">{editing ? " Edit Report" : " Add Report"}</h5>
+        <h5 className="mb-3">{editing ? "Edit Report" : "Add Report"}</h5>
 
         {error && (
           <div className="alert alert-danger" role="alert">
@@ -227,7 +260,7 @@ const RentHouseReportsManager: React.FC = () => {
         </div>
       </form>
 
-      <h5 className="mb-3"> Existing Reports</h5>
+      <h5 className="mb-3">Existing Reports</h5>
       {loading ? (
         <div className="text-center my-5">
           <div className="spinner-border text-primary" role="status" />

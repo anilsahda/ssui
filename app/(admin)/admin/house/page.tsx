@@ -11,12 +11,12 @@ interface House {
   isAllocated: boolean;
 }
 
-const API_BASE = "https://localhost:7293/api/Houses";
+const API_BASE = "https://localhost:7255/api/House";
 
 const HousesManager: React.FC = () => {
-  const [houses, setHouses] = useState<House[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
 
   const [form, setForm] = useState<Partial<House>>({
     houseNumber: "",
@@ -24,17 +24,21 @@ const HousesManager: React.FC = () => {
     address: "",
     isAllocated: false,
   });
-  const [isEditing, setIsEditing] = useState(false);
 
   const fetchHouses = async () => {
     setLoading(true);
     try {
-      const resp = await fetch(API_BASE);
-      if (!resp.ok) throw new Error(`Error ${resp.status}`);
-      const data = (await resp.json()) as House[];
-      setHouses(data);
+      const response = await fetch(API_BASE);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+
+      // We're no longer using this data, but fetch to ensure API is working
+      await response.json();
       setError(null);
     } catch (err: any) {
+      console.error("Fetch error:", err);
       setError(err.message || "Failed to fetch houses");
     } finally {
       setLoading(false);
@@ -46,14 +50,15 @@ const HousesManager: React.FC = () => {
   }, []);
 
   const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value, type, checked } = e.target;
-    let val: any = value;
-    if (type === "checkbox") val = checked;
-    if (type === "number") val = value === "" ? undefined : parseInt(value, 10);
+    let val: any = type === "checkbox" ? checked : value;
+
+    if (type === "number") {
+      val = value === "" ? undefined : parseInt(value, 10);
+    }
+
     setForm((prev) => ({
       ...prev,
       [name]: val,
@@ -69,56 +74,24 @@ const HousesManager: React.FC = () => {
     }
 
     try {
-      let resp: Response;
-      if (isEditing && form.id != null) {
-        resp = await fetch(`${API_BASE}/${form.id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(form),
-        });
-      } else {
-        resp = await fetch(API_BASE, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(form),
-        });
-      }
+      const method = isEditing ? "PUT" : "POST";
+      const url = isEditing ? `${API_BASE}/${form.id}` : API_BASE;
 
-      if (!resp.ok) {
-        const errText = await resp.text();
-        throw new Error(`${resp.status} - ${errText}`);
+      const response = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`${response.status} - ${errText}`);
       }
 
       await fetchHouses();
       resetForm();
     } catch (err: any) {
-      alert(err.message || "Error submitting");
-    }
-  };
-
-  const startEdit = (h: House) => {
-    setForm({
-      id: h.id,
-      houseNumber: h.houseNumber,
-      societyId: h.societyId,
-      address: h.address,
-      isAllocated: h.isAllocated,
-    });
-    setIsEditing(true);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
-  const handleDelete = async (id: number) => {
-    if (!window.confirm("Are you sure to delete this house?")) return;
-
-    try {
-      const resp = await fetch(`${API_BASE}/${id}`, {
-        method: "DELETE",
-      });
-      if (!resp.ok) throw new Error(`Delete failed ${resp.status}`);
-      await fetchHouses();
-    } catch (err: any) {
-      alert(err.message || "Error deleting");
+      alert(err.message || "Submission failed.");
     }
   };
 
@@ -138,16 +111,12 @@ const HousesManager: React.FC = () => {
         <div className="card-body">
           <h2 className="card-title text-center mb-4">Houses Manager</h2>
 
-          {error && (
-            <div className="alert alert-danger" role="alert">
-              {error}
-            </div>
-          )}
+          {error && <div className="alert alert-danger">{error}</div>}
 
           {/* Form */}
           <form
             onSubmit={handleSubmit}
-            className="border rounded p-4 mb-5 bg-light"
+            className="border rounded p-4 mb-4 bg-light"
             noValidate
           >
             <h4 className="mb-4">
@@ -184,7 +153,6 @@ const HousesManager: React.FC = () => {
                   onChange={handleChange}
                   required
                   placeholder="e.g. 5"
-                  min={1}
                 />
               </div>
 
@@ -248,78 +216,11 @@ const HousesManager: React.FC = () => {
             </div>
           </form>
 
-          {/* Houses Table */}
-          <h4 className="mb-3">House List</h4>
-          {loading ? (
-            <div className="text-center py-5">
-              <div
-                className="spinner-border text-primary"
-                role="status"
-                aria-hidden="true"
-              ></div>
-              <span className="visually-hidden">Loading houses...</span>
-            </div>
-          ) : houses.length === 0 ? (
-            <p className="text-center text-muted">No houses found.</p>
-          ) : (
-            <div className="table-responsive">
-              <table className="table table-bordered table-striped align-middle">
-                <thead className="table-dark">
-                  <tr>
-                    <th>ID</th>
-                    <th>House Number</th>
-                    <th>Society ID</th>
-                    <th>Address</th>
-                    <th>Allocated</th>
-                    <th className="text-center">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {houses.map((h) => (
-                    <tr key={h.id}>
-                      <td>{h.id}</td>
-                      <td>{h.houseNumber}</td>
-                      <td>{h.societyId}</td>
-                      <td>{h.address}</td>
-                      <td>
-                        {h.isAllocated ? (
-                          <span className="badge bg-success">Yes</span>
-                        ) : (
-                          <span className="badge bg-secondary">No</span>
-                        )}
-                      </td>
-                      <td className="text-center">
-                        <div
-                          className="btn-group"
-                          role="group"
-                          aria-label="Actions"
-                        >
-                          <button
-                            className="btn btn-sm btn-info"
-                            title="Edit"
-                            onClick={() => startEdit(h)}
-                          >
-                            <i className="bi bi-pencil"></i>
-                          </button>
-                          <button
-                            className="btn btn-sm btn-danger"
-                            title="Delete"
-                            onClick={() => handleDelete(h.id)}
-                          >
-                            <i className="bi bi-trash"></i>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+          {/* Removed: House List/Table */}
         </div>
       </div>
 
-      {/* Bootstrap Icons CDN */}
+      {/* Bootstrap Icons */}
       <link
         rel="stylesheet"
         href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"

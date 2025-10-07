@@ -21,7 +21,7 @@ const SocietiesManager: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const API_URL = "https://localhost:7293/api/Societies";
+  const API_URL = "https://localhost:7255/api/Society";
 
   useEffect(() => {
     fetchSocieties();
@@ -32,11 +32,22 @@ const SocietiesManager: React.FC = () => {
     try {
       const res = await fetch(API_URL);
       if (!res.ok) throw new Error("Failed to fetch societies");
+
       const data = await res.json();
+      console.log("Fetched societies:", data); // Optional: Debug
+
+      if (!Array.isArray(data)) {
+        throw new Error(
+          "Unexpected response format: societies is not an array."
+        );
+      }
+
       setSocieties(data);
-    } catch (error) {
+      setError(null);
+    } catch (error: any) {
       console.error(error);
-      setError("Error loading societies.");
+      setSocieties([]); // fallback to avoid crash on `.map`
+      setError(error.message || "Error loading societies.");
     } finally {
       setLoading(false);
     }
@@ -71,8 +82,8 @@ const SocietiesManager: React.FC = () => {
 
       await fetchSocieties();
       resetForm();
-    } catch (error) {
-      setError("Error saving society.");
+    } catch (error: any) {
+      setError(error.message || "Error saving society.");
       console.error(error);
     }
   };
@@ -92,9 +103,9 @@ const SocietiesManager: React.FC = () => {
       const response = await fetch(`${API_URL}/${id}`, { method: "DELETE" });
       if (!response.ok) throw new Error("Failed to delete society");
       await fetchSocieties();
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      setError("Error deleting society.");
+      setError(error.message || "Error deleting society.");
     }
   };
 
@@ -107,7 +118,7 @@ const SocietiesManager: React.FC = () => {
   return (
     <div className="container py-4">
       <div className="text-center mb-4">
-        <h2 className="fw-bold"> Societies Management</h2>
+        <h2 className="fw-bold">Societies Management</h2>
         <p className="text-muted">
           Manage housing societies and their locations
         </p>
@@ -116,7 +127,7 @@ const SocietiesManager: React.FC = () => {
       <div className="card shadow-sm mb-5">
         <div className="card-header bg-primary text-white">
           <h5 className="mb-0">
-            {editing ? " Edit Society" : " Add New Society"}
+            {editing ? "Edit Society" : "Add New Society"}
           </h5>
         </div>
         <form className="card-body" onSubmit={handleSubmit} noValidate>
@@ -183,7 +194,7 @@ const SocietiesManager: React.FC = () => {
         </form>
       </div>
 
-      <h5 className="mb-3"> Existing Societies</h5>
+      <h5 className="mb-3">Existing Societies</h5>
       {loading ? (
         <div className="text-center my-5">
           <div className="spinner-border text-primary" role="status" />
