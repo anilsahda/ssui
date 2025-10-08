@@ -53,13 +53,10 @@ export default function IssueReportsPage() {
         throw new Error("Failed to fetch data");
       }
 
-      const [reportsData, issueBooksDataRaw] = await Promise.all([
-        reportsRes.json(),
-        issueBooksRes.json(),
-      ]);
+      const reportsDataRaw = await reportsRes.json();
+      const issueBooksDataRaw = await issueBooksRes.json();
 
-      // ✅ Validate data from API
-      console.log("issueBooksDataRaw:", issueBooksDataRaw); // remove later
+      const reportsData = Array.isArray(reportsDataRaw) ? reportsDataRaw : [];
       const issueBooksData = Array.isArray(issueBooksDataRaw)
         ? issueBooksDataRaw
         : [];
@@ -299,7 +296,7 @@ export default function IssueReportsPage() {
             <div className="animate-spin h-6 w-6 mx-auto border-4 border-blue-500 border-t-transparent rounded-full" />
             <p className="text-gray-500 mt-2">Loading reports...</p>
           </div>
-        ) : (
+        ) : Array.isArray(reports) && reports.length > 0 ? (
           <table className="w-full table-auto border border-gray-300 text-sm">
             <thead className="bg-gray-100">
               <tr>
@@ -311,42 +308,38 @@ export default function IssueReportsPage() {
               </tr>
             </thead>
             <tbody>
-              {reports.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="text-center py-4 text-gray-500">
-                    No reports found.
+              {reports.map((r) => (
+                <tr key={r.id} className="text-center">
+                  <td className="px-3 py-2 border">{r.id}</td>
+                  <td className="px-3 py-2 border">{r.issueBookId}</td>
+                  <td className="px-3 py-2 border">
+                    {r.reportDate.split("T")[0]}
+                  </td>
+                  <td className="px-3 py-2 border">{r.message}</td>
+                  <td className="px-3 py-2 border flex justify-center gap-2">
+                    <button
+                      className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs"
+                      onClick={() => handleEdit(r)}
+                      disabled={submitting}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs"
+                      onClick={() => handleDelete(r.id)}
+                      disabled={submitting}
+                    >
+                      Delete
+                    </button>
                   </td>
                 </tr>
-              ) : (
-                reports.map((r) => (
-                  <tr key={r.id} className="text-center">
-                    <td className="px-3 py-2 border">{r.id}</td>
-                    <td className="px-3 py-2 border">{r.issueBookId}</td>
-                    <td className="px-3 py-2 border">
-                      {r.reportDate.split("T")[0]}
-                    </td>
-                    <td className="px-3 py-2 border">{r.message}</td>
-                    <td className="px-3 py-2 border flex justify-center gap-2">
-                      <button
-                        className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs"
-                        onClick={() => handleEdit(r)}
-                        disabled={submitting}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs"
-                        onClick={() => handleDelete(r.id)}
-                        disabled={submitting}
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
+              ))}
             </tbody>
           </table>
+        ) : (
+          <div className="text-center py-4 text-gray-500">
+            No reports found.
+          </div>
         )}
       </div>
     </div>

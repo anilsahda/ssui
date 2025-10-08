@@ -66,8 +66,28 @@ export default function IssueBooksPage() {
         issueRes.json(),
       ]);
 
+      // Validate bookData
+      if (!Array.isArray(bookData)) {
+        throw new Error("Books data is not an array");
+      }
       setBooks(bookData);
-      setStudents(studentData);
+
+      // Validate studentData
+      let studentsArray: Student[] = [];
+
+      if (Array.isArray(studentData)) {
+        studentsArray = studentData;
+      } else if (studentData && Array.isArray(studentData.data)) {
+        studentsArray = studentData.data;
+      } else {
+        throw new Error("Students data is not an array");
+      }
+      setStudents(studentsArray);
+
+      // Validate issueData
+      if (!Array.isArray(issueData)) {
+        throw new Error("Issues data is not an array");
+      }
       setIssues(issueData);
     } catch (err: any) {
       setError(err.message || "Error loading data");

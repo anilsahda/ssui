@@ -10,13 +10,12 @@ type ReturnBook = {
   fineAmount: number;
   issueBook?: {
     id: number;
-    // optionally more fields like student, book
   };
 };
 
 type IssueBook = {
   id: number;
-  // optionally more fields
+  title?: string;
 };
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://localhost:7293";
@@ -39,28 +38,41 @@ export default function ReturnBooksPage() {
   });
   const [formErrors, setFormErrors] = useState<Partial<typeof formData>>({});
 
-  // Load all data (issueBooks + returns)
   const loadAll = async () => {
     try {
       setLoading(true);
       setError(null);
+
       const [ibRes, retRes] = await Promise.all([
         fetch(`${API_BASE}/api/IssueBooks`),
         fetch(`${API_BASE}/api/ReturnBooks`),
       ]);
+
       if (!ibRes.ok || !retRes.ok) {
         throw new Error("Failed to fetch data");
       }
-      const [ibData, retData] = await Promise.all([
-        ibRes.json(),
-        retRes.json(),
-      ]);
-      setIssueBooks(ibData);
-      setReturns(retData);
+
+      const ibData = await ibRes.json();
+      const retData = await retRes.json();
+
+      console.log("IssueBooks API response:", ibData);
+
+      // Adjust these lines if your API returns { data: [...] }
+      const issueBooksArray = Array.isArray(ibData)
+        ? ibData
+        : ibData?.data ?? [];
+      const returnBooksArray = Array.isArray(retData)
+        ? retData
+        : retData?.data ?? [];
+
+      setIssueBooks(issueBooksArray);
+      setReturns(returnBooksArray);
     } catch (err: any) {
       console.error("loadAll error", err);
       setError(err.message || "Error loading data");
       toast.error("Error loading data: " + (err.message || ""));
+      setIssueBooks([]);
+      setReturns([]);
     } finally {
       setLoading(false);
     }
@@ -166,7 +178,6 @@ export default function ReturnBooksPage() {
         throw new Error(`Delete failed with status ${resp.status}`);
       }
       toast.success("Deleted successfully");
-      // Optimistic removal
       setReturns((prev) => prev.filter((r) => r.id !== id));
     } catch (err: any) {
       console.error("delete error", err);
@@ -205,11 +216,12 @@ export default function ReturnBooksPage() {
               }`}
             >
               <option value={0}>Select Issue Book</option>
-              {issueBooks.map((ib) => (
-                <option key={ib.id} value={ib.id}>
-                  #{ib.id}
-                </option>
-              ))}
+              {Array.isArray(issueBooks) &&
+                issueBooks.map((ib) => (
+                  <option key={ib.id} value={ib.id}>
+                    {ib.title ?? `#${ib.id}`}
+                  </option>
+                ))}
             </select>
             {formErrors.issueBookId && (
               <p className="text-red-500 text-sm mt-1">

@@ -54,16 +54,33 @@ export default function PenaltiesPage() {
         throw new Error("Failed to fetch data");
       }
 
-      const [studentsData, penaltiesData] = await Promise.all([
-        studentsRes.json(),
-        penaltiesRes.json(),
-      ]);
+      const studentsData = await studentsRes.json();
+      const penaltiesData = await penaltiesRes.json();
 
-      setStudents(studentsData);
-      setPenalties(penaltiesData);
+      // Debug: log what studentsData looks like
+      console.log("studentsData", studentsData);
+
+      // Ensure studentsData is an array before setting it
+      if (Array.isArray(studentsData)) {
+        setStudents(studentsData);
+      } else if (studentsData && typeof studentsData === "object") {
+        // Sometimes API sends an object with a nested array, e.g. { data: [...] }
+        // Adjust this as per your API shape:
+        if (Array.isArray((studentsData as any).data)) {
+          setStudents((studentsData as any).data);
+        } else {
+          throw new Error("Students data is not an array");
+        }
+      } else {
+        throw new Error("Students data is invalid");
+      }
+
+      setPenalties(Array.isArray(penaltiesData) ? penaltiesData : []);
     } catch (err: any) {
       console.error("loadData error", err);
       setError(err.message || "Error loading data");
+      setStudents([]); // Reset to empty to prevent errors
+      setPenalties([]);
     } finally {
       setLoading(false);
     }
@@ -194,7 +211,7 @@ export default function PenaltiesPage() {
       <h2 className="text-3xl font-bold mb-6 text-center">Penalties</h2>
 
       {error && (
-        <div className="bg-red-100 text-red-700 p-3 m b-4 rounded">{error}</div>
+        <div className="bg-red-100 text-red-700 p-3 mb-4 rounded">{error}</div>
       )}
 
       {/* Form */}
@@ -214,7 +231,7 @@ export default function PenaltiesPage() {
               onChange={handleChange}
             >
               <option value={0}>Select Student</option>
-              {students.map((s) => (
+              {(students || []).map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name}
                 </option>

@@ -25,7 +25,6 @@ export default function PublicationsPage() {
   >({});
   const [editId, setEditId] = useState<number | null>(null);
 
-  // Fetch publications on mount
   useEffect(() => {
     loadPublications();
   }, []);
@@ -39,6 +38,14 @@ export default function PublicationsPage() {
         throw new Error(`Failed to fetch: ${res.status}`);
       }
       const data = await res.json();
+
+      if (!Array.isArray(data)) {
+        console.error("Expected an array but got:", data);
+        setPublications([]);
+        setError("Invalid data format received from API.");
+        return;
+      }
+
       setPublications(data);
     } catch (err: any) {
       console.error("loadPublications error", err);
@@ -128,7 +135,6 @@ export default function PublicationsPage() {
         throw new Error(`Delete failed: ${resp.status} — ${text}`);
       }
       toast.success("Publication deleted");
-      // Optimistically update UI
       setPublications((prev) => prev.filter((p) => p.id !== id));
     } catch (err: any) {
       console.error("delete error", err);
@@ -147,7 +153,6 @@ export default function PublicationsPage() {
         </div>
       )}
 
-      {/* Form */}
       <div className="bg-white shadow-lg rounded-lg p-6 mb-8">
         <h3 className="text-xl font-semibold mb-4">
           {editId ? `Edit Publication #${editId}` : "Add New Publication"}
@@ -203,7 +208,6 @@ export default function PublicationsPage() {
         </form>
       </div>
 
-      {/* Table */}
       <div className="overflow-x-auto">
         {loading ? (
           <p className="text-gray-500">Loading publications...</p>
