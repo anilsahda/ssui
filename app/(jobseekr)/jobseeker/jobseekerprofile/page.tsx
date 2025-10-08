@@ -1,254 +1,267 @@
 "use client";
 
-import React, { useState } from "react";
-import dynamic from "next/dynamic";
-import { Container, Row, Col, Form, Button, Card } from "react-bootstrap";
+import React, { useState, useEffect, ChangeEvent, FormEvent } from "react";
+import axios from "axios";
 
-// ✅ Dynamically import react-select (no SSR issues)
-const Select = dynamic(() => import("react-select"), { ssr: false });
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_BASE || "https://localhost:7129/api";
 
-const ProfilePage: React.FC = () => {
-  // 🔹 State for Education entries
-  const [educationList, setEducationList] = useState([
-    { qualification: "", course: "", year: "" },
-  ]);
+interface JobSeekerProfile {
+  id: number;
+  fullName: string;
+  email: string;
+  mobile: string;
+  skills: string;
+  experience: number; // in years
+  resumeUrl?: string;
+}
 
-  // Add new education row
-  const handleAddEducation = () => {
-    setEducationList([...educationList, { qualification: "", course: "", year: "" }]);
+export default function JobSeekersPage() {
+  const [jobSeekers, setJobSeekers] = useState<JobSeekerProfile[]>([]);
+  const [formData, setFormData] = useState<JobSeekerProfile>({
+    id: 0,
+    fullName: "",
+    email: "",
+    mobile: "",
+    skills: "",
+    experience: 0,
+    resumeUrl: "",
+  });
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  // Fetch all job seekers
+  const fetchJobSeekers = async () => {
+    try {
+      const res = await axios.get(`${API_BASE}/JobSeeker`);
+      setJobSeekers(res.data);
+    } catch (err) {
+      console.error("Error fetching job seekers:", err);
+    }
   };
 
-  // Delete education row
-  const handleDeleteEducation = (index: number) => {
-    const updated = [...educationList];
-    updated.splice(index, 1);
-    setEducationList(updated);
-  };
+  useEffect(() => {
+    fetchJobSeekers();
+  }, []);
 
-  // Update field
-  const handleEducationChange = (
-    index: number,
-    field: string,
-    value: string
+  // Handle input change
+  const handleChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
-    const updated = [...educationList];
-    (updated[index] as any)[field] = value;
-    setEducationList(updated);
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: name === "experience" ? Number(value) : value,
+    });
   };
 
-  // Options for skills
-  const technicalOptions = [
-    { value: "react", label: "React" },
-    { value: "node", label: "Node.js" },
-    { value: "dotnet", label: ".NET" },
-    { value: "sql", label: "SQL" },
-    { value: "java", label: "Java" },
-    { value: "python", label: "Python" },
-  ];
+  // Handle form submit
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      if (editingId) {
+        await axios.put(`${API_BASE}/JobSeeker/${editingId}`, formData);
+        alert("Job seeker updated successfully!");
+      } else {
+        await axios.post(`${API_BASE}/JobSeeker`, formData);
+        alert("Job seeker created successfully!");
+      }
+      setFormData({
+        id: 0,
+        fullName: "",
+        email: "",
+        mobile: "",
+        skills: "",
+        experience: 0,
+        resumeUrl: "",
+      });
+      setEditingId(null);
+      fetchJobSeekers();
+    } catch (err) {
+      console.error("Error saving job seeker:", err);
+      alert("An error occurred!");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const softSkillOptions = [
-    { value: "communication", label: "Communication" },
-    { value: "teamwork", label: "Teamwork" },
-    { value: "leadership", label: "Leadership" },
-    { value: "problem-solving", label: "Problem Solving" },
-    { value: "adaptability", label: "Adaptability" },
-  ];
+  // Edit existing seeker
+  const handleEdit = (seeker: JobSeekerProfile) => {
+    setFormData(seeker);
+    setEditingId(seeker.id);
+  };
 
-  const languageOptions = [
-    { value: "english", label: "English (Fluent)" },
-    { value: "hindi", label: "Hindi (Read/Write)" },
-    { value: "spanish", label: "Spanish (Basic)" },
-    { value: "french", label: "French (Intermediate)" },
-  ];
+  // Delete seeker
+  const handleDelete = async (id: number) => {
+    if (!confirm("Are you sure you want to delete this job seeker?")) return;
+    try {
+      await axios.delete(`${API_BASE}/JobSeeker/${id}`);
+      alert("Job seeker deleted successfully!");
+      fetchJobSeekers();
+    } catch (err) {
+      console.error("Error deleting job seeker:", err);
+    }
+  };
 
   return (
-    <Container className="mt-4 mb-5">
-      <h2 className="mb-4">Job Seeker Profile</h2>
+    <div className="container mx-auto p-6 max-w-6xl">
+      <h1 className="text-3xl font-bold mb-6 text-center text-blue-700">
+        👤 Job Seekers Management
+      </h1>
 
-      {/* 👤 Personal Info */}
-      <Card className="p-4 mb-4 shadow-sm">
-        <h4>👤 Personal Info</h4>
-        <Row>
-          <Col md={6}>
-            <Form.Group className="mb-3">
-              <Form.Label>Full Name</Form.Label>
-              <Form.Control type="text" placeholder="Enter full name" />
-            </Form.Group>
-          </Col>
-          <Col md={3}>
-            <Form.Group className="mb-3">
-              <Form.Label>Date of Birth</Form.Label>
-              <Form.Control type="date" />
-            </Form.Group>
-          </Col>
-          <Col md={3}>
-            <Form.Group className="mb-3">
-              <Form.Label>Gender</Form.Label>
-              <Form.Select>
-                <option value="">Select</option>
-                <option>Male</option>
-                <option>Female</option>
-                <option>Other</option>
-              </Form.Select>
-            </Form.Group>
-          </Col>
-        </Row>
-        <Row>
-          <Col md={6}>
-            <Form.Group className="mb-3">
-              <Form.Label>Email</Form.Label>
-              <Form.Control type="email" placeholder="Enter email" />
-            </Form.Group>
-          </Col>
-          <Col md={6}>
-            <Form.Group className="mb-3">
-              <Form.Label>Mobile Number</Form.Label>
-              <Form.Control type="text" placeholder="Enter mobile number" />
-            </Form.Group>
-          </Col>
-        </Row>
-      </Card>
+      {/* Form */}
+      <form
+        onSubmit={handleSubmit}
+        className="bg-white shadow-md rounded-xl p-6 mb-8 border border-gray-200"
+      >
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block font-medium mb-1">Full Name</label>
+            <input
+              type="text"
+              name="fullName"
+              value={formData.fullName}
+              onChange={handleChange}
+              required
+              className="w-full border px-3 py-2 rounded-md focus:ring focus:ring-blue-200"
+            />
+          </div>
 
-      {/* 🎓 Education */}
-      <Card className="p-4 mb-4 shadow-sm">
-        <h4 className="d-flex justify-content-between align-items-center">
-          🎓 Education
-          <Button variant="success" size="sm" onClick={handleAddEducation}>
-            ➕ Add Education
-          </Button>
-        </h4>
+          <div>
+            <label className="block font-medium mb-1">Email</label>
+            <input
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              required
+              className="w-full border px-3 py-2 rounded-md focus:ring focus:ring-blue-200"
+            />
+          </div>
 
-        {educationList.map((edu, index) => (
-          <Row key={index} className="align-items-end mb-3">
-            <Col md={4}>
-              <Form.Group>
-                <Form.Label>Qualification</Form.Label>
-                <Form.Select
-                  value={edu.qualification}
-                  onChange={(e) =>
-                    handleEducationChange(index, "qualification", e.target.value)
-                  }
-                >
-                  <option value="">Select</option>
-                  <option>10th</option>
-                  <option>12th</option>
-                  <option>Diploma</option>
-                  <option>Graduation</option>
-                  <option>Masters</option>
-                  <option>PhD</option>
-                </Form.Select>
-              </Form.Group>
-            </Col>
+          <div>
+            <label className="block font-medium mb-1">Mobile</label>
+            <input
+              type="text"
+              name="mobile"
+              value={formData.mobile}
+              onChange={handleChange}
+              required
+              className="w-full border px-3 py-2 rounded-md focus:ring focus:ring-blue-200"
+            />
+          </div>
 
-            <Col md={4}>
-              <Form.Group>
-                <Form.Label>Course / Stream</Form.Label>
-                <Form.Control
-                  type="text"
-                  placeholder="Enter course/stream"
-                  value={edu.course}
-                  onChange={(e) =>
-                    handleEducationChange(index, "course", e.target.value)
-                  }
-                />
-              </Form.Group>
-            </Col>
+          <div>
+            <label className="block font-medium mb-1">Skills</label>
+            <textarea
+              name="skills"
+              value={formData.skills}
+              onChange={handleChange}
+              required
+              className="w-full border px-3 py-2 rounded-md focus:ring focus:ring-blue-200"
+            />
+          </div>
 
-            <Col md={3}>
-              <Form.Group>
-                <Form.Label>Year of Passing</Form.Label>
-                <Form.Control
-                  type="number"
-                  placeholder="e.g. 2023"
-                  value={edu.year}
-                  onChange={(e) =>
-                    handleEducationChange(index, "year", e.target.value)
-                  }
-                />
-              </Form.Group>
-            </Col>
+          <div>
+            <label className="block font-medium mb-1">Experience (Years)</label>
+            <input
+              type="number"
+              name="experience"
+              value={formData.experience}
+              onChange={handleChange}
+              min={0}
+              required
+              className="w-full border px-3 py-2 rounded-md focus:ring focus:ring-blue-200"
+            />
+          </div>
 
-            <Col md={1}>
-              <Button
-                variant="danger"
-                size="sm"
-                onClick={() => handleDeleteEducation(index)}
-                disabled={educationList.length === 1}
-              >
-                ❌
-              </Button>
-            </Col>
-          </Row>
-        ))}
-      </Card>
+          <div>
+            <label className="block font-medium mb-1">Resume URL</label>
+            <input
+              type="text"
+              name="resumeUrl"
+              value={formData.resumeUrl || ""}
+              onChange={handleChange}
+              className="w-full border px-3 py-2 rounded-md focus:ring focus:ring-blue-200"
+            />
+          </div>
+        </div>
 
-      {/* 💼 Work Experience */}
-      <Card className="p-4 mb-4 shadow-sm">
-        <h4>💼 Work Experience</h4>
-        <Row>
-          <Col md={6}>
-            <Form.Group className="mb-3">
-              <Form.Label>Company Name</Form.Label>
-              <Form.Control type="text" placeholder="Enter company name" />
-            </Form.Group>
-          </Col>
-          <Col md={6}>
-            <Form.Group className="mb-3">
-              <Form.Label>Job Title</Form.Label>
-              <Form.Control type="text" placeholder="Enter job title" />
-            </Form.Group>
-          </Col>
-        </Row>
-        <Form.Group className="mb-3">
-          <Form.Label>Responsibilities</Form.Label>
-          <Form.Control
-            as="textarea"
-            rows={2}
-            placeholder="Describe responsibilities"
-          />
-        </Form.Group>
-      </Card>
+        <button
+          type="submit"
+          disabled={loading}
+          className={`w-full mt-5 py-2 rounded-md text-white ${
+            loading ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"
+          }`}
+        >
+          {editingId ? "Update Job Seeker" : "Create Job Seeker"}
+        </button>
+      </form>
 
-      {/* 🛠 Skills */}
-      <Card className="p-4 mb-4 shadow-sm">
-        <h4>🛠 Skills</h4>
-        <Row>
-          <Col md={6}>
-            <Form.Group className="mb-3">
-              <Form.Label>Technical Skills</Form.Label>
-              <Select
-                options={technicalOptions}
-                isMulti
-                placeholder="Select technical skills"
-              />
-            </Form.Group>
-          </Col>
-          <Col md={6}>
-            <Form.Group className="mb-3">
-              <Form.Label>Soft Skills</Form.Label>
-              <Select
-                options={softSkillOptions}
-                isMulti
-                placeholder="Select soft skills"
-              />
-            </Form.Group>
-          </Col>
-        </Row>
-        <Form.Group className="mb-3">
-          <Form.Label>Languages Known</Form.Label>
-          <Select
-            options={languageOptions}
-            isMulti
-            placeholder="Select languages"
-          />
-        </Form.Group>
-      </Card>
-
-      <Button variant="primary" size="lg" className="mt-3">
-        Save Profile
-      </Button>
-    </Container>
+      {/* Table */}
+      <table className="w-full bg-white shadow-md rounded-xl overflow-hidden border border-gray-200">
+        <thead className="bg-gray-100 text-left">
+          <tr>
+            <th className="p-3 border-b">ID</th>
+            <th className="p-3 border-b">Full Name</th>
+            <th className="p-3 border-b">Email</th>
+            <th className="p-3 border-b">Mobile</th>
+            <th className="p-3 border-b">Skills</th>
+            <th className="p-3 border-b">Experience</th>
+            <th className="p-3 border-b">Resume</th>
+            <th className="p-3 border-b text-center">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {jobSeekers.length === 0 ? (
+            <tr>
+              <td colSpan={8} className="text-center p-4 text-gray-500">
+                No job seekers found.
+              </td>
+            </tr>
+          ) : (
+            jobSeekers.map((seeker) => (
+              <tr key={seeker.id} className="hover:bg-gray-50">
+                <td className="p-3 border-b">{seeker.id}</td>
+                <td className="p-3 border-b">{seeker.fullName}</td>
+                <td className="p-3 border-b">{seeker.email}</td>
+                <td className="p-3 border-b">{seeker.mobile}</td>
+                <td className="p-3 border-b">{seeker.skills}</td>
+                <td className="p-3 border-b">{seeker.experience}</td>
+                <td className="p-3 border-b">
+                  {seeker.resumeUrl ? (
+                    <a
+                      href={seeker.resumeUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline"
+                    >
+                      View Resume
+                    </a>
+                  ) : (
+                    "N/A"
+                  )}
+                </td>
+                <td className="p-3 border-b text-center space-x-2">
+                  <button
+                    onClick={() => handleEdit(seeker)}
+                    className="bg-yellow-500 text-white px-3 py-1 rounded-md hover:bg-yellow-600"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(seeker.id)}
+                    className="bg-red-600 text-white px-3 py-1 rounded-md hover:bg-red-700"
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </table>
+    </div>
   );
-};
-
-export default ProfilePage;
+}

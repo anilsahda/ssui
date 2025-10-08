@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { FaGoogle, FaFacebook, FaLinkedin } from "react-icons/fa";
-
+import AOS from "aos";
+import "aos/dist/aos.css";
 import API from "@/api";
 import useAuthStore from "@/store/useAuthStore";
+import "bootstrap/dist/css/bootstrap.min.css";
 
 export default function Login() {
   const router = useRouter();
@@ -14,50 +16,150 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+
+  useEffect(() => {
+    AOS.init({ duration: 800, once: true });
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setErrorMsg("");
 
     try {
       const res = await API.post("/auths/login", { email, password });
-
-      // Save user + token in persistent Zustand
       login(res.data.user, res.data.token);
 
-      // Redirect based on role
-      if (res.data.role === "Super Admin") router.push("/superadmin");
-      else if (res.data.role === "Admin") router.push("/admin");
-      else if (res.data.role === "Company") router.push("/company");
-      else if (res.data.role === "Job Seeker") router.push("/jobseeker");      
-      else router.push("/student");
+      // Role-based redirect
+      switch (res.data.role) {
+        case "Super Admin":
+          router.push("/superadmin");
+          break;
+        case "Admin":
+          router.push("/admin");
+          break;
+        case "Company":
+          router.push("/company");
+          break;
+        case "Job Seeker":
+          router.push("/jobseeker");
+          break;
+        default:
+          router.push("/student");
+      }
     } catch (err: any) {
-      alert(err.response?.data?.error || "Login failed");
+      setErrorMsg(
+        err.response?.data?.error || "Login failed. Please try again."
+      );
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="d-flex justify-content-center align-items-center vh-100 bg-light">
-      <div className="card shadow p-4" style={{ width: "350px", borderRadius: "12px" }}>
-        <h3 className="text-center mb-4">Login</h3>
-        <form onSubmit={handleSubmit}>
-          <div className="mb-3">
-            <label className="form-label">Email</label>
-            <input type="email" className="form-control" placeholder="Enter your email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+    <div
+      className="d-flex justify-content-center align-items-center vh-100 bg-gradient"
+      style={{ background: "linear-gradient(135deg,#667eea,#764ba2)" }}
+    >
+      <div
+        className="card shadow-lg p-4"
+        style={{ width: "360px", borderRadius: "16px" }}
+        data-aos="zoom-in"
+      >
+        <h3 className="text-center mb-4 fw-bold text-primary">Welcome Back!</h3>
+        <p className="text-center text-muted mb-4" data-aos="fade-up">
+          Sign in to access your account
+        </p>
+
+        {errorMsg && (
+          <div className="alert alert-danger text-center" data-aos="fade-down">
+            {errorMsg}
           </div>
-          <div className="mb-3">
-            <label className="form-label">Password</label>
-            <input type="password" className="form-control" placeholder="Enter your password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+        )}
+
+        <form onSubmit={handleSubmit} data-aos="fade-up" data-aos-delay="100">
+          <div className="form-floating mb-3">
+            <input
+              type="email"
+              className="form-control"
+              id="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+            <label htmlFor="email">Email</label>
           </div>
-          <button type="submit" className="btn btn-primary w-100 mb-3" disabled={loading}>{loading ? "Logging in..." : "Login"}</button>
+          <div className="form-floating mb-3">
+            <input
+              type="password"
+              className="form-control"
+              id="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+            <label htmlFor="password">Password</label>
+          </div>
+
+          <button
+            type="submit"
+            className="btn btn-primary w-100 mb-3 shadow-sm"
+            disabled={loading}
+          >
+            {loading ? "Logging in..." : "Login"}
+          </button>
         </form>
 
-        <div className="d-flex justify-content-center gap-3">
-          <button type="button" className="btn btn-outline-secondary rounded-circle"><FaGoogle className="text-danger" /></button>
-          <button type="button" className="btn btn-outline-secondary rounded-circle"><FaFacebook className="text-primary" /></button>
-          <button type="button" className="btn btn-outline-secondary rounded-circle"><FaLinkedin className="text-info" /></button>
+        <div
+          className="text-center mb-3"
+          data-aos="fade-up"
+          data-aos-delay="200"
+        >
+          <span className="text-muted">Or login with</span>
+        </div>
+        <div
+          className="d-flex justify-content-center gap-3 mb-3"
+          data-aos="fade-up"
+          data-aos-delay="300"
+        >
+          <button
+            type="button"
+            className="btn btn-outline-light rounded-circle shadow-sm p-2"
+            title="Login with Google"
+          >
+            <FaGoogle className="text-danger" size={20} />
+          </button>
+          <button
+            type="button"
+            className="btn btn-outline-light rounded-circle shadow-sm p-2"
+            title="Login with Facebook"
+          >
+            <FaFacebook className="text-primary" size={20} />
+          </button>
+          <button
+            type="button"
+            className="btn btn-outline-light rounded-circle shadow-sm p-2"
+            title="Login with LinkedIn"
+          >
+            <FaLinkedin className="text-info" size={20} />
+          </button>
+        </div>
+
+        <div className="text-center" data-aos="fade-up" data-aos-delay="400">
+          <p className="mb-0">
+            Don't have an account?{" "}
+            <a href="/register" className="text-primary fw-bold">
+              Register
+            </a>
+          </p>
+          <p>
+            <a href="/forgot-password" className="text-secondary small">
+              Forgot Password?
+            </a>
+          </p>
         </div>
       </div>
     </div>

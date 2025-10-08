@@ -6,48 +6,55 @@ import axios from "axios";
 const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE || "https://localhost:7129/api";
 
-interface JobSeekerReport {
+interface PostJob {
   id: number;
-  jobSeekerId: number;
-  reportTitle: string;
+  title: string;
   description: string;
-  createdDate: string; // ISO string
+  location: string;
+  salary: string;
 }
 
-export default function JobSeekerReportsPage() {
-  const [reports, setReports] = useState<JobSeekerReport[]>([]);
-  const [formData, setFormData] = useState<JobSeekerReport>({
+interface PostedJob {
+  id: number;
+  companyId: number;
+  postJobId: number;
+  postedDate: string;
+  postJob?: PostJob;
+}
+
+export default function PostedJobsPage() {
+  const [jobs, setJobs] = useState<PostedJob[]>([]);
+  const [formData, setFormData] = useState<PostedJob>({
     id: 0,
-    jobSeekerId: 0,
-    reportTitle: "",
-    description: "",
-    createdDate: new Date().toISOString().slice(0, 10), // yyyy-mm-dd
+    companyId: 0,
+    postJobId: 0,
+    postedDate: new Date().toISOString().slice(0, 10),
   });
   const [editingId, setEditingId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Fetch all reports
-  const fetchReports = async () => {
+  // Fetch all posted jobs
+  const fetchJobs = async () => {
     try {
-      const res = await axios.get(`${API_BASE}/JobSeekerReport`);
-      setReports(res.data);
+      const res = await axios.get(`${API_BASE}/PostedJob`);
+      setJobs(res.data);
     } catch (err) {
-      console.error("Error fetching reports:", err);
+      console.error("Error fetching posted jobs:", err);
     }
   };
 
   useEffect(() => {
-    fetchReports();
+    fetchJobs();
   }, []);
 
   // Handle input change
   const handleChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
     setFormData({
       ...formData,
-      [name]: name === "jobSeekerId" ? Number(value) : value,
+      [name]: ["companyId", "postJobId"].includes(name) ? Number(value) : value,
     });
   };
 
@@ -57,51 +64,50 @@ export default function JobSeekerReportsPage() {
     setLoading(true);
     try {
       if (editingId) {
-        await axios.put(`${API_BASE}/JobSeekerReport/${editingId}`, formData);
-        alert("Report updated successfully!");
+        await axios.put(`${API_BASE}/PostedJob/${editingId}`, formData);
+        alert("Posted job updated successfully!");
       } else {
-        await axios.post(`${API_BASE}/JobSeekerReport`, formData);
-        alert("Report created successfully!");
+        await axios.post(`${API_BASE}/PostedJob`, formData);
+        alert("Posted job created successfully!");
       }
       setFormData({
         id: 0,
-        jobSeekerId: 0,
-        reportTitle: "",
-        description: "",
-        createdDate: new Date().toISOString().slice(0, 10),
+        companyId: 0,
+        postJobId: 0,
+        postedDate: new Date().toISOString().slice(0, 10),
       });
       setEditingId(null);
-      fetchReports();
+      fetchJobs();
     } catch (err) {
-      console.error("Error saving report:", err);
+      console.error("Error saving posted job:", err);
       alert("An error occurred!");
     } finally {
       setLoading(false);
     }
   };
 
-  // Edit existing report
-  const handleEdit = (report: JobSeekerReport) => {
-    setFormData(report);
-    setEditingId(report.id);
+  // Edit posted job
+  const handleEdit = (job: PostedJob) => {
+    setFormData(job);
+    setEditingId(job.id);
   };
 
-  // Delete report
+  // Delete posted job
   const handleDelete = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this report?")) return;
+    if (!confirm("Are you sure you want to delete this posted job?")) return;
     try {
-      await axios.delete(`${API_BASE}/JobSeekerReport/${id}`);
-      alert("Report deleted successfully!");
-      fetchReports();
+      await axios.delete(`${API_BASE}/PostedJob/${id}`);
+      alert("Posted job deleted successfully!");
+      fetchJobs();
     } catch (err) {
-      console.error("Error deleting report:", err);
+      console.error("Error deleting posted job:", err);
     }
   };
 
   return (
     <div className="container mx-auto p-6 max-w-6xl">
       <h1 className="text-3xl font-bold mb-6 text-center text-blue-700">
-        📄 Job Seeker Reports
+        💼 Posted Jobs
       </h1>
 
       {/* Form */}
@@ -111,11 +117,11 @@ export default function JobSeekerReportsPage() {
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block font-medium mb-1">Job Seeker ID</label>
+            <label className="block font-medium mb-1">Company ID</label>
             <input
               type="number"
-              name="jobSeekerId"
-              value={formData.jobSeekerId}
+              name="companyId"
+              value={formData.companyId}
               onChange={handleChange}
               required
               className="w-full border px-3 py-2 rounded-md focus:ring focus:ring-blue-200"
@@ -123,22 +129,11 @@ export default function JobSeekerReportsPage() {
           </div>
 
           <div>
-            <label className="block font-medium mb-1">Report Title</label>
+            <label className="block font-medium mb-1">Post Job ID</label>
             <input
-              type="text"
-              name="reportTitle"
-              value={formData.reportTitle}
-              onChange={handleChange}
-              required
-              className="w-full border px-3 py-2 rounded-md focus:ring focus:ring-blue-200"
-            />
-          </div>
-
-          <div className="md:col-span-2">
-            <label className="block font-medium mb-1">Description</label>
-            <textarea
-              name="description"
-              value={formData.description}
+              type="number"
+              name="postJobId"
+              value={formData.postJobId}
               onChange={handleChange}
               required
               className="w-full border px-3 py-2 rounded-md focus:ring focus:ring-blue-200"
@@ -146,11 +141,11 @@ export default function JobSeekerReportsPage() {
           </div>
 
           <div>
-            <label className="block font-medium mb-1">Created Date</label>
+            <label className="block font-medium mb-1">Posted Date</label>
             <input
               type="date"
-              name="createdDate"
-              value={formData.createdDate.slice(0, 10)}
+              name="postedDate"
+              value={formData.postedDate.slice(0, 10)}
               onChange={handleChange}
               className="w-full border px-3 py-2 rounded-md focus:ring focus:ring-blue-200"
             />
@@ -164,7 +159,7 @@ export default function JobSeekerReportsPage() {
             loading ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"
           }`}
         >
-          {editingId ? "Update Report" : "Create Report"}
+          {editingId ? "Update Posted Job" : "Create Posted Job"}
         </button>
       </form>
 
@@ -173,39 +168,43 @@ export default function JobSeekerReportsPage() {
         <thead className="bg-gray-100 text-left">
           <tr>
             <th className="p-3 border-b">ID</th>
-            <th className="p-3 border-b">Job Seeker ID</th>
+            <th className="p-3 border-b">Company ID</th>
+            <th className="p-3 border-b">Post Job ID</th>
             <th className="p-3 border-b">Title</th>
             <th className="p-3 border-b">Description</th>
-            <th className="p-3 border-b">Created Date</th>
+            <th className="p-3 border-b">Posted Date</th>
             <th className="p-3 border-b text-center">Actions</th>
           </tr>
         </thead>
         <tbody>
-          {reports.length === 0 ? (
+          {jobs.length === 0 ? (
             <tr>
-              <td colSpan={6} className="text-center p-4 text-gray-500">
-                No reports found.
+              <td colSpan={7} className="text-center p-4 text-gray-500">
+                No posted jobs found.
               </td>
             </tr>
           ) : (
-            reports.map((report) => (
-              <tr key={report.id} className="hover:bg-gray-50">
-                <td className="p-3 border-b">{report.id}</td>
-                <td className="p-3 border-b">{report.jobSeekerId}</td>
-                <td className="p-3 border-b">{report.reportTitle}</td>
-                <td className="p-3 border-b">{report.description}</td>
+            jobs.map((job) => (
+              <tr key={job.id} className="hover:bg-gray-50">
+                <td className="p-3 border-b">{job.id}</td>
+                <td className="p-3 border-b">{job.companyId}</td>
+                <td className="p-3 border-b">{job.postJobId}</td>
+                <td className="p-3 border-b">{job.postJob?.title || "-"}</td>
                 <td className="p-3 border-b">
-                  {new Date(report.createdDate).toLocaleDateString()}
+                  {job.postJob?.description || "-"}
+                </td>
+                <td className="p-3 border-b">
+                  {new Date(job.postedDate).toLocaleDateString()}
                 </td>
                 <td className="p-3 border-b text-center space-x-2">
                   <button
-                    onClick={() => handleEdit(report)}
+                    onClick={() => handleEdit(job)}
                     className="bg-yellow-500 text-white px-3 py-1 rounded-md hover:bg-yellow-600"
                   >
                     Edit
                   </button>
                   <button
-                    onClick={() => handleDelete(report.id)}
+                    onClick={() => handleDelete(job.id)}
                     className="bg-red-600 text-white px-3 py-1 rounded-md hover:bg-red-700"
                   >
                     Delete
