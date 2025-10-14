@@ -2,41 +2,36 @@
 
 import React, { useEffect, useState, ChangeEvent, FormEvent } from "react";
 import axios from "axios";
+import "bootstrap/dist/css/bootstrap.min.css";
 
 const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE || "https://localhost:7129/api";
+  process.env.NEXT_PUBLIC_API_BASE || "https://localhost:7115/api";
 
 interface JobMatch {
   id: number;
-  jobTitle: string;
-  companyName: string;
-  location: string;
-  matchPercentage: number;
   jobSeekerId: number;
-  jobId: number;
+  matchingJobId: number;
 }
 
 export default function JobMatchesPage() {
   const [jobMatches, setJobMatches] = useState<JobMatch[]>([]);
   const [formData, setFormData] = useState<JobMatch>({
     id: 0,
-    jobTitle: "",
-    companyName: "",
-    location: "",
-    matchPercentage: 0,
     jobSeekerId: 0,
-    jobId: 0,
+    matchingJobId: 0,
   });
   const [editingId, setEditingId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Fetch all job matches
+  // ✅ Fetch Job Matches
   const fetchJobMatches = async () => {
     try {
       const res = await axios.get(`${API_BASE}/JobMatches`);
-      setJobMatches(res.data);
+      const data = Array.isArray(res.data) ? res.data : [];
+      setJobMatches(data);
     } catch (err) {
       console.error("Error fetching job matches:", err);
+      setJobMatches([]); // fallback to empty array
     }
   };
 
@@ -44,215 +39,167 @@ export default function JobMatchesPage() {
     fetchJobMatches();
   }, []);
 
-  // Handle form input changes
+  // ✅ Handle form input changes
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData({
       ...formData,
-      [name]:
-        name === "matchPercentage" || name === "jobId" || name === "jobSeekerId"
-          ? Number(value)
-          : value,
+      [name]: Number(value),
     });
   };
 
-  // Submit form (create or update)
+  // ✅ Handle form submit (Create / Update)
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
+
     try {
       if (editingId) {
         await axios.put(`${API_BASE}/JobMatches/${editingId}`, formData);
-        alert("Job match updated successfully!");
+        alert("✅ Job match updated successfully!");
       } else {
         await axios.post(`${API_BASE}/JobMatches`, formData);
-        alert("Job match created successfully!");
+        alert("✅ Job match created successfully!");
       }
-      setFormData({
-        id: 0,
-        jobTitle: "",
-        companyName: "",
-        location: "",
-        matchPercentage: 0,
-        jobSeekerId: 0,
-        jobId: 0,
-      });
+
+      // Reset form
+      setFormData({ id: 0, jobSeekerId: 0, matchingJobId: 0 });
       setEditingId(null);
       fetchJobMatches();
     } catch (err) {
       console.error("Error saving job match:", err);
-      alert("An error occurred while saving!");
+      alert("❌ An error occurred while saving!");
     } finally {
       setLoading(false);
     }
   };
 
-  // Edit existing record
-  const handleEdit = (jobMatch: JobMatch) => {
-    setFormData(jobMatch);
-    setEditingId(jobMatch.id);
+  // ✅ Edit Job Match
+  const handleEdit = (match: JobMatch) => {
+    setFormData(match);
+    setEditingId(match.id);
   };
 
-  // Delete record
+  // ✅ Delete Job Match
   const handleDelete = async (id: number) => {
     if (!confirm("Are you sure you want to delete this job match?")) return;
     try {
       await axios.delete(`${API_BASE}/JobMatches/${id}`);
-      alert("Job match deleted successfully!");
+      alert("🗑️ Job match deleted successfully!");
       fetchJobMatches();
     } catch (err) {
       console.error("Error deleting job match:", err);
+      alert("❌ Failed to delete job match.");
     }
   };
 
   return (
-    <div className="container mx-auto p-6 max-w-6xl">
-      <h1 className="text-3xl font-bold mb-6 text-center text-blue-700">
+    <div
+      className="container py-5"
+      style={{ fontFamily: "Inter, sans-serif", maxWidth: "900px" }}
+    >
+      <h1 className="text-center text-primary mb-5 fw-bold">
         🎯 Job Matches Management
       </h1>
 
-      {/* Form */}
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white shadow-md rounded-xl p-6 mb-8 border border-gray-200"
-      >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block font-medium mb-1">Job Title</label>
-            <input
-              type="text"
-              name="jobTitle"
-              value={formData.jobTitle}
-              onChange={handleChange}
-              required
-              className="w-full border px-3 py-2 rounded-md focus:ring focus:ring-blue-200"
-            />
-          </div>
-
-          <div>
-            <label className="block font-medium mb-1">Company Name</label>
-            <input
-              type="text"
-              name="companyName"
-              value={formData.companyName}
-              onChange={handleChange}
-              required
-              className="w-full border px-3 py-2 rounded-md focus:ring focus:ring-blue-200"
-            />
-          </div>
-
-          <div>
-            <label className="block font-medium mb-1">Location</label>
-            <input
-              type="text"
-              name="location"
-              value={formData.location}
-              onChange={handleChange}
-              required
-              className="w-full border px-3 py-2 rounded-md focus:ring focus:ring-blue-200"
-            />
-          </div>
-
-          <div>
-            <label className="block font-medium mb-1">Match Percentage</label>
-            <input
-              type="number"
-              name="matchPercentage"
-              value={formData.matchPercentage}
-              onChange={handleChange}
-              min="0"
-              max="100"
-              required
-              className="w-full border px-3 py-2 rounded-md focus:ring focus:ring-blue-200"
-            />
-          </div>
-
-          <div>
-            <label className="block font-medium mb-1">Job Seeker ID</label>
-            <input
-              type="number"
-              name="jobSeekerId"
-              value={formData.jobSeekerId}
-              onChange={handleChange}
-              required
-              className="w-full border px-3 py-2 rounded-md focus:ring focus:ring-blue-200"
-            />
-          </div>
-
-          <div>
-            <label className="block font-medium mb-1">Job ID</label>
-            <input
-              type="number"
-              name="jobId"
-              value={formData.jobId}
-              onChange={handleChange}
-              required
-              className="w-full border px-3 py-2 rounded-md focus:ring focus:ring-blue-200"
-            />
-          </div>
+      {/* ✅ Form Section */}
+      <div className="card shadow-sm border-0 mb-5">
+        <div className="card-header bg-primary text-white">
+          {editingId ? "✏️ Edit Job Match" : "➕ Add Job Match"}
         </div>
+        <div className="card-body">
+          <form onSubmit={handleSubmit}>
+            <div className="row g-3">
+              <div className="col-md-6">
+                <label className="form-label fw-semibold">Job Seeker ID</label>
+                <input
+                  type="number"
+                  name="jobSeekerId"
+                  value={formData.jobSeekerId}
+                  onChange={handleChange}
+                  className="form-control"
+                  placeholder="Enter Job Seeker ID"
+                  required
+                />
+              </div>
+              <div className="col-md-6">
+                <label className="form-label fw-semibold">
+                  Matching Job ID
+                </label>
+                <input
+                  type="number"
+                  name="matchingJobId"
+                  value={formData.matchingJobId}
+                  onChange={handleChange}
+                  className="form-control"
+                  placeholder="Enter Matching Job ID"
+                  required
+                />
+              </div>
+            </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className={`w-full mt-5 py-2 rounded-md text-white ${
-            loading ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"
-          }`}
-        >
-          {editingId ? "Update Job Match" : "Create Job Match"}
-        </button>
-      </form>
+            <button
+              type="submit"
+              className="btn btn-success w-100 mt-4"
+              disabled={loading}
+            >
+              {loading
+                ? "⏳ Processing..."
+                : editingId
+                ? "Update Job Match"
+                : "Create Job Match"}
+            </button>
+          </form>
+        </div>
+      </div>
 
-      {/* Table */}
-      <table className="w-full bg-white shadow-md rounded-xl overflow-hidden border border-gray-200">
-        <thead className="bg-gray-100 text-left">
-          <tr>
-            <th className="p-3 border-b">ID</th>
-            <th className="p-3 border-b">Job Title</th>
-            <th className="p-3 border-b">Company</th>
-            <th className="p-3 border-b">Location</th>
-            <th className="p-3 border-b">Match %</th>
-            <th className="p-3 border-b">JobSeeker ID</th>
-            <th className="p-3 border-b">Job ID</th>
-            <th className="p-3 border-b text-center">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {jobMatches.length === 0 ? (
-            <tr>
-              <td colSpan={8} className="text-center p-4 text-gray-500">
-                No job matches found.
-              </td>
-            </tr>
-          ) : (
-            jobMatches.map((match) => (
-              <tr key={match.id} className="hover:bg-gray-50">
-                <td className="p-3 border-b">{match.id}</td>
-                <td className="p-3 border-b">{match.jobTitle}</td>
-                <td className="p-3 border-b">{match.companyName}</td>
-                <td className="p-3 border-b">{match.location}</td>
-                <td className="p-3 border-b">{match.matchPercentage}%</td>
-                <td className="p-3 border-b">{match.jobSeekerId}</td>
-                <td className="p-3 border-b">{match.jobId}</td>
-                <td className="p-3 border-b text-center space-x-2">
-                  <button
-                    onClick={() => handleEdit(match)}
-                    className="bg-yellow-500 text-white px-3 py-1 rounded-md hover:bg-yellow-600"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(match.id)}
-                    className="bg-red-600 text-white px-3 py-1 rounded-md hover:bg-red-700"
-                  >
-                    Delete
-                  </button>
-                </td>
+      {/* ✅ Table Section */}
+      <div className="card shadow-sm border-0">
+        <div className="card-header bg-light fw-bold">📋 Job Matches List</div>
+        <div className="card-body p-0">
+          <table className="table table-striped table-hover mb-0 text-center">
+            <thead className="table-primary">
+              <tr>
+                <th>ID</th>
+                <th>Job Seeker ID</th>
+                <th>Matching Job ID</th>
+                <th>Actions</th>
               </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+            </thead>
+            <tbody>
+              {Array.isArray(jobMatches) && jobMatches.length > 0 ? (
+                jobMatches.map((match) => (
+                  <tr key={match.id}>
+                    <td>{match.id}</td>
+                    <td>{match.jobSeekerId}</td>
+                    <td>{match.matchingJobId}</td>
+                    <td>
+                      <button
+                        onClick={() => handleEdit(match)}
+                        className="btn btn-warning btn-sm me-2"
+                      >
+                        ✏️ Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(match.id)}
+                        className="btn btn-danger btn-sm"
+                      >
+                        🗑️ Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={4} className="text-muted py-3">
+                    No job matches found.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }

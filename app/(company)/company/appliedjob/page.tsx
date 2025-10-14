@@ -1,247 +1,256 @@
-"use client"; // if you're using Next.js App Router
+"use client";
 
-import React, { useEffect, useState, ChangeEvent } from "react";
+import React, { useState, useEffect, ChangeEvent, FormEvent } from "react";
 import axios from "axios";
-import { Button, Table, Form } from "react-bootstrap";
+import Swal from "sweetalert2";
+import AOS from "aos";
+import "aos/dist/aos.css";
+import { FaEdit, FaTrash } from "react-icons/fa";
+import "bootstrap/dist/css/bootstrap.min.css";
 
-// ✅ TypeScript interface for AppliedJob entity
+const API_BASE = "https://localhost:7269/api/AppliedJob";
+
 interface AppliedJob {
   id: number;
-  jobTitle: string;
-  companyName: string;
-  applicantName: string;
-  applicantEmail: string;
+  JobSeekerId: number;
+  postJobId: number;
   appliedDate: string;
 }
-
-// ✅ API Base URL — replace with your .NET Core API URL
-const API_BASE_URL = "https://localhost:7070/api/AppliedJob";
 
 export default function AppliedJobPage() {
   const [appliedJobs, setAppliedJobs] = useState<AppliedJob[]>([]);
   const [formData, setFormData] = useState<AppliedJob>({
     id: 0,
-    jobTitle: "",
-    companyName: "",
-    applicantName: "",
-    applicantEmail: "",
-    appliedDate: "",
+    JobSeekerId: 0,
+    postJobId: 0,
+    appliedDate: new Date().toISOString().split("T")[0],
   });
-  const [editing, setEditing] = useState<boolean>(false);
-
-  // ✅ Fetch all records
-  const fetchAppliedJobs = async () => {
-    try {
-      const response = await axios.get(API_BASE_URL);
-      setAppliedJobs(response.data);
-    } catch (error) {
-      console.error("Error fetching applied jobs:", error);
-    }
-  };
+  const [isEditing, setIsEditing] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     fetchAppliedJobs();
+    AOS.init({ duration: 800, easing: "ease-in-out" });
   }, []);
 
-  // ✅ Handle input changes
-  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const fetchAppliedJobs = async () => {
+    try {
+      const res = await axios.get(API_BASE);
+      const data = Array.isArray(res.data)
+        ? res.data
+        : Array.isArray(res.data?.data)
+        ? res.data.data
+        : [];
+      setAppliedJobs(data);
+    } catch (err) {
+      console.error(err);
+      Swal.fire("Error", "Failed to fetch records", "error");
+      setAppliedJobs([]);
+    }
   };
 
-  // ✅ Handle form submission (Create or Update)
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]:
+        name === "JobSeekerId" || name === "postJobId" ? Number(value) : value,
+    }));
+  };
+
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     try {
-      if (editing) {
-        await axios.put(`${API_BASE_URL}/${formData.id}`, formData);
-        alert("Record updated successfully!");
+      if (isEditing) {
+        await axios.put(`${API_BASE}/${formData.id}`, formData);
+        Swal.fire("Updated!", "Record updated successfully", "success");
       } else {
-        await axios.post(API_BASE_URL, formData);
-        alert("Record added successfully!");
+        await axios.post(API_BASE, formData);
+        Swal.fire("Success!", "Record added successfully", "success");
       }
-      setFormData({
-        id: 0,
-        jobTitle: "",
-        companyName: "",
-        applicantName: "",
-        applicantEmail: "",
-        appliedDate: "",
-      });
-      setEditing(false);
+      resetForm();
       fetchAppliedJobs();
-    } catch (error) {
-      console.error("Error submitting form:", error);
+    } catch (err) {
+      console.error(err);
+      Swal.fire("Error", "Failed to save record", "error");
     }
   };
 
-  // ✅ Handle delete
-  const handleDelete = async (id: number) => {
-    if (confirm("Are you sure you want to delete this record?")) {
-      try {
-        await axios.delete(`${API_BASE_URL}/${id}`);
-        alert("Deleted successfully!");
-        fetchAppliedJobs();
-      } catch (error) {
-        console.error("Error deleting record:", error);
-      }
-    }
-  };
-
-  // ✅ Handle edit
   const handleEdit = (job: AppliedJob) => {
     setFormData(job);
-    setEditing(true);
+    setIsEditing(true);
+    setShowForm(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  const handleDelete = async (id: number) => {
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: "You won’t be able to revert this!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, delete it!",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await axios.delete(`${API_BASE}/${id}`);
+        Swal.fire("Deleted!", "Record has been deleted.", "success");
+        fetchAppliedJobs();
+      } catch (err) {
+        Swal.fire("Error", "Failed to delete record", "error");
+      }
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      id: 0,
+      JobSeekerId: 0,
+      postJobId: 0,
+      appliedDate: new Date().toISOString().split("T")[0],
+    });
+    setIsEditing(false);
+    setShowForm(false);
+  };
+
+  const filteredJobs = Array.isArray(appliedJobs)
+    ? appliedJobs.filter(
+        (job) =>
+          job.JobSeekerId.toString().includes(search) ||
+          job.postJobId.toString().includes(search)
+      )
+    : [];
+
   return (
-    <div className="container mt-5">
-      <h2 className="text-center mb-4">
-        {editing ? "Edit Applied Job" : "Add New Applied Job"}
-      </h2>
+    <div className="container py-5">
+      <div
+        className="d-flex justify-content-between align-items-center mb-4"
+        data-aos="fade-down"
+      >
+        <h2 className="text-primary">📋 Applied Jobs Management</h2>
+        <button
+          onClick={() => setShowForm(!showForm)}
+          className={`btn btn-${showForm ? "secondary" : "success"}`}
+        >
+          {showForm ? "Close Form" : "Add Job"}
+        </button>
+      </div>
 
-      {/* ✅ Form */}
-      <Form onSubmit={handleSubmit}>
-        <div className="row g-3 mb-3">
-          <div className="col-md-4">
-            <Form.Group controlId="jobTitle">
-              <Form.Label>Job Title</Form.Label>
-              <Form.Control
-                type="text"
-                name="jobTitle"
-                value={formData.jobTitle}
+      {/* Search */}
+      <div className="mb-4" data-aos="fade-right">
+        <input
+          type="text"
+          placeholder="Search by JobSeekerId or PostJobId..."
+          className="form-control"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </div>
+
+      {/* Form */}
+      {showForm && (
+        <div className="card shadow-lg mb-5 p-4" data-aos="zoom-in">
+          <form className="row g-3" onSubmit={handleSubmit}>
+            <div className="col-md-6">
+              <label className="form-label">Job Seeker ID</label>
+              <input
+                type="number"
+                name="JobSeekerId"
+                value={formData.JobSeekerId}
                 onChange={handleChange}
-                placeholder="Enter job title"
+                className="form-control"
                 required
               />
-            </Form.Group>
-          </div>
-
-          <div className="col-md-4">
-            <Form.Group controlId="companyName">
-              <Form.Label>Company Name</Form.Label>
-              <Form.Control
-                type="text"
-                name="companyName"
-                value={formData.companyName}
+            </div>
+            <div className="col-md-6">
+              <label className="form-label">Post Job ID</label>
+              <input
+                type="number"
+                name="postJobId"
+                value={formData.postJobId}
                 onChange={handleChange}
-                placeholder="Enter company name"
+                className="form-control"
                 required
               />
-            </Form.Group>
-          </div>
-
-          <div className="col-md-4">
-            <Form.Group controlId="applicantName">
-              <Form.Label>Applicant Name</Form.Label>
-              <Form.Control
-                type="text"
-                name="applicantName"
-                value={formData.applicantName}
-                onChange={handleChange}
-                placeholder="Enter applicant name"
-                required
-              />
-            </Form.Group>
-          </div>
-
-          <div className="col-md-6">
-            <Form.Group controlId="applicantEmail">
-              <Form.Label>Applicant Email</Form.Label>
-              <Form.Control
-                type="email"
-                name="applicantEmail"
-                value={formData.applicantEmail}
-                onChange={handleChange}
-                placeholder="Enter email"
-                required
-              />
-            </Form.Group>
-          </div>
-
-          <div className="col-md-6">
-            <Form.Group controlId="appliedDate">
-              <Form.Label>Applied Date</Form.Label>
-              <Form.Control
+            </div>
+            <div className="col-md-6">
+              <label className="form-label">Applied Date</label>
+              <input
                 type="date"
                 name="appliedDate"
                 value={formData.appliedDate}
                 onChange={handleChange}
+                className="form-control"
                 required
               />
-            </Form.Group>
-          </div>
+            </div>
+            <div className="col-12 d-flex justify-content-end gap-2 mt-3">
+              <button
+                type="submit"
+                className={`btn ${isEditing ? "btn-warning" : "btn-success"}`}
+              >
+                {isEditing ? "Update" : "Submit"}
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={resetForm}
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
         </div>
+      )}
 
-        <Button type="submit" variant={editing ? "warning" : "primary"}>
-          {editing ? "Update" : "Submit"}
-        </Button>
-        {editing && (
-          <Button
-            variant="secondary"
-            className="ms-2"
-            onClick={() => {
-              setEditing(false);
-              setFormData({
-                id: 0,
-                jobTitle: "",
-                companyName: "",
-                applicantName: "",
-                applicantEmail: "",
-                appliedDate: "",
-              });
-            }}
-          >
-            Cancel
-          </Button>
+      {/* Table */}
+      <div className="card shadow-lg overflow-hidden" data-aos="fade-up">
+        {filteredJobs.length > 0 ? (
+          <div className="table-responsive">
+            <table className="table table-hover mb-0 align-middle">
+              <thead className="table-primary">
+                <tr>
+                  <th>#</th>
+                  <th>Job Seeker ID</th>
+                  <th>Post Job ID</th>
+                  <th>Applied Date</th>
+                  <th className="text-center">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredJobs.map((job, index) => (
+                  <tr key={job.id}>
+                    <td>{index + 1}</td>
+                    <td>{job.JobSeekerId}</td>
+                    <td>{job.postJobId}</td>
+                    <td>{job.appliedDate.substring(0, 10)}</td>
+                    <td className="text-center d-flex justify-content-center gap-2">
+                      <button
+                        onClick={() => handleEdit(job)}
+                        className="btn btn-sm btn-warning"
+                      >
+                        <FaEdit />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(job.id)}
+                        className="btn btn-sm btn-danger"
+                      >
+                        <FaTrash />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="text-center py-5 text-muted">No records found.</div>
         )}
-      </Form>
-
-      <hr className="my-4" />
-
-      {/* ✅ Table */}
-      <h3 className="text-center mb-3">Applied Jobs List</h3>
-      <Table striped bordered hover responsive>
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Job Title</th>
-            <th>Company</th>
-            <th>Applicant</th>
-            <th>Email</th>
-            <th>Applied Date</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {appliedJobs.map((job) => (
-            <tr key={job.id}>
-              <td>{job.id}</td>
-              <td>{job.jobTitle}</td>
-              <td>{job.companyName}</td>
-              <td>{job.applicantName}</td>
-              <td>{job.applicantEmail}</td>
-              <td>{job.appliedDate ? job.appliedDate.substring(0, 10) : ""}</td>
-              <td>
-                <Button
-                  variant="info"
-                  size="sm"
-                  onClick={() => handleEdit(job)}
-                  className="me-2"
-                >
-                  Edit
-                </Button>
-                <Button
-                  variant="danger"
-                  size="sm"
-                  onClick={() => handleDelete(job.id)}
-                >
-                  Delete
-                </Button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </Table>
+      </div>
     </div>
   );
 }

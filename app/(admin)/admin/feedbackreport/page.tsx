@@ -2,212 +2,257 @@
 
 import React, { useState, useEffect, ChangeEvent, FormEvent } from "react";
 import axios from "axios";
+import Swal from "sweetalert2";
+import "bootstrap/dist/css/bootstrap.min.css";
+import { Button, Table, Form, Spinner, Card } from "react-bootstrap";
 
-// 🌐 API base URL (change if needed)
 const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE || "https://localhost:7129/api";
 
-// Model Interface
 interface FeedbackReport {
   id: number;
-  userName: string;
-  email: string;
-  subject: string;
-  message: string;
-  createdDate?: string;
+  userId: number;
+  feedback: string;
+  submittedAt?: string;
 }
 
 export default function FeedbackReportsPage() {
   const [feedbacks, setFeedbacks] = useState<FeedbackReport[]>([]);
   const [formData, setFormData] = useState<FeedbackReport>({
     id: 0,
-    userName: "",
-    email: "",
-    subject: "",
-    message: "",
+    userId: 0,
+    feedback: "",
   });
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [loading, setLoading] = useState<boolean>(false);
-
-  // Fetch all feedback reports
-  const fetchFeedbacks = async () => {
-    try {
-      const response = await axios.get(`${API_BASE}/FeedbackReport`);
-      setFeedbacks(response.data);
-    } catch (error) {
-      console.error("Error fetching feedback reports:", error);
-    }
-  };
+  const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(true);
 
   useEffect(() => {
     fetchFeedbacks();
   }, []);
 
-  // Handle input change
+  const fetchFeedbacks = async () => {
+    setFetching(true);
+    try {
+      const res = await axios.get(`${API_BASE}/FeedbackReport`);
+      const data = Array.isArray(res.data)
+        ? res.data
+        : Array.isArray(res.data.data)
+        ? res.data.data
+        : [];
+      setFeedbacks(data);
+    } catch (err) {
+      console.error("Error fetching feedbacks:", err);
+      setFeedbacks([]);
+    } finally {
+      setFetching(false);
+    }
+  };
+
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: name === "userId" ? Number(value) : value,
+    }));
   };
 
-  // Create or Update feedback
+  const showToast = (icon: any, title: string) => {
+    Swal.fire({
+      icon,
+      title,
+      toast: true,
+      position: "top-end",
+      showConfirmButton: false,
+      timer: 2000,
+      timerProgressBar: true,
+    });
+  };
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
     try {
       if (editingId) {
         await axios.put(`${API_BASE}/FeedbackReport/${editingId}`, formData);
-        alert("Feedback updated successfully!");
+        showToast("success", "Feedback updated successfully!");
       } else {
         await axios.post(`${API_BASE}/FeedbackReport`, formData);
-        alert("Feedback submitted successfully!");
+        showToast("success", "Feedback submitted successfully!");
       }
-      setFormData({ id: 0, userName: "", email: "", subject: "", message: "" });
+      setFormData({ id: 0, userId: 0, feedback: "" });
       setEditingId(null);
       fetchFeedbacks();
     } catch (error) {
       console.error("Error saving feedback:", error);
-      alert("An error occurred!");
+      showToast("error", "Failed to save feedback.");
     } finally {
       setLoading(false);
     }
   };
 
-  // Edit feedback
   const handleEdit = (feedback: FeedbackReport) => {
     setFormData(feedback);
     setEditingId(feedback.id);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // Delete feedback
   const handleDelete = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this feedback?")) return;
-    try {
-      await axios.delete(`${API_BASE}/FeedbackReport/${id}`);
-      alert("Feedback deleted successfully!");
-      fetchFeedbacks();
-    } catch (error) {
-      console.error("Error deleting feedback:", error);
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: "This feedback will be deleted permanently!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Yes, delete it!",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await axios.delete(`${API_BASE}/FeedbackReport/${id}`);
+        showToast("success", "Feedback removed successfully!");
+        fetchFeedbacks();
+      } catch (err) {
+        console.error("Error deleting feedback:", err);
+        showToast("error", "Failed to delete feedback.");
+      }
     }
   };
 
   return (
-    <div className="container mx-auto p-6 max-w-4xl">
-      <h1 className="text-2xl font-bold mb-4 text-center">
+    <div className="container py-5">
+      <h1 className="text-center text-primary mb-5 display-5">
         📝 Feedback Reports
       </h1>
 
       {/* Feedback Form */}
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white shadow-md rounded-lg p-6 mb-6 border border-gray-200"
-      >
-        <div className="mb-3">
-          <label className="block font-medium mb-1">User Name</label>
-          <input
-            type="text"
-            name="userName"
-            value={formData.userName}
-            onChange={handleChange}
-            required
-            className="w-full border px-3 py-2 rounded-md focus:outline-none focus:ring focus:ring-blue-200"
-          />
-        </div>
-
-        <div className="mb-3">
-          <label className="block font-medium mb-1">Email</label>
-          <input
-            type="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            required
-            className="w-full border px-3 py-2 rounded-md focus:outline-none focus:ring focus:ring-blue-200"
-          />
-        </div>
-
-        <div className="mb-3">
-          <label className="block font-medium mb-1">Subject</label>
-          <input
-            type="text"
-            name="subject"
-            value={formData.subject}
-            onChange={handleChange}
-            required
-            className="w-full border px-3 py-2 rounded-md focus:outline-none focus:ring focus:ring-blue-200"
-          />
-        </div>
-
-        <div className="mb-4">
-          <label className="block font-medium mb-1">Message</label>
-          <textarea
-            name="message"
-            value={formData.message}
-            onChange={handleChange}
-            rows={4}
-            required
-            className="w-full border px-3 py-2 rounded-md focus:outline-none focus:ring focus:ring-blue-200"
-          />
-        </div>
-
-        <button
-          type="submit"
-          disabled={loading}
-          className={`w-full py-2 px-4 rounded-md text-white ${
-            loading ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"
-          }`}
-        >
-          {editingId ? "Update Feedback" : "Submit Feedback"}
-        </button>
-      </form>
+      <Card className="mb-5 shadow-sm">
+        <Card.Body>
+          <Card.Title className="text-center mb-4">
+            {editingId ? "✏️ Edit Feedback" : "💬 Submit Your Feedback"}
+          </Card.Title>
+          <Form onSubmit={handleSubmit}>
+            <div className="row g-3">
+              <div className="col-md-6">
+                <Form.Group controlId="userId">
+                  <Form.Label>User ID</Form.Label>
+                  <Form.Control
+                    type="number"
+                    name="userId"
+                    value={formData.userId}
+                    onChange={handleChange}
+                    placeholder="Enter user ID"
+                    required
+                  />
+                </Form.Group>
+              </div>
+              <div className="col-md-12">
+                <Form.Group controlId="feedback">
+                  <Form.Label>Feedback</Form.Label>
+                  <Form.Control
+                    as="textarea"
+                    rows={4}
+                    name="feedback"
+                    value={formData.feedback}
+                    onChange={handleChange}
+                    placeholder="Write your feedback here..."
+                    required
+                  />
+                </Form.Group>
+              </div>
+            </div>
+            <Button
+              type="submit"
+              variant="primary"
+              className="mt-4 w-100"
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <Spinner animation="border" size="sm" className="me-2" />{" "}
+                  Saving...
+                </>
+              ) : editingId ? (
+                "Update Feedback"
+              ) : (
+                "Submit Feedback"
+              )}
+            </Button>
+          </Form>
+        </Card.Body>
+      </Card>
 
       {/* Feedback Table */}
-      <table className="w-full bg-white shadow-md rounded-lg overflow-hidden border border-gray-200">
-        <thead className="bg-gray-100 text-left">
-          <tr>
-            <th className="p-3 border-b">ID</th>
-            <th className="p-3 border-b">User</th>
-            <th className="p-3 border-b">Email</th>
-            <th className="p-3 border-b">Subject</th>
-            <th className="p-3 border-b">Message</th>
-            <th className="p-3 border-b text-center">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {feedbacks.length === 0 ? (
-            <tr>
-              <td colSpan={6} className="text-center p-4 text-gray-500">
-                No feedback found.
-              </td>
-            </tr>
-          ) : (
-            feedbacks.map((f) => (
-              <tr key={f.id} className="hover:bg-gray-50">
-                <td className="p-3 border-b">{f.id}</td>
-                <td className="p-3 border-b">{f.userName}</td>
-                <td className="p-3 border-b">{f.email}</td>
-                <td className="p-3 border-b">{f.subject}</td>
-                <td className="p-3 border-b">{f.message}</td>
-                <td className="p-3 border-b text-center space-x-2">
-                  <button
-                    onClick={() => handleEdit(f)}
-                    className="bg-yellow-500 text-white px-3 py-1 rounded-md hover:bg-yellow-600"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(f.id)}
-                    className="bg-red-600 text-white px-3 py-1 rounded-md hover:bg-red-700"
-                  >
-                    Delete
-                  </button>
-                </td>
+      <Card className="shadow-sm">
+        <Card.Body className="p-0">
+          <Table responsive hover className="mb-0">
+            <thead className="table-primary">
+              <tr>
+                <th>ID</th>
+                <th>User ID</th>
+                <th>Feedback</th>
+                <th>Submitted At</th>
+                <th className="text-center">Actions</th>
               </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+            </thead>
+            <tbody>
+              {fetching ? (
+                <tr>
+                  <td colSpan={5} className="text-center py-3 text-muted">
+                    <Spinner animation="border" size="sm" className="me-2" />
+                    Loading feedbacks...
+                  </td>
+                </tr>
+              ) : feedbacks.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="text-center py-3 text-muted">
+                    No feedback found.
+                  </td>
+                </tr>
+              ) : (
+                feedbacks.map((f) => (
+                  <tr key={f.id} className="align-middle">
+                    <td>{f.id}</td>
+                    <td>{f.userId}</td>
+                    <td
+                      className="text-truncate"
+                      style={{ maxWidth: "300px" }}
+                      title={f.feedback}
+                    >
+                      {f.feedback}
+                    </td>
+                    <td>
+                      {f.submittedAt
+                        ? new Date(f.submittedAt).toLocaleString()
+                        : "-"}
+                    </td>
+                    <td className="text-center">
+                      <Button
+                        size="sm"
+                        variant="warning"
+                        className="me-1"
+                        onClick={() => handleEdit(f)}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="danger"
+                        onClick={() => handleDelete(f.id)}
+                      >
+                        Delete
+                      </Button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </Table>
+        </Card.Body>
+      </Card>
     </div>
   );
 }

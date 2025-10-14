@@ -2,6 +2,10 @@
 
 import React, { useState, useEffect, ChangeEvent, FormEvent } from "react";
 import axios from "axios";
+import AOS from "aos";
+import "aos/dist/aos.css";
+import { Modal, Button, Spinner } from "react-bootstrap";
+import "bootstrap/dist/css/bootstrap.min.css";
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE || "https://localhost:7129/api";
@@ -9,9 +13,8 @@ const API_BASE =
 interface JobSeekerReport {
   id: number;
   jobSeekerId: number;
-  reportTitle: string;
-  description: string;
-  createdDate: string; // ISO string
+  reportReason: string;
+  reportedAt: string; // ISO date string
 }
 
 export default function JobSeekerReportsPage() {
@@ -19,203 +22,225 @@ export default function JobSeekerReportsPage() {
   const [formData, setFormData] = useState<JobSeekerReport>({
     id: 0,
     jobSeekerId: 0,
-    reportTitle: "",
-    description: "",
-    createdDate: new Date().toISOString().slice(0, 10), // yyyy-mm-dd
+    reportReason: "",
+    reportedAt: new Date().toISOString().split("T")[0],
   });
   const [editingId, setEditingId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
-
-  // Fetch all reports
-  const fetchReports = async () => {
-    try {
-      const res = await axios.get(`${API_BASE}/JobSeekerReport`);
-      setReports(res.data);
-    } catch (err) {
-      console.error("Error fetching reports:", err);
-    }
-  };
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteId, setDeleteId] = useState<number | null>(null);
 
   useEffect(() => {
+    AOS.init({ duration: 800, once: true });
     fetchReports();
   }, []);
 
-  // Handle input change
+  const fetchReports = async () => {
+    try {
+      const res = await axios.get(`${API_BASE}/JobSeekerReport`);
+      const data = Array.isArray(res.data)
+        ? res.data
+        : Array.isArray(res.data?.data)
+        ? res.data.data
+        : [];
+      setReports(data);
+    } catch (err) {
+      console.error("Error fetching reports:", err);
+      setReports([]);
+    }
+  };
+
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
-    setFormData({
-      ...formData,
+    setFormData((prev) => ({
+      ...prev,
       [name]: name === "jobSeekerId" ? Number(value) : value,
-    });
+    }));
   };
 
-  // Handle form submit
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      if (editingId) {
+      if (editingId !== null) {
         await axios.put(`${API_BASE}/JobSeekerReport/${editingId}`, formData);
-        alert("Report updated successfully!");
       } else {
         await axios.post(`${API_BASE}/JobSeekerReport`, formData);
-        alert("Report created successfully!");
       }
       setFormData({
         id: 0,
         jobSeekerId: 0,
-        reportTitle: "",
-        description: "",
-        createdDate: new Date().toISOString().slice(0, 10),
+        reportReason: "",
+        reportedAt: new Date().toISOString().split("T")[0],
       });
       setEditingId(null);
       fetchReports();
     } catch (err) {
       console.error("Error saving report:", err);
-      alert("An error occurred!");
     } finally {
       setLoading(false);
     }
   };
 
-  // Edit existing report
   const handleEdit = (report: JobSeekerReport) => {
-    setFormData(report);
+    setFormData({
+      ...report,
+      reportedAt: report.reportedAt.split("T")[0],
+    });
     setEditingId(report.id);
   };
 
-  // Delete report
-  const handleDelete = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this report?")) return;
+  const confirmDelete = (id: number) => {
+    setDeleteId(id);
+    setShowDeleteModal(true);
+  };
+
+  const handleDelete = async () => {
+    if (deleteId === null) return;
     try {
-      await axios.delete(`${API_BASE}/JobSeekerReport/${id}`);
-      alert("Report deleted successfully!");
+      await axios.delete(`${API_BASE}/JobSeekerReport/${deleteId}`);
       fetchReports();
     } catch (err) {
       console.error("Error deleting report:", err);
+    } finally {
+      setShowDeleteModal(false);
+      setDeleteId(null);
     }
   };
 
   return (
-    <div className="container mx-auto p-6 max-w-6xl">
-      <h1 className="text-3xl font-bold mb-6 text-center text-blue-700">
+    <div className="container py-5">
+      <h1 className="text-center mb-5 text-primary" data-aos="fade-down">
         📄 Job Seeker Reports
       </h1>
 
-      {/* Form */}
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white shadow-md rounded-xl p-6 mb-8 border border-gray-200"
-      >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block font-medium mb-1">Job Seeker ID</label>
-            <input
-              type="number"
-              name="jobSeekerId"
-              value={formData.jobSeekerId}
-              onChange={handleChange}
-              required
-              className="w-full border px-3 py-2 rounded-md focus:ring focus:ring-blue-200"
-            />
-          </div>
-
-          <div>
-            <label className="block font-medium mb-1">Report Title</label>
-            <input
-              type="text"
-              name="reportTitle"
-              value={formData.reportTitle}
-              onChange={handleChange}
-              required
-              className="w-full border px-3 py-2 rounded-md focus:ring focus:ring-blue-200"
-            />
-          </div>
-
-          <div className="md:col-span-2">
-            <label className="block font-medium mb-1">Description</label>
-            <textarea
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              required
-              className="w-full border px-3 py-2 rounded-md focus:ring focus:ring-blue-200"
-            />
-          </div>
-
-          <div>
-            <label className="block font-medium mb-1">Created Date</label>
-            <input
-              type="date"
-              name="createdDate"
-              value={formData.createdDate.slice(0, 10)}
-              onChange={handleChange}
-              className="w-full border px-3 py-2 rounded-md focus:ring focus:ring-blue-200"
-            />
-          </div>
+      {/* Form Card */}
+      <div className="card shadow-lg mb-5" data-aos="fade-right">
+        <div className="card-body">
+          <h5 className="card-title mb-4">
+            {editingId !== null ? "Edit Report ✏️" : "Create New Report ➕"}
+          </h5>
+          <form onSubmit={handleSubmit}>
+            <div className="row g-3">
+              <div className="col-md-6">
+                <label className="form-label">Job Seeker ID</label>
+                <input
+                  type="number"
+                  className="form-control"
+                  name="jobSeekerId"
+                  value={formData.jobSeekerId}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+              <div className="col-md-6">
+                <label className="form-label">Report Reason</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  name="reportReason"
+                  value={formData.reportReason}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+              <div className="col-md-6">
+                <label className="form-label">Reported At</label>
+                <input
+                  type="date"
+                  className="form-control"
+                  name="reportedAt"
+                  value={formData.reportedAt}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+            </div>
+            <button
+              type="submit"
+              className="btn btn-primary mt-4 w-100"
+              disabled={loading}
+            >
+              {loading && (
+                <Spinner animation="border" size="sm" className="me-2" />
+              )}
+              {editingId !== null ? "Update Report" : "Create Report"}
+            </button>
+          </form>
         </div>
+      </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className={`w-full mt-5 py-2 rounded-md text-white ${
-            loading ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"
-          }`}
-        >
-          {editingId ? "Update Report" : "Create Report"}
-        </button>
-      </form>
-
-      {/* Table */}
-      <table className="w-full bg-white shadow-md rounded-xl overflow-hidden border border-gray-200">
-        <thead className="bg-gray-100 text-left">
-          <tr>
-            <th className="p-3 border-b">ID</th>
-            <th className="p-3 border-b">Job Seeker ID</th>
-            <th className="p-3 border-b">Title</th>
-            <th className="p-3 border-b">Description</th>
-            <th className="p-3 border-b">Created Date</th>
-            <th className="p-3 border-b text-center">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {reports.length === 0 ? (
+      {/* Reports Table */}
+      <div className="table-responsive" data-aos="fade-left">
+        <table className="table table-hover table-striped align-middle shadow-sm">
+          <thead className="table-primary">
             <tr>
-              <td colSpan={6} className="text-center p-4 text-gray-500">
-                No reports found.
-              </td>
+              <th>ID</th>
+              <th>Job Seeker ID</th>
+              <th>Report Reason</th>
+              <th>Reported At</th>
+              <th className="text-center">Actions</th>
             </tr>
-          ) : (
-            reports.map((report) => (
-              <tr key={report.id} className="hover:bg-gray-50">
-                <td className="p-3 border-b">{report.id}</td>
-                <td className="p-3 border-b">{report.jobSeekerId}</td>
-                <td className="p-3 border-b">{report.reportTitle}</td>
-                <td className="p-3 border-b">{report.description}</td>
-                <td className="p-3 border-b">
-                  {new Date(report.createdDate).toLocaleDateString()}
-                </td>
-                <td className="p-3 border-b text-center space-x-2">
-                  <button
-                    onClick={() => handleEdit(report)}
-                    className="bg-yellow-500 text-white px-3 py-1 rounded-md hover:bg-yellow-600"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(report.id)}
-                    className="bg-red-600 text-white px-3 py-1 rounded-md hover:bg-red-700"
-                  >
-                    Delete
-                  </button>
+          </thead>
+          <tbody>
+            {reports.length > 0 ? (
+              reports.map((report) => (
+                <tr key={report.id}>
+                  <td>{report.id}</td>
+                  <td>{report.jobSeekerId}</td>
+                  <td>{report.reportReason}</td>
+                  <td>{new Date(report.reportedAt).toLocaleDateString()}</td>
+                  <td className="text-center">
+                    <Button
+                      variant="warning"
+                      size="sm"
+                      className="me-2"
+                      onClick={() => handleEdit(report)}
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      onClick={() => confirmDelete(report.id)}
+                    >
+                      Delete
+                    </Button>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={5} className="text-center text-muted">
+                  No reports found 😔
                 </td>
               </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        show={showDeleteModal}
+        onHide={() => setShowDeleteModal(false)}
+        centered
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Confirm Delete</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>Are you sure you want to delete this report?</Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
+            Cancel
+          </Button>
+          <Button variant="danger" onClick={handleDelete}>
+            Delete
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 }

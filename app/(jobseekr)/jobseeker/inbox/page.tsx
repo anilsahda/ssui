@@ -2,21 +2,23 @@
 
 import React, { useEffect, useState, ChangeEvent, FormEvent } from "react";
 import axios from "axios";
+import "bootstrap/dist/css/bootstrap.min.css";
 
-// 🌐 Backend API URL
 const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE || "https://localhost:7129/api";
+  process.env.NEXT_PUBLIC_API_BASE || "https://localhost:7115/api";
 
 interface Message {
   id: number;
+  senderId: number;
+  receiverId: number;
+  subject: string;
   content: string;
+  sentAt: string;
 }
 
 interface Inbox {
   id: number;
-  sender: string;
-  receiver: string;
-  subject: string;
+  senderId: number;
   messageId?: number;
   message?: Message;
 }
@@ -26,31 +28,33 @@ export default function InboxPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [formData, setFormData] = useState<Inbox>({
     id: 0,
-    sender: "",
-    receiver: "",
-    subject: "",
+    senderId: 0,
     messageId: undefined,
   });
   const [editingId, setEditingId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Fetch all inbox records
+  // ✅ Fetch inboxes
   const fetchInboxes = async () => {
     try {
       const res = await axios.get(`${API_BASE}/Inbox`);
-      setInboxes(res.data);
+      const data = Array.isArray(res.data) ? res.data : [];
+      setInboxes(data);
     } catch (err) {
       console.error("Error fetching inboxes:", err);
+      setInboxes([]);
     }
   };
 
-  // Fetch all messages (for dropdown)
+  // ✅ Fetch messages
   const fetchMessages = async () => {
     try {
       const res = await axios.get(`${API_BASE}/Message`);
-      setMessages(res.data);
+      const data = Array.isArray(res.data) ? res.data : [];
+      setMessages(data);
     } catch (err) {
       console.error("Error fetching messages:", err);
+      setMessages([]);
     }
   };
 
@@ -59,18 +63,18 @@ export default function InboxPage() {
     fetchMessages();
   }, []);
 
-  // Handle input change
+  // ✅ Handle input change
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
     setFormData({
       ...formData,
-      [name]: name === "messageId" ? Number(value) : value,
+      [name]: ["senderId", "messageId"].includes(name) ? Number(value) : value,
     });
   };
 
-  // Create or update record
+  // ✅ Handle form submit
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -82,36 +86,27 @@ export default function InboxPage() {
         await axios.post(`${API_BASE}/Inbox`, formData);
         alert("Inbox created successfully!");
       }
-      setFormData({
-        id: 0,
-        sender: "",
-        receiver: "",
-        subject: "",
-        messageId: undefined,
-      });
+
+      setFormData({ id: 0, senderId: 0, messageId: undefined });
       setEditingId(null);
       fetchInboxes();
     } catch (err) {
       console.error("Error saving inbox:", err);
-      alert("An error occurred!");
+      alert("An error occurred while saving.");
     } finally {
       setLoading(false);
     }
   };
 
-  // Edit existing inbox
   const handleEdit = (inbox: Inbox) => {
     setFormData({
       id: inbox.id,
-      sender: inbox.sender,
-      receiver: inbox.receiver,
-      subject: inbox.subject,
+      senderId: inbox.senderId,
       messageId: inbox.messageId,
     });
     setEditingId(inbox.id);
   };
 
-  // Delete inbox
   const handleDelete = async (id: number) => {
     if (!confirm("Are you sure you want to delete this inbox message?")) return;
     try {
@@ -120,135 +115,124 @@ export default function InboxPage() {
       fetchInboxes();
     } catch (err) {
       console.error("Error deleting inbox:", err);
+      alert("Failed to delete inbox.");
     }
   };
 
   return (
-    <div className="container mx-auto p-6 max-w-5xl">
-      <h1 className="text-2xl font-bold mb-4 text-center">
-        📥 Inbox Management
+    <div className="container py-5" style={{ fontFamily: "Inter, sans-serif" }}>
+      <h1 className="text-center text-primary mb-4 fw-bold">
+        📬 Inbox Management
       </h1>
 
-      {/* Form */}
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white shadow-md rounded-lg p-6 mb-6 border border-gray-200"
-      >
-        <div className="mb-3">
-          <label className="block font-medium mb-1">Sender</label>
-          <input
-            type="text"
-            name="sender"
-            value={formData.sender}
-            onChange={handleChange}
-            required
-            className="w-full border px-3 py-2 rounded-md focus:ring focus:ring-blue-200"
-          />
+      {/* ✅ Form Section */}
+      <div className="card shadow-sm mb-5 border-0">
+        <div className="card-body">
+          <form onSubmit={handleSubmit}>
+            <div className="row g-3">
+              <div className="col-md-6">
+                <label className="form-label fw-semibold">Sender ID</label>
+                <input
+                  type="number"
+                  name="senderId"
+                  value={formData.senderId}
+                  onChange={handleChange}
+                  required
+                  className="form-control"
+                  placeholder="Enter sender ID"
+                />
+              </div>
+
+              <div className="col-md-12">
+                <label className="form-label fw-semibold">Message</label>
+                <select
+                  name="messageId"
+                  value={formData.messageId ?? ""}
+                  onChange={handleChange}
+                  required
+                  className="form-select"
+                >
+                  <option value="">Select a message</option>
+                  {messages.map((msg) => (
+                    <option key={msg.id} value={msg.id}>
+                      {msg.subject
+                        ? `${msg.subject} - ${msg.content.slice(0, 30)}...`
+                        : msg.content.slice(0, 50)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className={`btn w-100 mt-4 ${
+                editingId ? "btn-warning" : "btn-success"
+              }`}
+            >
+              {loading
+                ? "Processing..."
+                : editingId
+                ? "Update Inbox"
+                : "Create Inbox"}
+            </button>
+          </form>
         </div>
+      </div>
 
-        <div className="mb-3">
-          <label className="block font-medium mb-1">Receiver</label>
-          <input
-            type="text"
-            name="receiver"
-            value={formData.receiver}
-            onChange={handleChange}
-            required
-            className="w-full border px-3 py-2 rounded-md focus:ring focus:ring-blue-200"
-          />
-        </div>
-
-        <div className="mb-3">
-          <label className="block font-medium mb-1">Subject</label>
-          <input
-            type="text"
-            name="subject"
-            value={formData.subject}
-            onChange={handleChange}
-            required
-            className="w-full border px-3 py-2 rounded-md focus:ring focus:ring-blue-200"
-          />
-        </div>
-
-        <div className="mb-4">
-          <label className="block font-medium mb-1">Message</label>
-          <select
-            name="messageId"
-            value={formData.messageId ?? ""}
-            onChange={handleChange}
-            required
-            className="w-full border px-3 py-2 rounded-md focus:ring focus:ring-blue-200"
-          >
-            <option value="">Select a message</option>
-            {messages.map((msg) => (
-              <option key={msg.id} value={msg.id}>
-                {msg.content.length > 50
-                  ? msg.content.slice(0, 50) + "..."
-                  : msg.content}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <button
-          type="submit"
-          disabled={loading}
-          className={`w-full py-2 px-4 rounded-md text-white ${
-            loading ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"
-          }`}
-        >
-          {editingId ? "Update Inbox" : "Create Inbox"}
-        </button>
-      </form>
-
-      {/* Table */}
-      <table className="w-full bg-white shadow-md rounded-lg overflow-hidden border border-gray-200">
-        <thead className="bg-gray-100 text-left">
-          <tr>
-            <th className="p-3 border-b">ID</th>
-            <th className="p-3 border-b">Sender</th>
-            <th className="p-3 border-b">Receiver</th>
-            <th className="p-3 border-b">Subject</th>
-            <th className="p-3 border-b">Message</th>
-            <th className="p-3 border-b text-center">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {inboxes.length === 0 ? (
-            <tr>
-              <td colSpan={6} className="text-center p-4 text-gray-500">
-                No inbox messages found.
-              </td>
-            </tr>
-          ) : (
-            inboxes.map((inbox) => (
-              <tr key={inbox.id} className="hover:bg-gray-50">
-                <td className="p-3 border-b">{inbox.id}</td>
-                <td className="p-3 border-b">{inbox.sender}</td>
-                <td className="p-3 border-b">{inbox.receiver}</td>
-                <td className="p-3 border-b">{inbox.subject}</td>
-                <td className="p-3 border-b">
-                  {inbox.message?.content ?? "No message linked"}
-                </td>
-                <td className="p-3 border-b text-center space-x-2">
-                  <button
-                    onClick={() => handleEdit(inbox)}
-                    className="bg-yellow-500 text-white px-3 py-1 rounded-md hover:bg-yellow-600"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(inbox.id)}
-                    className="bg-red-600 text-white px-3 py-1 rounded-md hover:bg-red-700"
-                  >
-                    Delete
-                  </button>
-                </td>
+      {/* ✅ Table Section */}
+      <div className="card shadow-sm border-0">
+        <div className="card-body p-0">
+          <table className="table table-hover table-bordered mb-0">
+            <thead className="table-success text-center">
+              <tr>
+                <th>ID</th>
+                <th>Sender ID</th>
+                <th>Message</th>
+                <th>Sent At</th>
+                <th className="text-center">Actions</th>
               </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+            </thead>
+            <tbody>
+              {inboxes.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="text-center text-muted p-3">
+                    No inbox messages found.
+                  </td>
+                </tr>
+              ) : (
+                inboxes.map((inbox) => (
+                  <tr key={inbox.id} className="align-middle">
+                    <td>{inbox.id}</td>
+                    <td>{inbox.senderId}</td>
+                    <td>{inbox.message?.content ?? "No message linked"}</td>
+                    <td>
+                      {inbox.message?.sentAt
+                        ? new Date(inbox.message.sentAt).toLocaleString()
+                        : "—"}
+                    </td>
+                    <td className="text-center">
+                      <button
+                        onClick={() => handleEdit(inbox)}
+                        className="btn btn-sm btn-outline-warning me-2"
+                      >
+                        ✏️ Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(inbox.id)}
+                        className="btn btn-sm btn-outline-danger"
+                      >
+                        🗑️ Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }

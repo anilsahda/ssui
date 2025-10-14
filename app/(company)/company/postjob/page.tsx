@@ -2,14 +2,25 @@
 
 import React, { useState, useEffect, ChangeEvent, FormEvent } from "react";
 import axios from "axios";
+import { Card, Table, Button, Form, Row, Col, Spinner } from "react-bootstrap";
+import {
+  FaBuilding,
+  FaBriefcase,
+  FaMapMarkerAlt,
+  FaDollarSign,
+  FaSync,
+} from "react-icons/fa";
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE || "https://localhost:7129/api";
+const API_BASE = "https://localhost:7269/api";
 
-interface Company {
+// ✅ Interfaces — must match backend DTOs exactly
+interface CompanyProfile {
   id: number;
-  name: string;
-  email?: string;
+  companyName: string;
+  industry: string;
+  location: string;
+  description: string;
+  website: string;
 }
 
 interface PostJob {
@@ -19,7 +30,8 @@ interface PostJob {
   description: string;
   location: string;
   salary: string;
-  company?: Company;
+  postedDate?: string;
+  company?: CompanyProfile; // ✅ matches .NET navigation property name
 }
 
 export default function PostJobsPage() {
@@ -32,173 +44,262 @@ export default function PostJobsPage() {
     location: "",
     salary: "",
   });
+
   const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  // Fetch all post jobs
-  const fetchJobs = async () => {
-    try {
-      const res = await axios.get(`${API_BASE}/PostJob`);
-      setJobs(res.data);
-    } catch (err) {
-      console.error("Error fetching post jobs:", err);
-    }
-  };
-
+  // ✅ Fetch all jobs on load
   useEffect(() => {
     fetchJobs();
   }, []);
 
-  // Handle input change
+  const fetchJobs = async () => {
+    setLoading(true);
+    try {
+      const res = await axios.get(`${API_BASE}/PostJob`);
+      let jobsData: any = res.data;
+
+      // ✅ Normalize .NET API response
+      if (Array.isArray(jobsData)) {
+        setJobs(jobsData);
+      } else if (jobsData?.$values) {
+        setJobs(jobsData.$values);
+      } else if (jobsData?.data) {
+        setJobs(jobsData.data);
+      } else {
+        setJobs([]);
+      }
+    } catch (err) {
+      console.error("Error fetching post jobs:", err);
+      setJobs([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ✅ Handle input change
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
     setFormData({
       ...formData,
-      [name]: ["companyId"].includes(name) ? Number(value) : value,
+      [name]: name === "companyId" ? Number(value) : value,
     });
   };
 
-  // Handle form submit
+  // ✅ Handle form submission
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setSubmitting(true);
     try {
-      await axios.post(`${API_BASE}/PostJob`, formData);
-      alert("Post job created successfully!");
-      setFormData({
-        id: 0,
-        companyId: 0,
-        title: "",
-        description: "",
-        location: "",
-        salary: "",
+      // ✅ Clean payload to avoid nested objects
+      const payload = {
+        companyId: formData.companyId,
+        title: formData.title,
+        description: formData.description,
+        location: formData.location,
+        salary: formData.salary,
+      };
+
+      await axios.post(`${API_BASE}/PostJob`, payload, {
+        headers: { "Content-Type": "application/json" },
       });
+
+      alert("✅ Job post created successfully!");
+      resetForm();
       fetchJobs();
     } catch (err) {
       console.error("Error creating post job:", err);
-      alert("An error occurred!");
+      alert("❌ Failed to create job post. Check API connection.");
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
+  // ✅ Reset form fields
+  const resetForm = () => {
+    setFormData({
+      id: 0,
+      companyId: 0,
+      title: "",
+      description: "",
+      location: "",
+      salary: "",
+    });
+  };
+
   return (
-    <div className="container mx-auto p-6 max-w-6xl">
-      <h1 className="text-3xl font-bold mb-6 text-center text-blue-700">
-        📌 Post Jobs
-      </h1>
+    <div className="container py-5" style={{ fontFamily: "Inter, sans-serif" }}>
+      <h2 className="text-center text-primary mb-4 fw-bold">
+        📌 Post Jobs Management
+      </h2>
 
-      {/* Form */}
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white shadow-md rounded-xl p-6 mb-8 border border-gray-200"
-      >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block font-medium mb-1">Company ID</label>
-            <input
-              type="number"
-              name="companyId"
-              value={formData.companyId}
-              onChange={handleChange}
-              required
-              className="w-full border px-3 py-2 rounded-md focus:ring focus:ring-blue-200"
-            />
-          </div>
+      {/* ✅ Form Section */}
+      <Card className="shadow-sm mb-5 border-0">
+        <Card.Body>
+          <Form onSubmit={handleSubmit}>
+            <Row className="g-3">
+              <Col md={6}>
+                <Form.Group>
+                  <Form.Label>
+                    <FaBuilding className="me-1 text-secondary" /> Company ID
+                  </Form.Label>
+                  <Form.Control
+                    type="number"
+                    name="companyId"
+                    value={formData.companyId}
+                    onChange={handleChange}
+                    placeholder="Enter company ID"
+                    required
+                  />
+                </Form.Group>
+              </Col>
 
-          <div>
-            <label className="block font-medium mb-1">Title</label>
-            <input
-              type="text"
-              name="title"
-              value={formData.title}
-              onChange={handleChange}
-              required
-              className="w-full border px-3 py-2 rounded-md focus:ring focus:ring-blue-200"
-            />
-          </div>
+              <Col md={6}>
+                <Form.Group>
+                  <Form.Label>
+                    <FaBriefcase className="me-1 text-secondary" /> Job Title
+                  </Form.Label>
+                  <Form.Control
+                    type="text"
+                    name="title"
+                    value={formData.title}
+                    onChange={handleChange}
+                    placeholder="Enter job title"
+                    required
+                  />
+                </Form.Group>
+              </Col>
 
-          <div className="md:col-span-2">
-            <label className="block font-medium mb-1">Description</label>
-            <textarea
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              required
-              className="w-full border px-3 py-2 rounded-md focus:ring focus:ring-blue-200"
-            />
-          </div>
+              <Col md={12}>
+                <Form.Group>
+                  <Form.Label>Description</Form.Label>
+                  <Form.Control
+                    as="textarea"
+                    rows={3}
+                    name="description"
+                    value={formData.description}
+                    onChange={handleChange}
+                    placeholder="Enter job description"
+                    required
+                  />
+                </Form.Group>
+              </Col>
 
-          <div>
-            <label className="block font-medium mb-1">Location</label>
-            <input
-              type="text"
-              name="location"
-              value={formData.location}
-              onChange={handleChange}
-              required
-              className="w-full border px-3 py-2 rounded-md focus:ring focus:ring-blue-200"
-            />
-          </div>
+              <Col md={6}>
+                <Form.Group>
+                  <Form.Label>
+                    <FaMapMarkerAlt className="me-1 text-secondary" /> Location
+                  </Form.Label>
+                  <Form.Control
+                    type="text"
+                    name="location"
+                    value={formData.location}
+                    onChange={handleChange}
+                    placeholder="Enter location"
+                    required
+                  />
+                </Form.Group>
+              </Col>
 
-          <div>
-            <label className="block font-medium mb-1">Salary</label>
-            <input
-              type="text"
-              name="salary"
-              value={formData.salary}
-              onChange={handleChange}
-              required
-              className="w-full border px-3 py-2 rounded-md focus:ring focus:ring-blue-200"
-            />
-          </div>
-        </div>
+              <Col md={6}>
+                <Form.Group>
+                  <Form.Label>
+                    <FaDollarSign className="me-1 text-secondary" /> Salary
+                  </Form.Label>
+                  <Form.Control
+                    type="text"
+                    name="salary"
+                    value={formData.salary}
+                    onChange={handleChange}
+                    placeholder="Enter salary details"
+                    required
+                  />
+                </Form.Group>
+              </Col>
+            </Row>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className={`w-full mt-5 py-2 rounded-md text-white ${
-            loading ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"
-          }`}
-        >
-          Create Post Job
-        </button>
-      </form>
+            {/* ✅ Buttons */}
+            <div className="d-flex justify-content-between mt-4">
+              <Button
+                variant="outline-secondary"
+                onClick={fetchJobs}
+                disabled={loading}
+              >
+                <FaSync className="me-1" />
+                {loading ? "Refreshing..." : "Refresh"}
+              </Button>
 
-      {/* Table */}
-      <table className="w-full bg-white shadow-md rounded-xl overflow-hidden border border-gray-200">
-        <thead className="bg-gray-100 text-left">
-          <tr>
-            <th className="p-3 border-b">ID</th>
-            <th className="p-3 border-b">Company</th>
-            <th className="p-3 border-b">Title</th>
-            <th className="p-3 border-b">Description</th>
-            <th className="p-3 border-b">Location</th>
-            <th className="p-3 border-b">Salary</th>
-          </tr>
-        </thead>
-        <tbody>
-          {jobs.length === 0 ? (
-            <tr>
-              <td colSpan={6} className="text-center p-4 text-gray-500">
-                No post jobs found.
-              </td>
-            </tr>
+              <Button
+                type="submit"
+                className="px-4"
+                variant="primary"
+                disabled={submitting}
+              >
+                {submitting ? (
+                  <>
+                    <Spinner animation="border" size="sm" className="me-2" />
+                    Saving...
+                  </>
+                ) : (
+                  "Create Job Post"
+                )}
+              </Button>
+            </div>
+          </Form>
+        </Card.Body>
+      </Card>
+
+      {/* ✅ Job List Section */}
+      <Card className="shadow-sm border-0">
+        <Card.Body>
+          <h4 className="text-primary fw-bold mb-3">
+            <FaBriefcase className="me-2" />
+            Posted Jobs
+          </h4>
+
+          {loading ? (
+            <div className="text-center py-5">
+              <Spinner animation="border" variant="primary" />
+              <p className="mt-3 text-muted">Loading jobs...</p>
+            </div>
           ) : (
-            jobs.map((job) => (
-              <tr key={job.id} className="hover:bg-gray-50">
-                <td className="p-3 border-b">{job.id}</td>
-                <td className="p-3 border-b">{job.company?.name || "-"}</td>
-                <td className="p-3 border-b">{job.title}</td>
-                <td className="p-3 border-b">{job.description}</td>
-                <td className="p-3 border-b">{job.location}</td>
-                <td className="p-3 border-b">{job.salary}</td>
-              </tr>
-            ))
+            <Table striped bordered hover responsive>
+              <thead className="table-primary">
+                <tr>
+                  <th>ID</th>
+                  <th>Company</th>
+                  <th>Title</th>
+                  <th>Description</th>
+                  <th>Location</th>
+                  <th>Salary</th>
+                </tr>
+              </thead>
+              <tbody>
+                {!jobs || jobs.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="text-center text-muted py-4">
+                      No jobs found.
+                    </td>
+                  </tr>
+                ) : (
+                  jobs.map((job) => (
+                    <tr key={job.id}>
+                      <td>{job.id}</td>
+                      <td>{job.company?.companyName || "—"}</td>
+                      <td>{job.title}</td>
+                      <td>{job.description}</td>
+                      <td>{job.location}</td>
+                      <td>{job.salary}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </Table>
           )}
-        </tbody>
-      </table>
+        </Card.Body>
+      </Card>
     </div>
   );
 }

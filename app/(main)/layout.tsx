@@ -57,6 +57,7 @@ export default function MainLayout({
           <Link href="/" className="navbar-brand fw-bold fs-4">
             🌐 SS App
           </Link>
+
           <button
             className="navbar-toggler"
             type="button"
@@ -72,69 +73,58 @@ export default function MainLayout({
           <div className="collapse navbar-collapse" id="navbarNav">
             {/* Left Menu */}
             <ul className="navbar-nav me-auto mb-2 mb-lg-0">
-              <li
-                className="nav-item"
-                data-aos="fade-right"
-                data-aos-delay="100"
-              >
-                <Link href="/" className="nav-link px-3 fw-semibold">
-                  Home
-                </Link>
-              </li>
-              <li
-                className="nav-item"
-                data-aos="fade-right"
-                data-aos-delay="200"
-              >
-                <Link href="/about" className="nav-link px-3 fw-semibold">
-                  About
-                </Link>
-              </li>
-              <li
-                className="nav-item dropdown"
-                data-aos="fade-right"
-                data-aos-delay="300"
-              >
-                <Link
-                  href="/service"
-                  className="nav-link dropdown-toggle px-3 fw-semibold"
-                  id="servicesDropdown"
-                  role="button"
-                  data-bs-toggle="dropdown"
-                  aria-expanded="false"
+              {[
+                { href: "/", label: "Home" },
+                { href: "/about", label: "About" },
+                { href: "/service", label: "Services" },
+                { href: "/contact", label: "Contact" },
+              ].map((item, idx) => (
+                <li
+                  key={item.href}
+                  className="nav-item"
+                  data-aos="fade-right"
+                  data-aos-delay={100 * (idx + 1)}
                 >
-                  Services
-                </Link>
-                <ul
-                  className="dropdown-menu"
-                  aria-labelledby="servicesDropdown"
-                >
-                  <li>
-                    <Link href="/service/web" className="dropdown-item">
-                      Web Development
-                    </Link>
-                  </li>
-                  <li>
-                    <Link href="/service/mobile" className="dropdown-item">
-                      Mobile Development
-                    </Link>
-                  </li>
-                  <li>
-                    <Link href="/service/uiux" className="dropdown-item">
-                      UI/UX Design
-                    </Link>
-                  </li>
-                </ul>
-              </li>
-              <li
-                className="nav-item"
-                data-aos="fade-right"
-                data-aos-delay="400"
-              >
-                <Link href="/contact" className="nav-link px-3 fw-semibold">
-                  Contact
-                </Link>
-              </li>
+                  <Link
+                    href={item.href}
+                    className={`nav-link px-3 fw-semibold ${
+                      item.href === "/service" ? "dropdown-toggle" : ""
+                    }`}
+                    {...(item.href === "/service"
+                      ? {
+                          id: "servicesDropdown",
+                          role: "button",
+                          "data-bs-toggle": "dropdown",
+                          "aria-expanded": false,
+                        }
+                      : {})}
+                  >
+                    {item.label}
+                  </Link>
+                  {item.href === "/service" && (
+                    <ul
+                      className="dropdown-menu"
+                      aria-labelledby="servicesDropdown"
+                    >
+                      <li>
+                        <Link href="/service/web" className="dropdown-item">
+                          Web Development
+                        </Link>
+                      </li>
+                      <li>
+                        <Link href="/service/mobile" className="dropdown-item">
+                          Mobile Development
+                        </Link>
+                      </li>
+                      <li>
+                        <Link href="/service/uiux" className="dropdown-item">
+                          UI/UX Design
+                        </Link>
+                      </li>
+                    </ul>
+                  )}
+                </li>
+              ))}
             </ul>
 
             {/* Right Menu */}
@@ -157,7 +147,7 @@ export default function MainLayout({
 
               {/* Theme toggle */}
               <button
-                className="btn btn-sm btn-outline-secondary rounded-circle me-2"
+                className="btn btn-sm btn-outline-secondary rounded-circle me-2 hover-scale"
                 onClick={toggleTheme}
                 data-aos="zoom-in"
                 data-aos-delay="600"
@@ -168,7 +158,7 @@ export default function MainLayout({
               {/* Auth buttons */}
               <Link
                 href="/login"
-                className="btn btn-light btn-sm rounded-pill px-3 fw-bold"
+                className="btn btn-light btn-sm rounded-pill px-3 fw-bold hover-scale"
                 data-aos="fade-up"
                 data-aos-delay="700"
               >
@@ -176,7 +166,7 @@ export default function MainLayout({
               </Link>
               <Link
                 href="/register"
-                className="btn btn-outline-light btn-sm rounded-pill px-3 fw-bold"
+                className="btn btn-outline-light btn-sm rounded-pill px-3 fw-bold hover-scale"
                 data-aos="fade-up"
                 data-aos-delay="800"
               >
@@ -216,7 +206,7 @@ export default function MainLayout({
                 data-aos-delay="1000"
               >
                 <button
-                  className="btn btn-light btn-sm rounded-circle dropdown-toggle"
+                  className="btn btn-light btn-sm rounded-circle dropdown-toggle hover-scale"
                   type="button"
                   id="profileDropdown"
                   data-bs-toggle="dropdown"
@@ -225,7 +215,7 @@ export default function MainLayout({
                   <FaUserCircle size={20} />
                 </button>
                 <ul
-                  className="dropdown-menu dropdown-menu-end"
+                  className="dropdown-menu dropdown-menu-end shadow"
                   aria-labelledby="profileDropdown"
                 >
                   <li>
@@ -270,6 +260,12 @@ export default function MainLayout({
         }
         .navbar-dark .dropdown-menu {
           background-color: #1b2a44;
+        }
+        .navbar-light .dropdown-menu {
+          background-color: #fff;
+        }
+        .dropdown-menu a:hover {
+          background-color: rgba(0, 123, 255, 0.1);
         }
       `}</style>
     </div>
