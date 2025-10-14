@@ -212,9 +212,9 @@ export default function OwnerLayout({
               </li>
               <li>
                 <Link
-                  href="/owner/complain"
+                  href="/owner/ownercomplain"
                   className={`nav-link d-flex align-items-center gap-2 sidebar-link ${isActive(
-                    "/owner/complain"
+                    "/owner/ownercomplain"
                   )}`}
                 >
                   <FaUserShield size={16} className="text-success" /> Complain

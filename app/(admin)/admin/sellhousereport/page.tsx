@@ -1,53 +1,40 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, ChangeEvent, FormEvent } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
+import { useSellHouseStore } from "../store/sellhousereport";
 
-interface House {
-  id: number;
-  name: string;
-}
-
-interface SellHouseReport {
-  id: number;
-  houseId: number;
-  sellPrice: number;
-  buyerName: string;
-  sellDate?: string;
-  house?: House;
-}
+const API_URL = "https://localhost:7255/api/SellHouseReport";
+const HOUSES_API = "https://localhost:7255/api/House";
 
 const SellHouseReportsManager: React.FC = () => {
-  const [reports, setReports] = useState<SellHouseReport[]>([]);
-  const [houses, setHouses] = useState<House[]>([]);
-  const [form, setForm] = useState<Partial<SellHouseReport>>({});
-  const [editing, setEditing] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    reports,
+    houses,
+    form,
+    editing,
+    loading,
+    error,
+    setReports,
+    setHouses,
+    setForm,
+    setEditing,
+    setLoading,
+    setError,
+    resetForm,
+  } = useSellHouseStore();
 
-  const API_URL = "https://localhost:7255/api/SellHouseReport";
-  const HOUSES_API = "https://localhost:7255/api/House";
-
-  useEffect(() => {
-    fetchReports();
-    fetchHouses();
-  }, []);
-
+  // Fetch reports
   const fetchReports = async () => {
     setLoading(true);
+    setError(null);
     try {
-      const response = await fetch(API_URL);
-      const data = await response.json();
-
-      if (Array.isArray(data)) {
-        setReports(data);
-      } else {
-        console.error("Unexpected API response for reports:", data);
-        setReports([]);
-        setError("Unexpected response format for sell house reports.");
-      }
+      const res = await fetch(API_URL);
+      const data = await res.json();
+      if (Array.isArray(data)) setReports(data);
+      else throw new Error("Unexpected API response for reports.");
     } catch (err) {
-      console.error("Error fetching reports:", err);
+      console.error(err);
       setError("Error fetching sell house reports.");
       setReports([]);
     } finally {
@@ -55,36 +42,39 @@ const SellHouseReportsManager: React.FC = () => {
     }
   };
 
+  // Fetch houses
   const fetchHouses = async () => {
     try {
       const res = await fetch(HOUSES_API);
       const data = await res.json();
-
-      if (Array.isArray(data)) {
-        setHouses(data);
-      } else {
-        console.error("Unexpected API response for houses:", data);
-        setHouses([]);
-        setError("Unexpected response format for houses.");
-      }
+      if (Array.isArray(data)) setHouses(data);
+      else throw new Error("Unexpected API response for houses.");
     } catch (err) {
-      console.error("Error fetching houses:", err);
+      console.error(err);
       setError("Error fetching house data.");
+      setHouses([]);
     }
   };
 
+  useEffect(() => {
+    fetchReports();
+    fetchHouses();
+  }, []);
+
+  // Handle form input
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
-    setForm((prev) => ({
-      ...prev,
+    setForm({
+      ...form,
       [name]:
         name === "houseId" || name === "sellPrice" ? Number(value) : value,
-    }));
+    });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Submit form
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
 
@@ -97,26 +87,23 @@ const SellHouseReportsManager: React.FC = () => {
       const method = editing ? "PUT" : "POST";
       const url = editing ? `${API_URL}/${form.id}` : API_URL;
 
-      const response = await fetch(url, {
+      const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || "Failed to save report.");
-      }
+      if (!res.ok) throw new Error("Failed to save report.");
 
       await fetchReports();
       resetForm();
     } catch (err) {
-      console.error("Error saving report:", err);
+      console.error(err);
       setError("Error saving report.");
     }
   };
 
-  const handleEdit = (report: SellHouseReport) => {
+  const handleEdit = (report: any) => {
     setForm(report);
     setEditing(true);
     setError(null);
@@ -127,23 +114,13 @@ const SellHouseReportsManager: React.FC = () => {
     if (!window.confirm("Are you sure you want to delete this report?")) return;
 
     try {
-      const response = await fetch(`${API_URL}/${id}`, {
-        method: "DELETE",
-      });
-
-      if (!response.ok) throw new Error("Failed to delete");
-
+      const res = await fetch(`${API_URL}/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Delete failed.");
       await fetchReports();
     } catch (err) {
-      console.error("Error deleting report:", err);
+      console.error(err);
       setError("Error deleting report.");
     }
-  };
-
-  const resetForm = () => {
-    setForm({});
-    setEditing(false);
-    setError(null);
   };
 
   return (
@@ -179,7 +156,7 @@ const SellHouseReportsManager: React.FC = () => {
               <option value="">-- Select House --</option>
               {houses.map((h) => (
                 <option key={h.id} value={h.id}>
-                  {h.name}
+                  {h.houseNumber} - {h.address}
                 </option>
               ))}
             </select>
@@ -223,7 +200,7 @@ const SellHouseReportsManager: React.FC = () => {
               className={`bi ${
                 editing ? "bi-pencil-square" : "bi-plus-circle"
               }`}
-            ></i>{" "}
+            />{" "}
             {editing ? "Update Report" : "Create Report"}
           </button>
           {editing && (
@@ -232,14 +209,13 @@ const SellHouseReportsManager: React.FC = () => {
               className="btn btn-secondary"
               onClick={resetForm}
             >
-              <i className="bi bi-x-circle"></i> Cancel
+              <i className="bi bi-x-circle" /> Cancel
             </button>
           )}
         </div>
       </form>
 
       <h5 className="mb-3">Existing Sell Reports</h5>
-
       {loading ? (
         <div className="text-center my-5">
           <div className="spinner-border text-primary" role="status" />
@@ -254,7 +230,7 @@ const SellHouseReportsManager: React.FC = () => {
               <div className="card shadow-sm">
                 <div className="card-body">
                   <h6 className="card-title">
-                    {report.house?.name || `House #${report.houseId}`}{" "}
+                    {report.house?.houseNumber || `House #${report.houseId}`}{" "}
                     <span className="badge bg-secondary">{report.id}</span>
                   </h6>
                   <p className="card-text mb-1">
@@ -266,7 +242,7 @@ const SellHouseReportsManager: React.FC = () => {
                   <p className="card-text mb-3">
                     <strong>Date:</strong>{" "}
                     {report.sellDate
-                      ? new Date(report.sellDate).toLocaleString()
+                      ? new Date(report.sellDate).toLocaleDateString()
                       : "-"}
                   </p>
                   <button

@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 import AOS from "aos";
 import "aos/dist/aos.css";
+import "bootstrap/dist/css/bootstrap.min.css";
+import "bootstrap/dist/js/bootstrap.bundle.min.js";
 
 import { MdDashboard, MdHelpOutline } from "react-icons/md";
 import {
@@ -16,7 +18,7 @@ import {
 } from "react-icons/fa";
 import { FiSearch, FiBell, FiMoon, FiUserCheck } from "react-icons/fi";
 
-import "bootstrap/dist/css/bootstrap.min.css";
+import { useAdminStore } from "./store/useadmin";
 
 export default function AdminLayout({
   children,
@@ -24,26 +26,79 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const { darkMode, toggleDarkMode, notifications } = useAdminStore();
 
   useEffect(() => {
-    AOS.init({
-      duration: 700,
-      easing: "ease-in-out",
-      once: true,
-      mirror: false,
-    });
-  }, []);
+    AOS.init({ duration: 700, easing: "ease-in-out", once: true });
+    AOS.refresh();
+  }, [pathname]);
 
-  const isActive = (path: string) => (pathname === path ? "active" : "");
+  const isActive = (path: string) =>
+    pathname === path || pathname.startsWith(path);
 
   const handleLogout = () => {
     console.log("Logging out...");
     // TODO: integrate actual logout
   };
 
+  const navItems = [
+    {
+      href: "/superadmin",
+      label: "Dashboard",
+      icon: <MdDashboard size={18} className="text-info" />,
+    },
+    {
+      href: "/admin/society",
+      label: "Society",
+      icon: <FaUsers size={16} className="text-warning" />,
+    },
+    {
+      href: "/admin/house",
+      label: "House",
+      icon: <FaUserShield size={16} className="text-success" />,
+    },
+    {
+      href: "/admin/housereport",
+      label: "House Report",
+      icon: <FiUserCheck size={16} className="text-primary" />,
+    },
+    {
+      href: "/admin/allocatehouse",
+      label: "Allocate House",
+      icon: <FiUserCheck size={16} className="text-primary" />,
+    },
+    {
+      href: "/admin/member",
+      label: "Member",
+      icon: <FaUserShield size={16} className="text-success" />,
+    },
+    {
+      href: "/admin/memberreport",
+      label: "Member Report",
+      icon: <FaUserShield size={16} className="text-success" />,
+    },
+    {
+      href: "/admin/complain",
+      label: "Complain",
+      icon: <FaUserShield size={16} className="text-success" />,
+    },
+    {
+      href: "/admin/sellhousereport",
+      label: "Sell House Report",
+      icon: <FaUserShield size={16} className="text-success" />,
+    },
+    {
+      href: "/admin/renthousereport",
+      label: "Rent House Report",
+      icon: <FaUserShield size={16} className="text-success" />,
+    },
+  ];
+
   return (
     <div
-      className="d-flex flex-column min-vh-100 bg-light"
+      className={`${
+        darkMode ? "bg-dark text-light" : "bg-light"
+      } d-flex flex-column min-vh-100`}
       style={{ fontFamily: "Inter, sans-serif" }}
     >
       {/* Header */}
@@ -53,7 +108,6 @@ export default function AdminLayout({
       >
         <h1 className="m-0 text-primary fw-bold fs-4">SS House Admin</h1>
 
-        {/* Search bar - hidden on small */}
         <div className="d-none d-md-block flex-grow-1 px-4">
           <div
             className="position-relative mx-auto"
@@ -73,11 +127,11 @@ export default function AdminLayout({
           </div>
         </div>
 
-        {/* Icons */}
         <div className="d-flex align-items-center gap-3">
           <button
             className="btn btn-light rounded-circle p-2 shadow-sm"
             title="Toggle Dark Mode"
+            onClick={toggleDarkMode}
             data-aos="zoom-in"
           >
             <FiMoon size={18} />
@@ -101,16 +155,18 @@ export default function AdminLayout({
               style={{ zIndex: 1 }}
             >
               <FiBell size={18} />
-              <span
-                className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
-                style={{ fontSize: "0.65rem" }}
-              >
-                5<span className="visually-hidden">unread messages</span>
-              </span>
+              {notifications > 0 && (
+                <span
+                  className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                  style={{ fontSize: "0.65rem" }}
+                >
+                  {notifications}
+                  <span className="visually-hidden">unread messages</span>
+                </span>
+              )}
             </button>
           </div>
 
-          {/* Profile Dropdown */}
           <div className="dropdown" data-aos="fade-up" data-aos-delay={150}>
             <button
               className="btn p-0 d-flex align-items-center gap-2 dropdown-toggle"
@@ -122,8 +178,8 @@ export default function AdminLayout({
                 src="https://ui-avatars.com/api/?name=Admin+User&background=0d6efd&color=fff&rounded=true"
                 alt="profile"
                 className="rounded-circle shadow-sm border border-2 border-light"
-                width="40"
-                height="40"
+                width={40}
+                height={40}
               />
             </button>
             <ul className="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 p-0 overflow-hidden">
@@ -176,118 +232,7 @@ export default function AdminLayout({
         >
           <nav>
             <ul className="nav nav-pills flex-column gap-2">
-              {[
-                {
-                  href: "/superadmin",
-                  label: "Dashboard",
-                  icon: (
-                    <MdDashboard
-                      size={18}
-                      className="text-info"
-                      aria-hidden="true"
-                    />
-                  ),
-                },
-                {
-                  href: "/admin/society",
-                  label: "Society",
-                  icon: (
-                    <FaUsers
-                      size={16}
-                      className="text-warning"
-                      aria-hidden="true"
-                    />
-                  ),
-                },
-                {
-                  href: "/admin/house",
-                  label: "House",
-                  icon: (
-                    <FaUserShield
-                      size={16}
-                      className="text-success"
-                      aria-hidden="true"
-                    />
-                  ),
-                },
-                {
-                  href: "/admin/housereport",
-                  label: "House Report",
-                  icon: (
-                    <FiUserCheck
-                      size={16}
-                      className="text-primary"
-                      aria-hidden="true"
-                    />
-                  ),
-                },
-                {
-                  href: "/admin/allocatehouse",
-                  label: "Allocate House",
-                  icon: (
-                    <FiUserCheck
-                      size={16}
-                      className="text-primary"
-                      aria-hidden="true"
-                    />
-                  ),
-                },
-                {
-                  href: "/admin/member",
-                  label: "Member",
-                  icon: (
-                    <FaUserShield
-                      size={16}
-                      className="text-success"
-                      aria-hidden="true"
-                    />
-                  ),
-                },
-                {
-                  href: "/admin/memberreport",
-                  label: "Member Report",
-                  icon: (
-                    <FaUserShield
-                      size={16}
-                      className="text-success"
-                      aria-hidden="true"
-                    />
-                  ),
-                },
-                {
-                  href: "/admin/complain",
-                  label: "Complain",
-                  icon: (
-                    <FaUserShield
-                      size={16}
-                      className="text-success"
-                      aria-hidden="true"
-                    />
-                  ),
-                },
-                {
-                  href: "/admin/sellhousereport",
-                  label: "Sell House Report",
-                  icon: (
-                    <FaUserShield
-                      size={16}
-                      className="text-success"
-                      aria-hidden="true"
-                    />
-                  ),
-                },
-                {
-                  href: "/admin/renthousereport",
-                  label: "Rent House Report",
-                  icon: (
-                    <FaUserShield
-                      size={16}
-                      className="text-success"
-                      aria-hidden="true"
-                    />
-                  ),
-                },
-              ].map(({ href, label, icon }, idx) => (
+              {navItems.map(({ href, label, icon }, idx) => (
                 <li
                   key={href}
                   data-aos="fade-up"

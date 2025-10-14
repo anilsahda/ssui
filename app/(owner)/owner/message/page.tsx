@@ -1,202 +1,189 @@
 "use client";
 
-import React, { useEffect, useState, FormEvent } from "react";
+import React, { useEffect, ChangeEvent, FormEvent } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
+import "bootstrap-icons/font/bootstrap-icons.css";
+import { usePostHouseStore } from "../store/posthouse";
 
-type Owner = {
-  _id: string;
-  name?: string;
-};
+const API_BASE = "https://localhost:7049/api/PostHouses";
+const OWNER_API = "https://localhost:7049/api/Owner";
 
-type Message = {
-  _id: string;
-  text: string;
-  sentAt: string;
-  ownerId: Owner | string;
-};
+const PostHousesManager: React.FC = () => {
+  const {
+    postHouses,
+    owners,
+    form,
+    editing,
+    loading,
+    setPostHouses,
+    setOwners,
+    setForm,
+    setEditing,
+    setLoading,
+    resetForm,
+  } = usePostHouseStore();
 
-const MessagesPage: React.FC = () => {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [text, setText] = useState("");
-  const [ownerId, setOwnerId] = useState("");
-  const [editId, setEditId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [submitting, setSubmitting] = useState<boolean>(false);
+  useEffect(() => {
+    fetchOwners();
+    fetchPostHouses();
+  }, []);
 
-  const fetchMessages = async () => {
+  const fetchPostHouses = async () => {
     setLoading(true);
-    setError(null);
     try {
-      const res = await fetch("http://localhost:5000/api/messages");
-      if (!res.ok) {
-        const err = await res.text();
-        throw new Error(err || "Failed to fetch messages");
-      }
-      const json = await res.json();
-      setMessages(json.data || []);
-    } catch (err: any) {
-      console.error("Fetch messages error:", err);
-      setError(err.message || "Failed to load messages");
+      const res = await fetch(API_BASE);
+      const data = await res.json();
+      setPostHouses(Array.isArray(data) ? data : []);
+    } catch (err) {
+      alert("Error fetching post houses");
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchMessages();
-  }, []);
+  const fetchOwners = async () => {
+    try {
+      const res = await fetch(OWNER_API);
+      const data = await res.json();
+      setOwners(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Error loading owners", err);
+    }
+  };
 
-  const resetForm = () => {
-    setText("");
-    setOwnerId("");
-    setEditId(null);
-    setError(null);
+  const handleChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target;
+    setForm({
+      ...form,
+      [name]: name === "ownerId" ? parseInt(value) : value,
+    });
   };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setError(null);
-    if (!text.trim() || !ownerId.trim()) {
-      setError("Text and Owner ID are required.");
+    if (!form.title || !form.address || !form.ownerId) {
+      alert("Title, Address, and Owner are required");
       return;
     }
 
-    setSubmitting(true);
     try {
-      const url = editId
-        ? `http://localhost:5000/api/messages/${editId}`
-        : `http://localhost:5000/api/messages`;
-      const method = editId ? "PUT" : "POST";
-      const body: any = { text: text.trim(), ownerId: ownerId.trim() };
-
-      const res = await fetch(url, {
-        method,
+      const res = await fetch(editing ? `${API_BASE}/${form.id}` : API_BASE, {
+        method: editing ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify(form),
       });
-      const resJson = await res.json();
 
-      if (!res.ok) {
-        throw new Error(resJson.error || "Failed to save message");
-      }
+      if (!res.ok) throw new Error("Save failed");
 
-      await fetchMessages();
+      await fetchPostHouses();
       resetForm();
-    } catch (err: any) {
-      console.error("Submit error:", err);
-      setError(err.message || "Error saving message.");
-    } finally {
-      setSubmitting(false);
+    } catch (err) {
+      alert("Error saving post house");
+      console.error(err);
     }
   };
 
-  const handleEdit = (msg: Message) => {
-    setEditId(msg._id);
-    setText(msg.text);
-    setOwnerId(typeof msg.ownerId === "string" ? msg.ownerId : msg.ownerId._id);
+  const handleEdit = (ph: any) => {
+    setForm(ph);
+    setEditing(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm("Are you sure you want to delete this message?"))
-      return;
+  const handleDelete = async (id: number) => {
+    if (!window.confirm("Delete this post house?")) return;
+
     try {
-      const res = await fetch(`http://localhost:5000/api/messages/${id}`, {
-        method: "DELETE",
-      });
-      const resJson = await res.json();
-      if (!res.ok) {
-        throw new Error(resJson.error || "Failed to delete");
-      }
-      await fetchMessages();
-    } catch (err: any) {
-      console.error("Delete error:", err);
-      setError(err.message || "Error deleting message.");
+      const res = await fetch(`${API_BASE}/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Delete failed");
+
+      await fetchPostHouses();
+    } catch (err) {
+      alert("Error deleting post house");
+      console.error(err);
     }
   };
 
   return (
     <div className="container py-4">
-      <div className="text-center mb-4">
-        <h2 className="fw-bold">
-          <i className="bi bi-chat-left-text me-2 text-primary"></i>
-          Messages
+      <div className="mb-4 text-center">
+        <h2 className="fw-bold text-primary">
+          <i className="bi bi-house-door-fill me-2"></i>Post Houses Manager
         </h2>
-        <p className="text-muted">Create, edit or remove messages</p>
+        <p className="text-muted">Manage and publish house listings</p>
       </div>
 
+      {/* FORM */}
       <div className="card shadow-sm mb-5">
         <div className="card-header bg-primary text-white">
           <h5 className="mb-0">
-            {editId ? (
-              <>
-                <i className="bi bi-pencil-square me-2"></i>Edit Message
-              </>
-            ) : (
-              <>
-                <i className="bi bi-plus-circle me-2"></i>New Message
-              </>
-            )}
+            <i
+              className={`bi ${
+                editing ? "bi-pencil-square" : "bi-plus-circle"
+              } me-2`}
+            ></i>
+            {editing ? "Edit Post House" : "Create New Post House"}
           </h5>
         </div>
         <div className="card-body">
-          {error && (
-            <div
-              className="alert alert-danger d-flex align-items-center"
-              role="alert"
-            >
-              <i className="bi bi-exclamation-triangle-fill me-2"></i>
-              <div>{error}</div>
-            </div>
-          )}
           <form onSubmit={handleSubmit}>
             <div className="mb-3">
-              <label htmlFor="text" className="form-label">
-                Message Text
-              </label>
-              <textarea
-                id="text"
-                className="form-control"
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                placeholder="Enter your message"
-                rows={3}
-                disabled={submitting}
-                required
-              />
-            </div>
-            <div className="mb-3">
-              <label htmlFor="ownerId" className="form-label">
-                Owner ID
-              </label>
+              <label className="form-label">Title *</label>
               <input
-                id="ownerId"
+                type="text"
                 className="form-control"
-                value={ownerId}
-                onChange={(e) => setOwnerId(e.target.value)}
-                placeholder="Enter owner ID"
-                disabled={submitting}
+                name="title"
+                value={form.title || ""}
+                onChange={handleChange}
+                placeholder="Enter house title"
                 required
               />
             </div>
-            <div className="d-grid gap-2 d-md-flex justify-content-md-end">
-              <button
-                type="submit"
-                className="btn btn-success me-md-2"
-                disabled={submitting}
+
+            <div className="mb-3">
+              <label className="form-label">Address *</label>
+              <input
+                type="text"
+                className="form-control"
+                name="address"
+                value={form.address || ""}
+                onChange={handleChange}
+                placeholder="Enter house address"
+                required
+              />
+            </div>
+
+            <div className="mb-3">
+              <label className="form-label">Owner *</label>
+              <select
+                className="form-select"
+                name="ownerId"
+                value={form.ownerId || 0}
+                onChange={handleChange}
+                required
               >
+                <option value={0}>-- Select Owner --</option>
+                {owners.map((owner) => (
+                  <option key={owner.id} value={owner.id}>
+                    {owner.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="d-flex justify-content-end">
+              <button type="submit" className="btn btn-success me-2">
                 <i
-                  className={`bi ${editId ? "bi-pencil" : "bi-plus-lg"} me-1`}
+                  className={`bi ${editing ? "bi-save" : "bi-plus-lg"} me-1`}
                 ></i>
-                {editId ? "Update Message" : "Create Message"}
+                {editing ? "Update" : "Create"}
               </button>
-              {editId && (
+              {editing && (
                 <button
                   type="button"
                   className="btn btn-secondary"
                   onClick={resetForm}
-                  disabled={submitting}
                 >
                   <i className="bi bi-x-circle me-1"></i>Cancel
                 </button>
@@ -206,66 +193,64 @@ const MessagesPage: React.FC = () => {
         </div>
       </div>
 
-      {loading ? (
-        <div className="text-center my-5">
-          <div className="spinner-border text-primary" role="status"></div>
-          <p className="mt-3">Loading messages...</p>
-        </div>
-      ) : (
-        <div className="table-responsive">
-          <table className="table table-hover table-bordered align-middle">
-            <thead className="table-dark">
-              <tr>
-                <th>ID</th>
-                <th>Text</th>
-                <th>Owner</th>
-                <th>Sent At</th>
-                <th className="text-center">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {messages.length === 0 ? (
+      {/* TABLE */}
+      <div>
+        <h5>
+          <i className="bi bi-card-list me-2"></i>All Posted Houses
+        </h5>
+        {loading ? (
+          <div className="text-center my-5">
+            <div className="spinner-border text-primary" role="status"></div>
+            <p className="mt-3 text-muted">Loading post houses...</p>
+          </div>
+        ) : postHouses.length === 0 ? (
+          <p className="text-muted">No post houses available.</p>
+        ) : (
+          <div className="table-responsive">
+            <table className="table table-hover table-bordered align-middle mt-3">
+              <thead className="table-dark">
                 <tr>
-                  <td colSpan={5} className="text-center text-muted">
-                    No messages found.
-                  </td>
+                  <th>ID</th>
+                  <th>Title</th>
+                  <th>Address</th>
+                  <th>Owner</th>
+                  <th className="text-center">Actions</th>
                 </tr>
-              ) : (
-                messages.map((msg) => (
-                  <tr key={msg._id}>
+              </thead>
+              <tbody>
+                {postHouses.map((ph) => (
+                  <tr key={ph.id}>
                     <td>
-                      <span className="badge bg-secondary">{msg._id}</span>
+                      <span className="badge bg-secondary">{ph.id}</span>
                     </td>
-                    <td>{msg.text}</td>
-                    <td>
-                      {typeof msg.ownerId === "string"
-                        ? msg.ownerId
-                        : msg.ownerId.name ?? msg.ownerId._id}
-                    </td>
-                    <td>{new Date(msg.sentAt).toLocaleString()}</td>
+                    <td>{ph.title}</td>
+                    <td>{ph.address}</td>
+                    <td>{ph.owner?.name || "N/A"}</td>
                     <td className="text-center">
                       <button
                         className="btn btn-sm btn-outline-primary me-2"
-                        onClick={() => handleEdit(msg)}
+                        onClick={() => handleEdit(ph)}
+                        title="Edit"
                       >
                         <i className="bi bi-pencil-square"></i>
                       </button>
                       <button
                         className="btn btn-sm btn-outline-danger"
-                        onClick={() => handleDelete(msg._id)}
+                        onClick={() => handleDelete(ph.id)}
+                        title="Delete"
                       >
                         <i className="bi bi-trash-fill"></i>
                       </button>
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
 
-export default MessagesPage;
+export default PostHousesManager;

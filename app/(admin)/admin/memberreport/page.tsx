@@ -1,165 +1,123 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, ChangeEvent, FormEvent } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
+import { useMemberStore } from "../store/member";
 
-interface Member {
-  id: number;
-  fullName: string;
-}
+const API_BASE = "https://localhost:7255/api/Member";
 
-interface MemberReport {
-  id: number;
-  memberId: number;
-  reportDetails: string;
-  reportDate: string;
-  member?: Member;
-}
+const MembersManager: React.FC = () => {
+  const {
+    members,
+    form,
+    isEditing,
+    loading,
+    error,
+    setMembers,
+    setForm,
+    setIsEditing,
+    setLoading,
+    setError,
+    resetForm,
+  } = useMemberStore();
 
-const API_BASE = "https://localhost:7255/api/MemberReport";
-const MEMBERS_API = "https://localhost:7255/api/Member";
-
-const MemberReportsManager: React.FC = () => {
-  const [reports, setReports] = useState<MemberReport[]>([]);
-  const [members, setMembers] = useState<Member[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [form, setForm] = useState<Partial<MemberReport>>({});
-  const [isEditing, setIsEditing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetchReports();
-    fetchMembers();
-  }, []);
-
-  const fetchReports = async () => {
+  // ✅ Fetch Members
+  const fetchMembers = async () => {
     setLoading(true);
+    setError(null);
     try {
       const res = await fetch(API_BASE);
       const data = await res.json();
-      console.log("Fetched reports:", data);
 
-      if (!Array.isArray(data)) {
-        throw new Error("Unexpected data format: reports is not an array");
-      }
-
-      setReports(data);
+      const safeMembers = Array.isArray(data.members)
+        ? data.members
+        : Array.isArray(data)
+        ? data
+        : [];
+      setMembers(safeMembers);
     } catch (err: any) {
-      console.error("Error fetching reports:", err);
-      setReports([]); // fallback to avoid .map error
-      setError(err.message || "Failed to fetch reports.");
+      console.error("Failed to fetch members", err);
+      setError("Failed to load members.");
+      setMembers([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchMembers = async () => {
-    try {
-      const res = await fetch(MEMBERS_API);
-      const data = await res.json();
+  useEffect(() => {
+    fetchMembers();
+  }, []);
 
-      if (!Array.isArray(data)) {
-        throw new Error("Unexpected data format: members is not an array");
-      }
-
-      setMembers(data);
-    } catch (err: any) {
-      console.error("Error fetching members:", err);
-      setMembers([]);
-      setError(err.message || "Failed to fetch members.");
-    }
-  };
-
-  const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
-  ) => {
+  // ✅ Handle input change
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setForm((prev) => ({
-      ...prev,
-      [name]: name === "memberId" ? parseInt(value) : value,
-    }));
+    setForm({ ...form, [name]: value });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // ✅ Submit form (Add / Update)
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    if (!form.memberId || !form.reportDetails) {
-      setError("Please select a member and enter report details.");
+    if (!form.fullName || !form.email || !form.phoneNumber) {
+      setError("Please fill all fields.");
       return;
     }
 
-    const payload = {
-      ...form,
-      reportDate: new Date().toISOString(),
-    };
-
     try {
-      const url = isEditing && form.id ? `${API_BASE}/${form.id}` : API_BASE;
-      const method = isEditing ? "PUT" : "POST";
-
-      const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) {
-        throw new Error("Failed to save the report.");
+      if (isEditing && form.id !== undefined) {
+        await fetch(`${API_BASE}/${form.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(form),
+        });
+      } else {
+        await fetch(API_BASE, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(form),
+        });
       }
 
       resetForm();
-      await fetchReports();
-    } catch (err: any) {
-      console.error("Error saving report:", err);
-      setError(err.message || "Failed to save the report.");
+      fetchMembers();
+    } catch (err) {
+      console.error("Error saving member", err);
+      setError("Failed to save member.");
     }
   };
 
-  const handleEdit = (report: MemberReport) => {
-    setForm({
-      id: report.id,
-      memberId: report.memberId,
-      reportDetails: report.reportDetails,
-      reportDate: report.reportDate,
-    });
+  // ✅ Edit member
+  const handleEdit = (member: any) => {
+    setForm(member);
     setIsEditing(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  // ✅ Delete member
   const handleDelete = async (id: number) => {
-    if (!window.confirm("Delete this report?")) return;
+    if (!window.confirm("Are you sure you want to delete this member?")) return;
 
     try {
-      const res = await fetch(`${API_BASE}/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Failed to delete the report.");
-      await fetchReports();
-    } catch (err: any) {
-      console.error("Error deleting report:", err);
-      setError(err.message || "Failed to delete the report.");
+      await fetch(`${API_BASE}/${id}`, { method: "DELETE" });
+      fetchMembers();
+    } catch (err) {
+      console.error("Delete failed", err);
+      setError("Failed to delete member.");
     }
-  };
-
-  const resetForm = () => {
-    setForm({});
-    setIsEditing(false);
-    setError(null);
   };
 
   return (
     <div className="container py-4">
-      <div className="mb-4 text-center">
-        <h2 className="fw-bold">Member Reports</h2>
-        <p className="text-muted">Manage and view member-generated reports.</p>
+      <div className="mb-4">
+        <h2 className="text-center">Member Management</h2>
       </div>
 
       <form
         onSubmit={handleSubmit}
-        className="border p-4 mb-4 rounded bg-light shadow-sm"
+        className="mb-4 p-4 border rounded bg-light shadow-sm"
       >
-        <h5 className="mb-3">{isEditing ? "Edit Report" : "Add New Report"}</h5>
+        <h5 className="mb-3">{isEditing ? "Edit Member" : "Add New Member"}</h5>
 
         {error && (
           <div className="alert alert-danger" role="alert">
@@ -167,50 +125,59 @@ const MemberReportsManager: React.FC = () => {
           </div>
         )}
 
-        <div className="mb-3">
-          <label htmlFor="memberId" className="form-label">
-            Member
-          </label>
-          <select
-            className="form-select"
-            id="memberId"
-            name="memberId"
-            value={form.memberId ?? ""}
-            onChange={handleChange}
-            required
-          >
-            <option value="">-- Select Member --</option>
-            {members.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.fullName}
-              </option>
-            ))}
-          </select>
+        <div className="row g-3">
+          <div className="col-md-4">
+            <label htmlFor="fullName" className="form-label">
+              Full Name
+            </label>
+            <input
+              type="text"
+              id="fullName"
+              name="fullName"
+              className="form-control"
+              value={form.fullName ?? ""}
+              onChange={handleChange}
+              disabled={loading}
+            />
+          </div>
+          <div className="col-md-4">
+            <label htmlFor="email" className="form-label">
+              Email
+            </label>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              className="form-control"
+              value={form.email ?? ""}
+              onChange={handleChange}
+              disabled={loading}
+            />
+          </div>
+          <div className="col-md-4">
+            <label htmlFor="phoneNumber" className="form-label">
+              Phone Number
+            </label>
+            <input
+              type="text"
+              id="phoneNumber"
+              name="phoneNumber"
+              className="form-control"
+              value={form.phoneNumber ?? ""}
+              onChange={handleChange}
+              disabled={loading}
+            />
+          </div>
         </div>
 
-        <div className="mb-3">
-          <label htmlFor="reportDetails" className="form-label">
-            Report Details
-          </label>
-          <textarea
-            className="form-control"
-            id="reportDetails"
-            name="reportDetails"
-            rows={4}
-            value={form.reportDetails ?? ""}
-            onChange={handleChange}
-            required
-          ></textarea>
-        </div>
-
-        <div>
+        <div className="mt-4">
           <button type="submit" className="btn btn-success me-2">
             <i
               className={`bi ${
                 isEditing ? "bi-pencil-square" : "bi-plus-circle"
               }`}
             ></i>{" "}
-            {isEditing ? "Update Report" : "Add Report"}
+            {isEditing ? "Update Member" : "Add Member"}
           </button>
           {isEditing && (
             <button
@@ -224,66 +191,13 @@ const MemberReportsManager: React.FC = () => {
         </div>
       </form>
 
-      {loading ? (
-        <div className="text-center my-5">
-          <div className="spinner-border text-primary" role="status" />
-          <p className="mt-2">Loading reports...</p>
-        </div>
-      ) : (
-        <div className="table-responsive">
-          <table className="table table-hover table-bordered align-middle">
-            <thead className="table-dark">
-              <tr>
-                <th>ID</th>
-                <th>Member</th>
-                <th>Details</th>
-                <th>Date</th>
-                <th className="text-center">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {Array.isArray(reports) && reports.length > 0 ? (
-                reports.map((report) => (
-                  <tr key={report.id}>
-                    <td>
-                      <span className="badge bg-secondary">{report.id}</span>
-                    </td>
-                    <td>{report.member?.fullName ?? `#${report.memberId}`}</td>
-                    <td>{report.reportDetails}</td>
-                    <td>
-                      <span className="text-muted">
-                        {new Date(report.reportDate).toLocaleString()}
-                      </span>
-                    </td>
-                    <td className="text-center">
-                      <button
-                        className="btn btn-sm btn-outline-primary me-2"
-                        onClick={() => handleEdit(report)}
-                      >
-                        <i className="bi bi-pencil-fill"></i>
-                      </button>
-                      <button
-                        className="btn btn-sm btn-outline-danger"
-                        onClick={() => handleDelete(report.id)}
-                      >
-                        <i className="bi bi-trash-fill"></i>
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={5} className="text-center text-muted">
-                    No reports available.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+      {!loading && members.length > 0 && (
+        <div className="alert alert-info">
+          {members.length} member(s) available in the system.
         </div>
       )}
     </div>
   );
 };
 
-export default MemberReportsManager;
+export default MembersManager;

@@ -1,64 +1,62 @@
 "use client";
-import React, { useEffect, useState } from "react";
+
+import React, { useEffect, ChangeEvent, FormEvent } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
+import "bootstrap-icons/font/bootstrap-icons.css";
+import { useSocietyStore, Society } from "../store/society";
 
-interface House {
-  id: number;
-  name: string;
-}
-
-interface Society {
-  id: number;
-  name: string;
-  location: string;
-  houses?: House[];
-}
+const API_URL = process.env.NEXT_PUBLIC_API_BASE
+  ? `${process.env.NEXT_PUBLIC_API_BASE}/Society`
+  : "https://localhost:7255/api/Society";
 
 const SocietiesManager: React.FC = () => {
-  const [societies, setSocieties] = useState<Society[]>([]);
-  const [form, setForm] = useState<Partial<Society>>({});
-  const [editing, setEditing] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    societies,
+    form,
+    editing,
+    loading,
+    error,
+    setSocieties,
+    setForm,
+    setEditing,
+    setLoading,
+    setError,
+    resetForm,
+  } = useSocietyStore();
 
-  const API_URL = "https://localhost:7255/api/Society";
-
-  useEffect(() => {
-    fetchSocieties();
-  }, []);
-
+  // Fetch societies
   const fetchSocieties = async () => {
     setLoading(true);
+    setError(null);
     try {
       const res = await fetch(API_URL);
       if (!res.ok) throw new Error("Failed to fetch societies");
 
-      const data = await res.json();
-      console.log("Fetched societies:", data); // Optional: Debug
-
-      if (!Array.isArray(data)) {
-        throw new Error(
-          "Unexpected response format: societies is not an array."
-        );
-      }
+      const data: Society[] = await res.json();
+      if (!Array.isArray(data)) throw new Error("Unexpected response format.");
 
       setSocieties(data);
-      setError(null);
-    } catch (error: any) {
-      console.error(error);
-      setSocieties([]); // fallback to avoid crash on `.map`
-      setError(error.message || "Error loading societies.");
+    } catch (err: any) {
+      console.error(err);
+      setSocieties([]);
+      setError(err.message || "Error loading societies.");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  useEffect(() => {
+    fetchSocieties();
+  }, []);
+
+  // Handle form input
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    setForm({ ...form, [name]: value });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Submit form
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!form.name || !form.location) {
       setError("Please fill in all fields.");
@@ -69,25 +67,23 @@ const SocietiesManager: React.FC = () => {
       const method = editing ? "PUT" : "POST";
       const url = editing ? `${API_URL}/${form.id}` : API_URL;
 
-      const response = await fetch(url, {
+      const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || "Failed to save society");
-      }
+      if (!res.ok) throw new Error("Failed to save society");
 
       await fetchSocieties();
       resetForm();
-    } catch (error: any) {
-      setError(error.message || "Error saving society.");
-      console.error(error);
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || "Error saving society.");
     }
   };
 
+  // Edit society
   const handleEdit = (society: Society) => {
     setForm(society);
     setEditing(true);
@@ -95,35 +91,32 @@ const SocietiesManager: React.FC = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  // Delete society
   const handleDelete = async (id: number) => {
     if (!window.confirm("Are you sure you want to delete this society?"))
       return;
 
     try {
-      const response = await fetch(`${API_URL}/${id}`, { method: "DELETE" });
-      if (!response.ok) throw new Error("Failed to delete society");
-      await fetchSocieties();
-    } catch (error: any) {
-      console.error(error);
-      setError(error.message || "Error deleting society.");
-    }
-  };
+      const res = await fetch(`${API_URL}/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to delete society");
 
-  const resetForm = () => {
-    setForm({});
-    setEditing(false);
-    setError(null);
+      await fetchSocieties();
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || "Error deleting society.");
+    }
   };
 
   return (
     <div className="container py-4">
       <div className="text-center mb-4">
-        <h2 className="fw-bold">Societies Management</h2>
+        <h2 className="fw-bold">🏢 Societies Management</h2>
         <p className="text-muted">
           Manage housing societies and their locations
         </p>
       </div>
 
+      {/* Form */}
       <div className="card shadow-sm mb-5">
         <div className="card-header bg-primary text-white">
           <h5 className="mb-0">
@@ -137,7 +130,6 @@ const SocietiesManager: React.FC = () => {
               {error}
             </div>
           )}
-
           <div className="row g-3">
             <div className="col-md-6">
               <label htmlFor="name" className="form-label">
@@ -154,7 +146,6 @@ const SocietiesManager: React.FC = () => {
                 required
               />
             </div>
-
             <div className="col-md-6">
               <label htmlFor="location" className="form-label">
                 Location
@@ -171,7 +162,6 @@ const SocietiesManager: React.FC = () => {
               />
             </div>
           </div>
-
           <div className="mt-4">
             <button type="submit" className="btn btn-success me-2">
               <i
@@ -194,10 +184,11 @@ const SocietiesManager: React.FC = () => {
         </form>
       </div>
 
+      {/* Table */}
       <h5 className="mb-3">Existing Societies</h5>
       {loading ? (
         <div className="text-center my-5">
-          <div className="spinner-border text-primary" role="status" />
+          <div className="spinner-border text-primary" role="status"></div>
           <p className="mt-2">Loading societies...</p>
         </div>
       ) : (

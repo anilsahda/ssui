@@ -1,76 +1,64 @@
 "use client";
-import React, { useEffect, useState } from "react";
-import "bootstrap/dist/css/bootstrap.min.css";
 
-interface Complain {
-  id: number;
-  houseId: number;
-  memberId?: number | null;
-  description: string;
-  complainDate: string;
-  isResolved: boolean;
-}
+import React, { useEffect, ChangeEvent, FormEvent } from "react";
+import "bootstrap/dist/css/bootstrap.min.css";
+import "bootstrap-icons/font/bootstrap-icons.css";
+import { useComplainStore, Complain } from "../store/complain";
 
 const ComplainManager: React.FC = () => {
-  const API_URL = "https://localhost:7255/api/Complain";
+  const API_URL = process.env.NEXT_PUBLIC_API_BASE
+    ? `${process.env.NEXT_PUBLIC_API_BASE}/Complain`
+    : "https://localhost:7255/api/Complain";
 
-  const [complains, setComplains] = useState<Complain[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [form, setForm] = useState<Partial<Complain>>({
-    houseId: undefined,
-    memberId: undefined,
-    description: "",
-    complainDate: new Date().toISOString(),
-    isResolved: false,
-  });
-  const [isEditing, setIsEditing] = useState<boolean>(false);
+  const {
+    complains,
+    loading,
+    error,
+    form,
+    isEditing,
+    setComplains,
+    setLoading,
+    setError,
+    setForm,
+    setIsEditing,
+    resetForm,
+  } = useComplainStore();
 
-  useEffect(() => {
-    fetchComplains();
-  }, []);
-
+  // Fetch complaints
   const fetchComplains = async () => {
+    setLoading(true);
+    setError(null);
     try {
-      setLoading(true);
       const res = await fetch(API_URL);
-      if (!res.ok) throw new Error("Failed to load complains.");
-
-      const data = await res.json();
-
-      // Ensure data is an array before setting state
-      if (Array.isArray(data)) {
-        setComplains(data);
-      } else if (data && Array.isArray(data.complains)) {
-        // If API response wraps the array in an object, adjust here
-        setComplains(data.complains);
-      } else {
-        // Fallback to empty array if data shape unexpected
-        setComplains([]);
-        setError("Unexpected data format received from server.");
-      }
-      setError(null);
+      if (!res.ok) throw new Error("Failed to load complaints.");
+      const data: Complain[] = await res.json();
+      setComplains(Array.isArray(data) ? data : []);
     } catch (err: any) {
-      setError(err.message || "Error fetching complains");
       setComplains([]);
+      setError(err.message || "Error fetching complaints.");
     } finally {
       setLoading(false);
     }
   };
 
+  useEffect(() => {
+    fetchComplains();
+  }, []);
+
+  // Handle form inputs
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value, type, checked } = e.target;
-    setForm((prev) => ({
-      ...prev,
+    setForm({
+      ...form,
       [name]: type === "checkbox" ? checked : value,
-    }));
+    });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Submit form
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-
     if (!form.houseId || !form.description?.trim()) {
       alert("House ID and Description are required.");
       return;
@@ -79,32 +67,36 @@ const ComplainManager: React.FC = () => {
     try {
       const method = isEditing ? "PUT" : "POST";
       const url = isEditing ? `${API_URL}/${form.id}` : API_URL;
+      const payload: Complain = {
+        ...form,
+        complainDate:
+          form.complainDate || new Date().toISOString().substring(0, 19) + "Z",
+      };
 
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
 
-      if (!res.ok) {
-        const errorText = await res.text();
-        throw new Error(errorText);
-      }
-
+      if (!res.ok) throw new Error(await res.text());
       await fetchComplains();
       resetForm();
     } catch (err: any) {
-      alert(err.message || "Error submitting form");
+      alert(err.message || "Error submitting complaint.");
     }
   };
 
-  const handleEdit = (complain: Complain) => {
-    setForm({ ...complain });
+  // Edit
+  const handleEdit = (c: Complain) => {
+    setForm({ ...c });
     setIsEditing(true);
   };
 
-  const handleDelete = async (id: number) => {
-    if (!window.confirm("Are you sure you want to delete this complain?"))
+  // Delete
+  const handleDelete = async (id?: number) => {
+    if (!id) return;
+    if (!window.confirm("Are you sure you want to delete this complaint?"))
       return;
 
     try {
@@ -112,30 +104,15 @@ const ComplainManager: React.FC = () => {
       if (!res.ok) throw new Error("Delete failed.");
       await fetchComplains();
     } catch (err: any) {
-      alert(err.message || "Error deleting complain");
+      alert(err.message || "Error deleting complaint.");
     }
-  };
-
-  const resetForm = () => {
-    setForm({
-      houseId: undefined,
-      memberId: undefined,
-      description: "",
-      complainDate: new Date().toISOString(),
-      isResolved: false,
-    });
-    setIsEditing(false);
   };
 
   return (
     <div className="container my-5">
       <h2 className="mb-4 text-primary fw-bold">Complain Manager</h2>
 
-      {error && (
-        <div className="alert alert-danger shadow-sm" role="alert">
-          {error}
-        </div>
-      )}
+      {error && <div className="alert alert-danger shadow-sm">{error}</div>}
 
       {/* Form */}
       <form
@@ -143,51 +120,42 @@ const ComplainManager: React.FC = () => {
         className="border rounded-3 p-4 mb-5 shadow-sm bg-white"
       >
         <h4 className="mb-4 text-secondary">
-          {isEditing ? "Edit Complain" : "Add New Complain"}
+          {isEditing ? "Edit Complaint" : "Add New Complaint"}
         </h4>
 
         <div className="row g-3">
           <div className="col-md-4">
-            <label htmlFor="houseId" className="form-label fw-semibold">
+            <label className="form-label fw-semibold">
               House ID <span className="text-danger">*</span>
             </label>
             <input
               type="number"
               className="form-control"
-              id="houseId"
               name="houseId"
               value={form.houseId ?? ""}
               onChange={handleInputChange}
               required
-              placeholder="Enter House ID"
               min={1}
             />
           </div>
 
           <div className="col-md-4">
-            <label htmlFor="memberId" className="form-label fw-semibold">
-              Member ID (optional)
-            </label>
+            <label className="form-label fw-semibold">Member ID</label>
             <input
               type="number"
               className="form-control"
-              id="memberId"
               name="memberId"
               value={form.memberId ?? ""}
               onChange={handleInputChange}
-              placeholder="Enter Member ID"
               min={1}
             />
           </div>
 
           <div className="col-md-4">
-            <label htmlFor="complainDate" className="form-label fw-semibold">
-              Complain Date
-            </label>
+            <label className="form-label fw-semibold">Complaint Date</label>
             <input
               type="datetime-local"
               className="form-control"
-              id="complainDate"
               name="complainDate"
               value={form.complainDate?.substring(0, 16) || ""}
               onChange={handleInputChange}
@@ -197,18 +165,16 @@ const ComplainManager: React.FC = () => {
         </div>
 
         <div className="mt-3">
-          <label htmlFor="description" className="form-label fw-semibold">
+          <label className="form-label fw-semibold">
             Description <span className="text-danger">*</span>
           </label>
           <textarea
             className="form-control"
-            id="description"
             name="description"
             rows={4}
-            value={form.description}
+            value={form.description || ""}
             onChange={handleInputChange}
             required
-            placeholder="Describe the complain in detail"
           ></textarea>
         </div>
 
@@ -216,27 +182,18 @@ const ComplainManager: React.FC = () => {
           <input
             className="form-check-input"
             type="checkbox"
-            id="isResolved"
             name="isResolved"
-            checked={form.isResolved}
+            checked={form.isResolved || false}
             onChange={handleInputChange}
           />
-          <label className="form-check-label fw-semibold" htmlFor="isResolved">
+          <label className="form-check-label fw-semibold">
             Mark as Resolved
           </label>
         </div>
 
         <div>
           <button type="submit" className="btn btn-primary me-3 shadow-sm">
-            {isEditing ? (
-              <>
-                <i className="bi bi-pencil-square me-2"></i> Update
-              </>
-            ) : (
-              <>
-                <i className="bi bi-plus-circle me-2"></i> Create
-              </>
-            )}
+            {isEditing ? "✏️ Update" : "➕ Create"}
           </button>
           {isEditing && (
             <button
@@ -251,19 +208,13 @@ const ComplainManager: React.FC = () => {
       </form>
 
       {/* Table */}
-      <h4 className="mb-3 text-secondary">All Complains</h4>
-
+      <h4 className="mb-3 text-secondary">All Complaints</h4>
       {loading ? (
         <div className="text-center py-5">
-          <div
-            className="spinner-border text-primary"
-            role="status"
-            aria-hidden="true"
-          ></div>
-          <span className="visually-hidden">Loading...</span>
+          <div className="spinner-border text-primary" role="status"></div>
         </div>
-      ) : !Array.isArray(complains) || complains.length === 0 ? (
-        <p className="text-muted fst-italic">No complains found.</p>
+      ) : complains.length === 0 ? (
+        <p className="text-muted fst-italic">No complaints found.</p>
       ) : (
         <div className="table-responsive shadow-sm rounded">
           <table className="table table-striped table-hover align-middle mb-0 bg-white">
@@ -289,7 +240,11 @@ const ComplainManager: React.FC = () => {
                   <td style={{ maxWidth: "300px", whiteSpace: "normal" }}>
                     {c.description}
                   </td>
-                  <td>{new Date(c.complainDate).toLocaleString()}</td>
+                  <td>
+                    {c.complainDate
+                      ? new Date(c.complainDate).toLocaleString()
+                      : "-"}
+                  </td>
                   <td>
                     {c.isResolved ? (
                       <span className="text-success" title="Resolved">
@@ -304,17 +259,15 @@ const ComplainManager: React.FC = () => {
                   <td>
                     <button
                       className="btn btn-sm btn-info me-2 shadow-sm"
-                      title="Edit"
                       onClick={() => handleEdit(c)}
                     >
-                      <i className="bi bi-pencil"></i>
+                      ✏️
                     </button>
                     <button
                       className="btn btn-sm btn-danger shadow-sm"
-                      title="Delete"
                       onClick={() => handleDelete(c.id)}
                     >
-                      <i className="bi bi-trash"></i>
+                      🗑️
                     </button>
                   </td>
                 </tr>

@@ -2,15 +2,18 @@
 
 import React, { useEffect, useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
+import "bootstrap-icons/font/bootstrap-icons.css";
 
+// PostHouse interface
 interface PostHouse {
   id: number;
   title: string;
-  description: string;
+  address: string;
   ownerId: number;
   owner?: { id: number; name: string };
 }
 
+// Owner interface
 interface Owner {
   id: number;
   name: string;
@@ -21,42 +24,46 @@ const PostHousesManager: React.FC = () => {
   const [owners, setOwners] = useState<Owner[]>([]);
   const [form, setForm] = useState<Partial<PostHouse>>({
     title: "",
-    description: "",
+    address: "",
     ownerId: 0,
   });
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const API_BASE = "/api/PostHouses";
-  const OWNER_API = "/api/Owners";
+  const API_BASE = "https://localhost:7049/api/PostHouses";
+  const OWNER_API = "https://localhost:7049/api/Owner";
 
   useEffect(() => {
     fetchPostHouses();
     fetchOwners();
   }, []);
 
+  // Fetch all post houses
   const fetchPostHouses = async () => {
     setLoading(true);
     try {
       const res = await fetch(API_BASE);
       const data = await res.json();
-      setPostHouses(data);
+      setPostHouses(Array.isArray(data) ? data : []);
     } catch (err) {
       alert("Error fetching post houses");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
+  // Fetch all owners
   const fetchOwners = async () => {
     try {
       const res = await fetch(OWNER_API);
       const data = await res.json();
-      setOwners(data);
+      setOwners(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("Error loading owners", err);
     }
   };
 
+  // Handle form changes
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
@@ -67,10 +74,12 @@ const PostHousesManager: React.FC = () => {
     }));
   };
 
+  // Handle create/update submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.title || !form.ownerId) {
-      alert("Title and Owner are required");
+
+    if (!form.title || !form.address || !form.ownerId) {
+      alert("Title, Address, and Owner are required");
       return;
     }
 
@@ -87,33 +96,35 @@ const PostHousesManager: React.FC = () => {
       resetForm();
     } catch (err) {
       alert("Error saving post house");
+      console.error(err);
     }
   };
 
+  // Edit a post house
   const handleEdit = (ph: PostHouse) => {
     setForm(ph);
     setEditing(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  // Delete a post house
   const handleDelete = async (id: number) => {
     if (!window.confirm("Delete this post house?")) return;
 
     try {
-      const res = await fetch(`${API_BASE}/${id}`, {
-        method: "DELETE",
-      });
-
+      const res = await fetch(`${API_BASE}/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Delete failed");
 
       await fetchPostHouses();
     } catch (err) {
       alert("Error deleting post house");
+      console.error(err);
     }
   };
 
+  // Reset form
   const resetForm = () => {
-    setForm({ title: "", description: "", ownerId: 0 });
+    setForm({ title: "", address: "", ownerId: 0 });
     setEditing(false);
   };
 
@@ -154,14 +165,15 @@ const PostHousesManager: React.FC = () => {
             </div>
 
             <div className="mb-3">
-              <label className="form-label">Description</label>
+              <label className="form-label">Address *</label>
               <input
                 type="text"
                 className="form-control"
-                name="description"
-                value={form.description || ""}
+                name="address"
+                value={form.address || ""}
                 onChange={handleChange}
-                placeholder="Optional description"
+                placeholder="Enter house address"
+                required
               />
             </div>
 
@@ -223,7 +235,7 @@ const PostHousesManager: React.FC = () => {
                 <tr>
                   <th>ID</th>
                   <th>Title</th>
-                  <th>Description</th>
+                  <th>Address</th>
                   <th>Owner</th>
                   <th className="text-center">Actions</th>
                 </tr>
@@ -235,9 +247,7 @@ const PostHousesManager: React.FC = () => {
                       <span className="badge bg-secondary">{ph.id}</span>
                     </td>
                     <td>{ph.title}</td>
-                    <td>
-                      {ph.description || <span className="text-muted">—</span>}
-                    </td>
+                    <td>{ph.address}</td>
                     <td>{ph.owner?.name || "N/A"}</td>
                     <td className="text-center">
                       <button

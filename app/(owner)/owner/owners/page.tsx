@@ -1,318 +1,223 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, ChangeEvent, FormEvent } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
-import { FaEdit, FaTrash, FaPlusCircle, FaTimesCircle } from "react-icons/fa";
+import "bootstrap-icons/font/bootstrap-icons.css";
+import { useOwnerStore, Owner } from "../store/owner";
 
-interface Owner {
-  id: number;
-  name: string;
-  email?: string;
-  phoneNumber?: string;
-}
+const API_BASE = "https://localhost:7049/api/Owner";
 
-const OwnersManager: React.FC = () => {
-  const API_URL = "/api/Owners";
+export default function OwnerPage() {
+  const {
+    owners,
+    form,
+    isEditing,
+    loading,
+    error,
+    setOwners,
+    setForm,
+    setEditing,
+    setLoading,
+    setError,
+    resetForm,
+  } = useOwnerStore();
 
-  const [owners, setOwners] = useState<Owner[]>([]);
-  const [form, setForm] = useState<Partial<Owner>>({
-    name: "",
-    email: "",
-    phoneNumber: "",
-  });
-  const [editing, setEditing] = useState<boolean>(false);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
-  const [deleteOwnerId, setDeleteOwnerId] = useState<number | null>(null);
-
-  // Load data
   useEffect(() => {
-    loadOwners();
+    fetchOwners();
   }, []);
 
-  const loadOwners = async () => {
+  const fetchOwners = async () => {
     setLoading(true);
     try {
-      const res = await fetch(API_URL);
+      const res = await fetch(API_BASE);
+      if (!res.ok) throw new Error("Failed to fetch owners");
       const data = await res.json();
-      setOwners(data);
-    } catch (err) {
-      console.error("Failed to load owners:", err);
+      setOwners(Array.isArray(data) ? data : []);
+    } catch (err: any) {
+      console.error(err);
+      setOwners([]);
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    setForm({ ...form, [name]: value });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    setError(null);
 
-    if (!form.name) {
-      alert("Name is required.");
+    if (!form.name || !form.email || !form.phone) {
+      setError("Please fill in all fields.");
       return;
     }
 
     try {
-      const res = await fetch(editing ? `${API_URL}/${form.id}` : API_URL, {
-        method: editing ? "PUT" : "POST",
+      const url = isEditing && form.id ? `${API_BASE}/${form.id}` : API_BASE;
+      const method = isEditing ? "PUT" : "POST";
+
+      const res = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
 
-      if (!res.ok) throw new Error("Failed to save.");
+      if (!res.ok) throw new Error("Failed to save owner");
 
+      await fetchOwners();
       resetForm();
-      loadOwners();
-    } catch (err) {
-      console.error("Submit error:", err);
-      alert("Error submitting form.");
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message);
     }
   };
 
   const handleEdit = (owner: Owner) => {
     setForm(owner);
     setEditing(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const confirmDelete = (id: number) => {
-    setDeleteOwnerId(id);
-    setShowDeleteModal(true);
-  };
-
-  const handleDelete = async () => {
-    if (deleteOwnerId === null) return;
+  const handleDelete = async (id: number) => {
+    if (!window.confirm("Delete this owner?")) return;
 
     try {
-      const res = await fetch(`${API_URL}/${deleteOwnerId}`, {
-        method: "DELETE",
-      });
-
-      if (!res.ok) throw new Error("Delete failed");
-
-      setShowDeleteModal(false);
-      setDeleteOwnerId(null);
-      loadOwners();
-    } catch (err) {
-      console.error("Delete error:", err);
-      alert("Failed to delete owner.");
+      const res = await fetch(`${API_BASE}/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to delete owner");
+      await fetchOwners();
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message);
     }
   };
 
-  const resetForm = () => {
-    setForm({ name: "", email: "", phoneNumber: "" });
-    setEditing(false);
-  };
-
   return (
-    <div className="container my-5">
-      <h3 className="mb-4 text-primary fw-bold">Owners Manager</h3>
+    <div className="container py-4">
+      <div className="text-center mb-4">
+        <h2 className="fw-bold">🏠 Manage Owners</h2>
+        <p className="text-muted">Add, edit, and view house owners</p>
+      </div>
 
-      {/* Form */}
+      {/* Owner Form */}
       <form
         onSubmit={handleSubmit}
-        className="border rounded-3 p-4 mb-5 shadow-sm bg-white"
+        className="border p-4 mb-4 rounded bg-light shadow-sm"
       >
-        <h5 className="mb-4 text-secondary">
-          {editing ? (
-            <>
-              <FaEdit className="me-2" />
-              Edit Owner
-            </>
-          ) : (
-            <>
-              <FaPlusCircle className="me-2" />
-              Add New Owner
-            </>
-          )}
-        </h5>
+        <h5>{isEditing ? "Edit Owner" : "Add New Owner"}</h5>
+        {error && <div className="alert alert-danger">{error}</div>}
 
         <div className="mb-3">
-          <label htmlFor="ownerName" className="form-label fw-semibold">
-            Name <span className="text-danger">*</span>
-          </label>
+          <label className="form-label">Name</label>
           <input
-            id="ownerName"
             type="text"
             className="form-control"
             name="name"
-            value={form.name || ""}
+            value={form.name ?? ""}
             onChange={handleChange}
             required
-            placeholder="Enter owner's name"
           />
         </div>
 
         <div className="mb-3">
-          <label htmlFor="ownerEmail" className="form-label fw-semibold">
-            Email
-          </label>
+          <label className="form-label">Email</label>
           <input
-            id="ownerEmail"
             type="email"
             className="form-control"
             name="email"
-            value={form.email || ""}
+            value={form.email ?? ""}
             onChange={handleChange}
-            placeholder="example@mail.com"
+            required
           />
         </div>
 
-        <div className="mb-4">
-          <label htmlFor="ownerPhone" className="form-label fw-semibold">
-            Phone Number
-          </label>
+        <div className="mb-3">
+          <label className="form-label">Phone</label>
           <input
-            id="ownerPhone"
             type="text"
             className="form-control"
-            name="phoneNumber"
-            value={form.phoneNumber || ""}
+            name="phone"
+            value={form.phone ?? ""}
             onChange={handleChange}
-            placeholder="+1 234 567 890"
+            required
           />
         </div>
 
-        <button type="submit" className="btn btn-primary me-3 px-4">
-          {editing ? "Update" : "Create"}
+        <button type="submit" className="btn btn-success me-2">
+          <i
+            className={`bi ${
+              isEditing ? "bi-pencil-square" : "bi-plus-circle"
+            }`}
+          ></i>{" "}
+          {isEditing ? "Update" : "Add"}
         </button>
-
-        {editing && (
+        {isEditing && (
           <button
             type="button"
-            className="btn btn-outline-secondary px-4"
+            className="btn btn-secondary"
             onClick={resetForm}
           >
-            <FaTimesCircle className="me-2" />
-            Cancel
+            <i className="bi bi-x-circle"></i> Cancel
           </button>
         )}
       </form>
 
-      {/* Owners Table */}
-      <h5 className="mb-3 text-secondary">All Owners</h5>
-
+      {/* Owner Table */}
       {loading ? (
-        <div className="d-flex justify-content-center py-5">
-          <div
-            className="spinner-border text-primary"
-            role="status"
-            aria-label="Loading owners"
-          >
-            <span className="visually-hidden">Loading...</span>
-          </div>
+        <div className="text-center">
+          <div className="spinner-border text-primary" role="status"></div>
+          <p className="mt-2">Loading owners...</p>
         </div>
-      ) : owners.length === 0 ? (
-        <p className="text-muted fst-italic">No owners found.</p>
       ) : (
-        <div className="table-responsive shadow-sm rounded">
-          <table className="table table-striped table-hover align-middle mb-0">
-            <thead className="table-primary">
+        <div className="table-responsive">
+          <table className="table table-bordered table-hover align-middle">
+            <thead className="table-dark">
               <tr>
-                <th scope="col" style={{ width: "6%" }}>
-                  ID
-                </th>
-                <th scope="col" style={{ width: "30%" }}>
-                  Name
-                </th>
-                <th scope="col" style={{ width: "30%" }}>
-                  Email
-                </th>
-                <th scope="col" style={{ width: "20%" }}>
-                  Phone
-                </th>
-                <th scope="col" style={{ width: "14%" }}>
-                  Actions
-                </th>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th className="text-center">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {owners.map((owner) => (
-                <tr key={owner.id}>
-                  <td>{owner.id}</td>
-                  <td>{owner.name}</td>
-                  <td>{owner.email || <i className="text-muted">-</i>}</td>
-                  <td>
-                    {owner.phoneNumber || <i className="text-muted">-</i>}
-                  </td>
-                  <td>
-                    <button
-                      className="btn btn-sm btn-info me-2"
-                      onClick={() => handleEdit(owner)}
-                      aria-label={`Edit ${owner.name}`}
-                    >
-                      <FaEdit />
-                    </button>
-                    <button
-                      className="btn btn-sm btn-danger"
-                      onClick={() => confirmDelete(owner.id)}
-                      aria-label={`Delete ${owner.name}`}
-                    >
-                      <FaTrash />
-                    </button>
+              {owners.length > 0 ? (
+                owners.map((o) => (
+                  <tr key={o.id}>
+                    <td>{o.id}</td>
+                    <td>{o.name}</td>
+                    <td>{o.email}</td>
+                    <td>{o.phone}</td>
+                    <td className="text-center">
+                      <button
+                        className="btn btn-sm btn-outline-primary me-2"
+                        onClick={() => handleEdit(o)}
+                      >
+                        <i className="bi bi-pencil-fill"></i>
+                      </button>
+                      <button
+                        className="btn btn-sm btn-outline-danger"
+                        onClick={() => handleDelete(o.id)}
+                      >
+                        <i className="bi bi-trash-fill"></i>
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={5} className="text-center text-muted">
+                    No owners found.
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
       )}
-
-      {/* Delete Confirmation Modal */}
-      {showDeleteModal && (
-        <div
-          className="modal fade show d-block"
-          tabIndex={-1}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="deleteModalLabel"
-          onClick={() => setShowDeleteModal(false)}
-          style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
-        >
-          <div
-            className="modal-dialog modal-dialog-centered"
-            role="document"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="modal-content shadow">
-              <div className="modal-header">
-                <h5 className="modal-title" id="deleteModalLabel">
-                  Confirm Delete
-                </h5>
-                <button
-                  type="button"
-                  className="btn-close"
-                  aria-label="Close"
-                  onClick={() => setShowDeleteModal(false)}
-                ></button>
-              </div>
-              <div className="modal-body">
-                Are you sure you want to delete this owner?
-              </div>
-              <div className="modal-footer">
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => setShowDeleteModal(false)}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-danger"
-                  onClick={handleDelete}
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
-};
-
-export default OwnersManager;
+}
