@@ -76,12 +76,7 @@ export default function AdminLayout({
       href: "/admin/student",
       color: "text-info",
     },
-    {
-      label: "Student Report",
-      icon: <FaClipboardList size={16} />,
-      href: "/admin/studentreport",
-      color: "text-secondary",
-    },
+
     {
       label: "Issue Book",
       icon: <RiBookOpenLine size={16} />,
