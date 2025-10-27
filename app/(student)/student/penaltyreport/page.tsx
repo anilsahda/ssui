@@ -1,38 +1,38 @@
 "use client";
 
 import React, { useEffect } from "react";
-import { usePenaltyReportStore } from "@/store/penaltyReportStore";
+import { useMyAccountStore } from "@/store/myAccountStore";
 import "bootstrap/dist/css/bootstrap.min.css";
 
-export default function PenaltyReportPage() {
+export default function MyAccountPage() {
   const {
-    reports,
+    accounts,
     students,
     formData,
     editingId,
-    fetchReports,
+    fetchAccounts,
     fetchStudents,
     handleChange,
     handleSubmit,
     handleEdit,
     handleDelete,
     resetForm,
-  } = usePenaltyReportStore();
+  } = useMyAccountStore();
 
   useEffect(() => {
-    fetchReports();
+    fetchAccounts();
     fetchStudents();
-  }, [fetchReports, fetchStudents]);
+  }, [fetchAccounts, fetchStudents]);
 
   return (
     <div className="container mt-5">
-      <h2 className="text-center mb-4 fw-bold">💰 Penalty Report Management</h2>
+      <h2 className="text-center mb-4 fw-bold">👤 My Account Management</h2>
 
       {/* Form Section */}
       <div className="card shadow-sm mb-4">
         <div className="card-body">
           <h5 className="card-title mb-3">
-            {editingId ? "✏️ Edit Penalty Report" : "➕ Add New Penalty Report"}
+            {editingId ? "✏️ Edit Account" : "➕ Add New Account"}
           </h5>
           <form
             onSubmit={(e) => {
@@ -41,7 +41,7 @@ export default function PenaltyReportPage() {
             }}
           >
             <div className="row g-3">
-              <div className="col-md-3">
+              <div className="col-md-4">
                 <label className="form-label">Student</label>
                 <select
                   name="studentId"
@@ -61,7 +61,35 @@ export default function PenaltyReportPage() {
                 </select>
               </div>
 
-              <div className="col-md-3">
+              <div className="col-md-2">
+                <label className="form-label">Total Issued</label>
+                <input
+                  type="number"
+                  name="totalIssuedBooks"
+                  value={formData.totalIssuedBooks}
+                  onChange={(e) =>
+                    handleChange(e.target.name, Number(e.target.value))
+                  }
+                  className="form-control"
+                  min={0}
+                />
+              </div>
+
+              <div className="col-md-2">
+                <label className="form-label">Total Returned</label>
+                <input
+                  type="number"
+                  name="totalReturnedBooks"
+                  value={formData.totalReturnedBooks}
+                  onChange={(e) =>
+                    handleChange(e.target.name, Number(e.target.value))
+                  }
+                  className="form-control"
+                  min={0}
+                />
+              </div>
+
+              <div className="col-md-2">
                 <label className="form-label">Total Penalties</label>
                 <input
                   type="number"
@@ -72,44 +100,27 @@ export default function PenaltyReportPage() {
                   }
                   className="form-control"
                   min={0}
-                  required
                 />
               </div>
 
-              <div className="col-md-3">
-                <label className="form-label">Paid Penalties</label>
+              <div className="col-md-2">
+                <label className="form-label">Outstanding Penalty</label>
                 <input
                   type="number"
-                  name="paidPenalties"
-                  value={formData.paidPenalties}
+                  name="outStandingPenalty"
+                  value={formData.outStandingPenalty}
                   onChange={(e) =>
                     handleChange(e.target.name, Number(e.target.value))
                   }
                   className="form-control"
                   min={0}
-                  required
-                />
-              </div>
-
-              <div className="col-md-3">
-                <label className="form-label">Pending Penalties</label>
-                <input
-                  type="number"
-                  name="pendingPenalties"
-                  value={formData.pendingPenalties}
-                  onChange={(e) =>
-                    handleChange(e.target.name, Number(e.target.value))
-                  }
-                  className="form-control"
-                  min={0}
-                  required
                 />
               </div>
             </div>
 
             <div className="mt-4">
               <button type="submit" className="btn btn-success me-2">
-                {editingId ? "Update Report" : "Add Report"}
+                {editingId ? "Update Account" : "Add Account"}
               </button>
               {editingId && (
                 <button
@@ -128,43 +139,45 @@ export default function PenaltyReportPage() {
       {/* Table Section */}
       <div className="card shadow-sm">
         <div className="card-body">
-          <h5 className="card-title mb-3">📋 Penalty Reports List</h5>
+          <h5 className="card-title mb-3">📋 Accounts List</h5>
           <table className="table table-bordered table-hover align-middle">
             <thead className="table-dark">
               <tr>
                 <th>ID</th>
                 <th>Student</th>
+                <th>Total Issued</th>
+                <th>Total Returned</th>
                 <th>Total Penalties</th>
-                <th>Paid Penalties</th>
-                <th>Pending Penalties</th>
-                <th>Report Date</th>
+                <th>Outstanding Penalty</th>
+                <th>Last Updated</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {reports.length > 0 ? (
-                reports.map((r) => (
-                  <tr key={r.id}>
-                    <td>{r.id}</td>
-                    <td>{r.student?.fullName || "N/A"}</td>
-                    <td>{r.totalPenalties}</td>
-                    <td>{r.paidPenalties}</td>
-                    <td>{r.pendingPenalties}</td>
+              {accounts.length > 0 ? (
+                accounts.map((a) => (
+                  <tr key={a.id}>
+                    <td>{a.id}</td>
+                    <td>{a.student?.fullName || "N/A"}</td>
+                    <td>{a.totalIssuedBooks}</td>
+                    <td>{a.totalReturnedBooks}</td>
+                    <td>{a.totalPenalties}</td>
+                    <td>{a.outStandingPenalty}</td>
                     <td>
-                      {r.reportDate
-                        ? new Date(r.reportDate).toLocaleString()
+                      {a.lastUpdated
+                        ? new Date(a.lastUpdated).toLocaleString()
                         : "N/A"}
                     </td>
                     <td>
                       <button
                         className="btn btn-sm btn-warning me-2"
-                        onClick={() => handleEdit(r)}
+                        onClick={() => handleEdit(a)}
                       >
                         Edit
                       </button>
                       <button
                         className="btn btn-sm btn-danger"
-                        onClick={() => handleDelete(r.id)}
+                        onClick={() => handleDelete(a.id)}
                       >
                         Delete
                       </button>
@@ -173,8 +186,8 @@ export default function PenaltyReportPage() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={7} className="text-center">
-                    No penalty reports found.
+                  <td colSpan={8} className="text-center">
+                    No accounts found.
                   </td>
                 </tr>
               )}

@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import "bootstrap/dist/css/bootstrap.min.css";
+import AOS from "aos";
+import "aos/dist/aos.css";
 
 import { MdDashboard, MdHelpOutline } from "react-icons/md";
 import {
@@ -13,7 +15,6 @@ import {
   FaBook,
   FaBuilding,
   FaUserGraduate,
-  FaClipboardList,
   FaUndo,
   FaMoneyBillWave,
 } from "react-icons/fa";
@@ -33,6 +34,7 @@ export default function AdminLayout({
 
   useEffect(() => {
     import("bootstrap/dist/js/bootstrap.bundle.min.js");
+    AOS.init({ duration: 600, easing: "ease-in-out", once: true });
   }, []);
 
   const toggleTheme = () => {
@@ -42,62 +44,61 @@ export default function AdminLayout({
   const navItems = [
     {
       label: "Dashboard",
-      icon: <MdDashboard size={18} />,
+      icon: <MdDashboard />,
       href: "/admin",
       color: "text-info",
     },
     {
       label: "Add Publication",
-      icon: <BsFileEarmarkPlus size={16} />,
+      icon: <BsFileEarmarkPlus />,
       href: "/admin/publication",
       color: "text-primary",
     },
     {
       label: "Add Book",
-      icon: <FaBook size={16} />,
+      icon: <FaBook />,
       href: "/admin/book",
       color: "text-success",
     },
     {
       label: "Book Report",
-      icon: <TbReportAnalytics size={16} />,
+      icon: <TbReportAnalytics />,
       href: "/admin/bookreport",
       color: "text-warning",
     },
     {
       label: "Add Branch",
-      icon: <FaBuilding size={16} />,
+      icon: <FaBuilding />,
       href: "/admin/branch",
       color: "text-danger",
     },
     {
       label: "Add Student",
-      icon: <FaUserGraduate size={16} />,
+      icon: <FaUserGraduate />,
       href: "/admin/student",
       color: "text-info",
     },
-
     {
       label: "Issue Book",
-      icon: <RiBookOpenLine size={16} />,
+      icon: <RiBookOpenLine />,
       href: "/admin/issuebook",
       color: "text-success",
     },
     {
       label: "Issue Report",
-      icon: <BsFileEarmarkText size={16} />,
+      icon: <BsFileEarmarkText />,
       href: "/admin/issuereport",
       color: "text-warning",
     },
     {
       label: "Return Book",
-      icon: <FaUndo size={16} />,
+      icon: <FaUndo />,
       href: "/admin/returnbook",
       color: "text-primary",
     },
     {
       label: "Penalty",
-      icon: <FaMoneyBillWave size={16} />,
+      icon: <FaMoneyBillWave />,
       href: "/admin/penalty",
       color: "text-danger",
     },
@@ -108,43 +109,79 @@ export default function AdminLayout({
       className={`d-flex flex-column min-vh-100 ${
         isDarkMode ? "bg-dark text-light" : "bg-light text-dark"
       }`}
-      style={{ fontFamily: "Inter, sans-serif" }}
+      style={{
+        fontFamily: "Inter, sans-serif",
+        transition: "background 0.3s ease",
+      }}
     >
       {/* Header */}
       <header
-        className={`d-flex justify-content-between align-items-center px-4 py-2 ${
-          isDarkMode ? "bg-secondary" : "bg-white"
-        } border-bottom shadow-sm sticky-top`}
+        className={`d-flex justify-content-between align-items-center px-4 py-2 shadow-sm sticky-top ${
+          isDarkMode ? "bg-gradient bg-secondary" : "bg-white border-bottom"
+        }`}
+        data-aos="fade-down"
       >
-        <h1 className="m-0 text-primary fs-4 fw-bold">Digital Library Admin</h1>
+        <h1
+          className={`m-0 fs-4 fw-bold ${
+            isDarkMode ? "text-info" : "text-primary"
+          }`}
+        >
+          📚 Digital Library Admin
+        </h1>
 
+        {/* Search Bar */}
         <div className="d-none d-md-block w-50 px-3">
-          <div className="position-relative">
+          <div
+            className="position-relative"
+            data-aos="fade-down"
+            data-aos-delay="200"
+          >
             <FiSearch className="position-absolute top-50 start-0 translate-middle-y ms-3 text-muted" />
             <input
               type="text"
-              className="form-control rounded-pill ps-5 shadow-sm"
-              placeholder="Search..."
+              className="form-control rounded-pill ps-5 shadow-sm border-0"
+              placeholder="Search anything..."
+              style={{
+                background: isDarkMode ? "#1e293b" : "#f1f5f9",
+                color: isDarkMode ? "#f8fafc" : "#0f172a",
+              }}
             />
           </div>
         </div>
 
+        {/* Header Controls */}
         <div className="d-flex align-items-center gap-3">
+          {/* Theme Toggle */}
           <button
-            className="btn btn-light rounded-circle p-2"
+            className={`btn rounded-circle p-2 shadow-sm ${
+              isDarkMode ? "btn-light" : "btn-dark"
+            }`}
             onClick={toggleTheme}
             title="Toggle Theme"
+            data-aos="fade-left"
+            data-aos-delay="200"
           >
-            {isDarkMode ? <FiSun size={18} /> : <FiMoon size={18} />}
+            {isDarkMode ? <FiSun /> : <FiMoon />}
           </button>
 
-          <button className="btn btn-light rounded-circle p-2">
-            <MdHelpOutline size={18} />
+          {/* Help */}
+          <button
+            className="btn btn-outline-secondary rounded-circle p-2 shadow-sm"
+            title="Help"
+            data-aos="fade-left"
+            data-aos-delay="300"
+          >
+            <MdHelpOutline />
           </button>
 
-          <div className="position-relative">
-            <button className="btn btn-light rounded-circle p-2">
-              <FiBell size={18} />
+          {/* Notifications */}
+          <div
+            className="position-relative"
+            data-aos="fade-left"
+            data-aos-delay="400"
+          >
+            <button className="btn btn-outline-danger rounded-circle p-2 shadow-sm">
+              <FiBell />
             </button>
             <span
               className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
@@ -154,7 +191,8 @@ export default function AdminLayout({
             </span>
           </div>
 
-          <div className="dropdown">
+          {/* Profile */}
+          <div className="dropdown" data-aos="fade-left" data-aos-delay="500">
             <button
               className="btn p-0 dropdown-toggle d-flex align-items-center"
               data-bs-toggle="dropdown"
@@ -162,13 +200,13 @@ export default function AdminLayout({
             >
               <img
                 src="https://ui-avatars.com/api/?name=Admin+User&background=0d6efd&color=fff&rounded=true"
-                className="rounded-circle shadow border border-2"
+                className="rounded-circle shadow border border-2 border-light"
                 width={40}
                 height={40}
                 alt="Admin"
               />
             </button>
-            <ul className="dropdown-menu dropdown-menu-end shadow p-0 overflow-hidden">
+            <ul className="dropdown-menu dropdown-menu-end shadow p-0 overflow-hidden animate__animated animate__fadeIn">
               <li className="bg-light p-3 border-bottom text-center">
                 <div className="fw-semibold">Admin User</div>
                 <small className="text-muted">Administrator</small>
@@ -195,7 +233,7 @@ export default function AdminLayout({
               <li>
                 <Link
                   href="/"
-                  className="dropdown-item d-flex align-items-center gap-2 text-danger"
+                  className="dropdown-item d-flex align-items-center gap-2 text-danger fw-semibold"
                 >
                   <FaSignOutAlt /> Logout
                 </Link>
@@ -210,18 +248,21 @@ export default function AdminLayout({
         {/* Sidebar */}
         <aside
           className="d-flex flex-column p-3 shadow-sm"
+          data-aos="fade-right"
           style={{
             width: isSidebarCollapsed ? "72px" : "240px",
             background: isDarkMode
               ? "linear-gradient(180deg, #1e293b, #0f172a)"
-              : "#f8f9fa",
+              : "linear-gradient(180deg, #f8fafc, #e2e8f0)",
             color: isDarkMode ? "#f1f5f9" : "#1f2937",
-            transition: "width 0.3s ease",
+            transition: "all 0.3s ease",
           }}
         >
           <div className="d-flex justify-content-end mb-3">
             <button
-              className="btn btn-sm btn-outline-light"
+              className={`btn btn-sm ${
+                isDarkMode ? "btn-outline-light" : "btn-outline-dark"
+              }`}
               onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
               title="Toggle Sidebar"
             >
@@ -231,41 +272,58 @@ export default function AdminLayout({
 
           <nav>
             <ul className="nav nav-pills flex-column gap-1">
-              {navItems.map((item) => (
-                <li key={item.href}>
+              {navItems.map((item, index) => (
+                <li
+                  key={item.href}
+                  data-aos="fade-up"
+                  data-aos-delay={index * 80}
+                >
                   <Link
                     href={item.href}
-                    className={`nav-link d-flex align-items-center gap-2 sidebar-link ${
+                    className={`nav-link d-flex align-items-center gap-2 ${
                       pathname === item.href
-                        ? "active bg-info text-white"
+                        ? "active bg-gradient text-white shadow-sm"
                         : isDarkMode
                         ? "text-light"
                         : "text-dark"
                     }`}
                     style={{
                       fontSize: "0.9rem",
-                      transition: "background 0.2s ease",
+                      borderRadius: "10px",
+                      transition: "all 0.3s ease",
                     }}
                   >
-                    <span className={item.color}>{item.icon}</span>
-                    {!isSidebarCollapsed && item.label}
+                    <span className={`${item.color}`}>{item.icon}</span>
+                    {!isSidebarCollapsed && <span>{item.label}</span>}
                   </Link>
                 </li>
               ))}
             </ul>
           </nav>
 
-          <div className="mt-auto pt-3 border-top text-center">
+          <div className="mt-auto pt-3 border-top text-center small opacity-75">
             {!isSidebarCollapsed && (
-              <small style={{ color: isDarkMode ? "#94a3b8" : "#6c757d" }}>
+              <div className="fw-light">
                 © {new Date().getFullYear()} SS App
-              </small>
+              </div>
             )}
           </div>
         </aside>
 
         {/* Main Content */}
-        <main className="flex-grow-1 p-4">{children}</main>
+        <main
+          className="flex-grow-1 p-4"
+          data-aos="fade-up"
+          data-aos-delay="200"
+          style={{
+            background: isDarkMode
+              ? "linear-gradient(180deg, #0f172a, #1e293b)"
+              : "#f8fafc",
+            transition: "background 0.3s ease",
+          }}
+        >
+          {children}
+        </main>
       </div>
     </div>
   );

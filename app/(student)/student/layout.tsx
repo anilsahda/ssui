@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-
+import AOS from "aos";
+import "aos/dist/aos.css";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 import { MdDashboard, MdHelpOutline } from "react-icons/md";
@@ -26,6 +27,7 @@ export default function StudentLayout({
 
   useEffect(() => {
     import("bootstrap/dist/js/bootstrap.bundle.min.js");
+    AOS.init({ duration: 700, easing: "ease-in-out" });
   }, []);
 
   const toggleTheme = () => setIsDarkMode((prev) => !prev);
@@ -60,46 +62,65 @@ export default function StudentLayout({
       }`}
       style={{ fontFamily: "Inter, sans-serif" }}
     >
-      {/* Header */}
+      {/* ================= Header ================= */}
       <header
-        className={`d-flex justify-content-between align-items-center px-4 py-2 shadow-sm ${
+        data-aos="fade-down"
+        className={`d-flex justify-content-between align-items-center px-4 py-2 shadow-sm sticky-top ${
           isDarkMode ? "bg-secondary" : "bg-white"
-        } border-bottom sticky-top`}
+        } border-bottom`}
       >
         <h1 className="m-0 text-primary fs-4 fw-bold">Student Portal</h1>
 
-        {/* Search */}
+        {/* Search Bar */}
         <div className="flex-grow-1 px-4 d-none d-md-block">
-          <div className="position-relative mx-auto" style={{ width: "60%" }}>
+          <div
+            className="position-relative mx-auto"
+            style={{ width: "60%" }}
+            data-aos="zoom-in"
+          >
             <FiSearch
               size={18}
               className="position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"
             />
             <input
               type="text"
-              className="form-control rounded-pill ps-5 shadow-sm"
+              className="form-control rounded-pill ps-5 shadow-sm border-0"
               placeholder="Search books, reports..."
+              style={{ backgroundColor: isDarkMode ? "#1f2937" : "#f8f9fa" }}
             />
           </div>
         </div>
 
-        {/* Actions */}
-        <div className="d-flex align-items-center gap-3">
+        {/* Header Actions */}
+        <div className="d-flex align-items-center gap-3" data-aos="fade-left">
+          {/* Theme Toggle */}
           <button
-            className="btn btn-light rounded-circle p-2"
+            className={`btn btn-${
+              isDarkMode ? "light" : "dark"
+            } rounded-circle p-2`}
             onClick={toggleTheme}
             title="Toggle Theme"
           >
             {isDarkMode ? <FiSun size={18} /> : <FiMoon size={18} />}
           </button>
 
-          <button className="btn btn-light rounded-circle p-2">
+          {/* Help */}
+          <button
+            className={`btn btn-${
+              isDarkMode ? "light" : "outline-secondary"
+            } rounded-circle p-2`}
+            title="Help"
+          >
             <MdHelpOutline size={18} />
           </button>
 
           {/* Notifications */}
           <div className="position-relative">
-            <button className="btn btn-light rounded-circle p-2">
+            <button
+              className={`btn btn-${
+                isDarkMode ? "light" : "outline-secondary"
+              } rounded-circle p-2`}
+            >
               <FiBell size={18} />
             </button>
             <span
@@ -125,7 +146,7 @@ export default function StudentLayout({
                 height="40"
               />
             </button>
-            <ul className="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 p-0 overflow-hidden">
+            <ul className="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 overflow-hidden">
               <li className="bg-light p-3 border-bottom text-center">
                 <strong className="d-block">Student</strong>
                 <small className="text-muted">Library Access</small>
@@ -162,18 +183,20 @@ export default function StudentLayout({
         </div>
       </header>
 
-      {/* Sidebar + Main */}
+      {/* ================= Sidebar + Main ================= */}
       <div className="d-flex flex-grow-1">
         {/* Sidebar */}
         <aside
-          className="d-flex flex-column p-3 shadow-sm"
+          data-aos="fade-right"
+          className="d-flex flex-column p-3 shadow-sm sticky-top"
           style={{
             width: 230,
             background: isDarkMode
               ? "linear-gradient(180deg, #1e293b, #0f172a)"
-              : "#f8f9fa",
-            color: isDarkMode ? "#f1f5f9" : "#1f2937",
-            transition: "all 0.3s ease",
+              : "linear-gradient(180deg, #ffffff, #f1f5f9)",
+            color: isDarkMode ? "#f8fafc" : "#1f2937",
+            transition: "all 0.4s ease",
+            height: "100vh",
           }}
         >
           <nav>
@@ -182,9 +205,9 @@ export default function StudentLayout({
                 <li key={href}>
                   <Link
                     href={href}
-                    className={`nav-link d-flex align-items-center gap-2 sidebar-link ${
+                    className={`nav-link d-flex align-items-center gap-2 sidebar-link rounded-3 ${
                       pathname === href
-                        ? "active bg-info text-white"
+                        ? "active bg-info text-white fw-semibold"
                         : isDarkMode
                         ? "text-light"
                         : "text-dark"
@@ -201,16 +224,26 @@ export default function StudentLayout({
             </ul>
           </nav>
 
-          {/* Footer */}
-          <div className="mt-auto pt-3 border-top text-center">
-            <small style={{ color: "#94a3b8" }}>
+          {/* Sidebar Footer */}
+          <div className="mt-auto pt-3 border-top text-center small">
+            <small style={{ color: isDarkMode ? "#94a3b8" : "#6b7280" }}>
               © {new Date().getFullYear()} SS App
             </small>
           </div>
         </aside>
 
         {/* Main Content */}
-        <main className="flex-grow-1 p-4">{children}</main>
+        <main
+          className="flex-grow-1 p-4"
+          data-aos="fade-up"
+          data-aos-delay="100"
+          style={{
+            backgroundColor: isDarkMode ? "#0f172a" : "#f8fafc",
+            transition: "background-color 0.3s ease",
+          }}
+        >
+          {children}
+        </main>
       </div>
     </div>
   );

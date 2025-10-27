@@ -10,6 +10,8 @@ import {
   FaMoon,
   FaSun,
 } from "react-icons/fa";
+import AOS from "aos";
+import "aos/dist/aos.css";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 interface LayoutProps {
@@ -22,6 +24,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   useEffect(() => {
     import("bootstrap/dist/js/bootstrap.bundle.min.js");
+    AOS.init({ duration: 900, once: true, easing: "ease-in-out" });
   }, []);
 
   const toggleTheme = () => {
@@ -60,30 +63,43 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const backgroundStyle = {
     background: isDark
-      ? "linear-gradient(135deg, #1e3a8a, #0f172a, #1e3a8a)"
-      : "linear-gradient(135deg, #f8f9fa, #e9ecef, #f8f9fa)",
+      ? "linear-gradient(135deg, #0f172a 0%, #1e3a8a 40%, #0f172a 100%)"
+      : "linear-gradient(135deg, #f8f9fa 0%, #dee2e6 50%, #f8f9fa 100%)",
     color: isDark ? "#f8f9fa" : "#212529",
-    transition: "all 0.4s ease-in-out",
+    transition: "all 0.5s ease-in-out",
     fontFamily: "Inter, sans-serif",
   };
 
   const navBackground = isDark
-    ? "rgba(23, 42, 69, 0.85)"
+    ? "rgba(15, 23, 42, 0.85)"
     : "rgba(255, 255, 255, 0.9)";
 
   return (
     <div
-      className="d-flex flex-column min-vh-100"
+      className="d-flex flex-column min-vh-100 position-relative"
       style={backgroundStyle}
       data-theme={theme}
     >
+      {/* Subtle Background Glow Animation */}
+      <div
+        className="position-absolute top-0 start-0 w-100 h-100"
+        style={{
+          background:
+            "radial-gradient(circle at 20% 30%, rgba(255,255,255,0.08) 0%, transparent 60%)",
+          zIndex: 0,
+          animation: "moveGlow 15s infinite alternate ease-in-out",
+        }}
+      ></div>
+
       {/* Navbar */}
       <nav
         className="navbar navbar-expand-lg sticky-top shadow-sm"
         style={{
           background: navBackground,
-          backdropFilter: "blur(10px)",
+          backdropFilter: "blur(12px)",
+          zIndex: 10,
         }}
+        data-aos="fade-down"
       >
         <div className="container-fluid px-lg-5">
           <Link
@@ -115,11 +131,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             id="navbarNav"
           >
             {/* Nav Links */}
-            <ul className="navbar-nav fw-semibold fs-6">
+            <ul className="navbar-nav fw-semibold fs-6" data-aos="fade-right">
               {navLinks.map(({ href, label }) => {
                 const active = pathname === href;
                 return (
-                  <li key={label} className="nav-item">
+                  <li key={label} className="nav-item mx-2">
                     <Link
                       href={href}
                       className={`nav-link px-3 ${
@@ -132,7 +148,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                           : "text-dark"
                       }`}
                     >
-                      <span className="position-relative">
+                      <span className="position-relative d-inline-block link-hover">
                         {label}
                         <span className="underline-effect"></span>
                       </span>
@@ -142,8 +158,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               })}
             </ul>
 
-            {/* Actions */}
-            <div className="d-flex align-items-center gap-3">
+            {/* Right Side Buttons */}
+            <div
+              className="d-flex align-items-center gap-3"
+              data-aos="fade-left"
+            >
               <Link
                 href="/login"
                 className={`btn btn-outline-${
@@ -166,7 +185,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
               <button
                 className="btn btn-light btn-sm rounded-circle shadow-sm"
-                style={{ width: "36px", height: "36px" }}
+                style={{ width: "38px", height: "38px" }}
                 onClick={toggleTheme}
                 title="Toggle Theme"
               >
@@ -181,11 +200,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   rel="noopener noreferrer"
                   title={title}
                   className="btn btn-light btn-sm rounded-circle d-flex justify-content-center align-items-center shadow-sm"
-                  style={{ width: "36px", height: "36px" }}
+                  style={{
+                    width: "38px",
+                    height: "38px",
+                    transition: "transform 0.3s ease, box-shadow 0.3s ease",
+                  }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = "scale(1.15)";
+                    e.currentTarget.style.transform = "scale(1.2)";
                     e.currentTarget.style.boxShadow =
-                      "0 4px 12px rgba(0,0,0,0.2)";
+                      "0 4px 16px rgba(255,255,255,0.5)";
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.transform = "scale(1)";
@@ -201,20 +224,25 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       </nav>
 
       {/* Main Content */}
-      <main className="container flex-grow-1 py-4 px-3 px-lg-5">
+      <main
+        className="container flex-grow-1 py-4 px-3 px-lg-5"
+        data-aos="fade-up"
+      >
         {children}
       </main>
 
       {/* Footer */}
       <footer
-        className="text-center py-3 mt-auto"
+        className="text-center py-4 mt-auto"
         style={{
           background: navBackground,
           color: isDark ? "#ccc" : "#333",
           boxShadow: "inset 0 1px 5px rgba(0,0,0,0.1)",
+          backdropFilter: "blur(6px)",
         }}
+        data-aos="fade-up"
       >
-        <div className="mb-2">
+        <div className="mb-3">
           {socialIcons.map(({ icon: Icon, href, title, color }, i) => (
             <a
               key={i}
@@ -222,33 +250,36 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               target="_blank"
               rel="noopener noreferrer"
               title={title}
-              className={`${color} mx-2 fs-4`}
-              style={{ transition: "color 0.3s" }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = "#ffc107")}
-              onMouseLeave={(e) => (e.currentTarget.style.color = "")}
+              className={`${color} mx-3 fs-4`}
+              style={{ transition: "transform 0.3s" }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.transform = "scale(1.3)")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.transform = "scale(1)")
+              }
             >
               <Icon />
             </a>
           ))}
         </div>
         <small>
-          © {new Date().getFullYear()} Digital Library. All rights reserved.
+          © {new Date().getFullYear()} <b>Digital Library</b> — All rights
+          reserved.
         </small>
       </footer>
 
-      {/* Styles */}
+      {/* Extra Styling */}
       <style jsx>{`
         .nav-link {
           position: relative;
           transition: color 0.3s ease;
         }
-
         .nav-link:hover,
         .nav-link:focus {
           color: #ffc107 !important;
           text-decoration: none;
         }
-
         .underline-effect {
           position: absolute;
           bottom: 0;
@@ -256,13 +287,20 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           height: 2px;
           width: 0;
           background-color: #ffc107;
-          transition: width 0.3s ease;
+          transition: width 0.4s ease;
           border-radius: 2px;
         }
-
-        .nav-link:hover .underline-effect,
-        .nav-link:focus .underline-effect {
+        .nav-link:hover .underline-effect {
           width: 100%;
+        }
+
+        @keyframes moveGlow {
+          0% {
+            transform: translate(0, 0);
+          }
+          100% {
+            transform: translate(-50px, 50px);
+          }
         }
       `}</style>
     </div>
