@@ -1,17 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { MdDashboard, MdHelpOutline } from "react-icons/md";
-import {
-  FaUsers,
-  FaUserEdit,
-  FaSignOutAlt,
-  FaUserCog,
-  FaUserShield,
-} from "react-icons/fa";
-import { FiSearch, FiBell, FiMoon, FiUserCheck } from "react-icons/fi";
 import { useEffect } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
+import AOS from "aos";
+import "aos/dist/aos.css";
+
+import { MdDashboard, MdHelpOutline } from "react-icons/md";
+import { FaUsers, FaUserEdit, FaSignOutAlt, FaUserCog } from "react-icons/fa";
+import { FiSearch, FiBell, FiMoon } from "react-icons/fi";
 
 export default function AdminLayout({
   children,
@@ -20,6 +17,7 @@ export default function AdminLayout({
 }) {
   useEffect(() => {
     import("bootstrap/dist/js/bootstrap.bundle.min.js");
+    AOS.init({ duration: 600, once: true });
   }, []);
 
   return (
@@ -27,18 +25,18 @@ export default function AdminLayout({
       className="d-flex flex-column min-vh-100 bg-light"
       style={{ fontFamily: "Inter, sans-serif" }}
     >
+      {/* Header */}
       <header className="d-flex justify-content-between align-items-center px-4 py-2 shadow-sm bg-white border-bottom">
-        <h1
-          className="m-0 text-primary"
-          style={{ fontSize: "1.6rem", fontWeight: 600 }}
-        >
+        <h1 className="m-0 text-primary fw-bold" style={{ fontSize: "1.6rem" }}>
           SS App
         </h1>
+
+        {/* Search */}
         <div className="flex-grow-1 px-4 d-none d-md-block">
           <div className="position-relative mx-auto" style={{ width: "50%" }}>
             <FiSearch
-              size={18}
               className="position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"
+              size={18}
             />
             <input
               type="text"
@@ -48,6 +46,7 @@ export default function AdminLayout({
           </div>
         </div>
 
+        {/* Actions */}
         <div className="d-flex align-items-center gap-3">
           <button className="btn btn-light rounded-circle shadow-sm p-2 action-btn">
             <FiMoon size={18} />
@@ -67,13 +66,13 @@ export default function AdminLayout({
             </span>
           </div>
 
+          {/* Profile Dropdown */}
           <div className="dropdown">
             <button
               id="dropdownUser"
               className="btn p-0 d-flex align-items-center gap-2 dropdown-toggle"
               data-bs-toggle="dropdown"
               aria-expanded="false"
-              type="button"
             >
               <img
                 src="https://ui-avatars.com/api/?name=Admin+User&background=0d6efd&color=fff&rounded=true"
@@ -83,7 +82,6 @@ export default function AdminLayout({
                 height="40"
               />
             </button>
-
             <ul
               className="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 p-0 overflow-hidden"
               aria-labelledby="dropdownUser"
@@ -116,7 +114,6 @@ export default function AdminLayout({
                 <a
                   href="/"
                   className="dropdown-item d-flex align-items-center gap-2 py-2 text-danger"
-                  type="button"
                 >
                   <FaSignOutAlt /> Logout
                 </a>
@@ -126,7 +123,9 @@ export default function AdminLayout({
         </div>
       </header>
 
+      {/* Body */}
       <div className="d-flex flex-grow-1">
+        {/* Sidebar */}
         <aside
           className="d-flex flex-column p-3 shadow-sm"
           style={{
@@ -137,7 +136,7 @@ export default function AdminLayout({
         >
           <nav>
             <ul className="nav nav-pills flex-column gap-1">
-              <li>
+              <li data-aos="fade-right" data-aos-delay="100">
                 <Link
                   href="/admin"
                   className="nav-link d-flex align-items-center gap-2 sidebar-link active"
@@ -145,12 +144,12 @@ export default function AdminLayout({
                   <MdDashboard size={18} className="text-info" /> Dashboard
                 </Link>
               </li>
-              <li>
+              <li data-aos="fade-right" data-aos-delay="150">
                 <Link
                   href="/admin/item1"
                   className="nav-link d-flex align-items-center gap-2 sidebar-link"
                 >
-                  <FaUsers size={16} className="text-warning" /> item 1
+                  <FaUsers size={16} className="text-warning" /> Item 1
                 </Link>
               </li>
             </ul>
@@ -159,7 +158,15 @@ export default function AdminLayout({
             <small style={{ color: "#94a3b8" }}>© 2025 SS App</small>
           </div>
         </aside>
-        <main className="flex-grow-1 p-4 bg-light">{children}</main>
+
+        {/* Main Content */}
+        <main
+          className="flex-grow-1 p-4 bg-light"
+          data-aos="fade-up"
+          data-aos-delay="200"
+        >
+          {children}
+        </main>
       </div>
     </div>
   );
