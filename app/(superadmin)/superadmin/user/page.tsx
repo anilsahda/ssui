@@ -3,81 +3,86 @@
 import axios from "axios";
 import React, { useEffect, useState } from "react";
 import Swal from "sweetalert2";
+import AOS from "aos";
+import "aos/dist/aos.css";
+import "bootstrap/dist/css/bootstrap.min.css";
+import {
+  FaPlusCircle,
+  FaEdit,
+  FaTrashAlt,
+  FaEye,
+  FaUserShield,
+  FaSearch,
+} from "react-icons/fa";
 
-function Page() {
-  const [users, setUsers] = useState([]);
+export default function Page() {
+  const [roles, setRoles] = useState([]);
+  const [filteredRoles, setFilteredRoles] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [showModal, setShowModal] = useState(false);
+  const [roleName, setRoleName] = useState("");
   const [editId, setEditId] = useState(null);
 
-  // form fields
-  const [name, setName] = useState("");
-  const [mobile, setMobile] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-
-  // ✅ Fetch users on page load
   useEffect(() => {
-    fetchUsers();
+    AOS.init({ duration: 800, once: true, easing: "ease-in-out" });
+    fetchRoles();
   }, []);
 
-  const fetchUsers = async () => {
+  const fetchRoles = async () => {
     try {
-      const res = await axios.get("https://localhost:7071/api/Users/GetUsers");
-      setUsers(res.data);
-    } catch (err) {
-      Swal.fire("Error", "Failed to fetch users", "error");
+      const res = await axios.get("https://localhost:7071/api/Roles/GetRoles");
+      setRoles(res.data);
+      setFilteredRoles(res.data);
+    } catch {
+      Swal.fire("Error", "Failed to fetch roles", "error");
     }
   };
 
-  // ✅ Add / Update user
+  const handleSearch = (value) => {
+    setSearchTerm(value);
+    const filtered = roles.filter((r) =>
+      r.name.toLowerCase().includes(value.toLowerCase())
+    );
+    setFilteredRoles(filtered);
+  };
+
   const handleSave = async () => {
-    if (!name || !mobile || !email || !password) {
-      Swal.fire("Validation Error", "All fields are required", "warning");
+    if (!roleName.trim()) {
+      Swal.fire("Warning", "Role name cannot be empty", "warning");
       return;
     }
-
     try {
       if (editId) {
-        await axios.put("https://localhost:7024/api/Users/UpdateUser", {
+        await axios.put("https://localhost:7024/api/Roles/UpdateRole", {
           id: editId,
-          name,
-          mobile,
-          email,
-          password,
+          name: roleName,
         });
-        Swal.fire("Updated!", "User has been updated.", "success");
+        Swal.fire("Updated!", "Role updated successfully.", "success");
       } else {
-        await axios.post("https://localhost:7024/api/Users/AddUser", {
-          name,
-          mobile,
-          email,
-          password,
+        await axios.post("https://localhost:7024/api/Roles/AddRole", {
+          name: roleName,
         });
-        Swal.fire("Added!", "User has been added.", "success");
+        Swal.fire("Added!", "New role created.", "success");
       }
-      resetForm();
+      setRoleName("");
+      setEditId(null);
       setShowModal(false);
-      fetchUsers();
-    } catch (err) {
-      Swal.fire("Error", "Failed to save user", "error");
+      fetchRoles();
+    } catch {
+      Swal.fire("Error", "Failed to save role", "error");
     }
   };
 
-  // ✅ Edit user (open modal with data)
-  const handleEdit = (user) => {
-    setEditId(user.id);
-    setName(user.name);
-    setMobile(user.mobile);
-    setEmail(user.email);
-    setPassword(user.password);
+  const handleEdit = (role) => {
+    setEditId(role.id);
+    setRoleName(role.name);
     setShowModal(true);
   };
 
-  // ✅ Delete user with confirmation
-  const handleDelete = async (id) => {
+  const handleDelete = (id) => {
     Swal.fire({
       title: "Are you sure?",
-      text: "This action cannot be undone!",
+      text: "This role will be permanently deleted.",
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#d33",
@@ -86,107 +91,137 @@ function Page() {
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
-          await axios.delete(`https://localhost:7024/api/Users/${id}`);
-          Swal.fire("Deleted!", "User has been deleted.", "success");
-          fetchUsers();
-        } catch (err) {
-          Swal.fire("Error", "Failed to delete user", "error");
+          await axios.delete(`https://localhost:7024/api/Roles/${id}`);
+          Swal.fire("Deleted!", "Role deleted successfully.", "success");
+          fetchRoles();
+        } catch {
+          Swal.fire("Error", "Failed to delete role", "error");
         }
       }
     });
   };
 
-  // ✅ View user details
-  const handleView = (user) => {
+  const handleView = (role) => {
     Swal.fire({
-      title: "User Details",
-      html: `
-        <strong>ID:</strong> ${user.id}<br/>
-        <strong>Name:</strong> ${user.name}<br/>
-        <strong>Mobile:</strong> ${user.mobile}<br/>
-        <strong>Email:</strong> ${user.email}<br/>
-        <strong>Password:</strong> ${user.password}
-      `,
+      title: `<h5 class="fw-bold text-primary">Role Details</h5>`,
+      html: `<div class="text-start">
+              <p><strong>ID:</strong> ${role.id}</p>
+              <p><strong>Name:</strong> ${role.name}</p>
+             </div>`,
       icon: "info",
+      confirmButtonColor: "#0d6efd",
     });
   };
 
-  const resetForm = () => {
-    setEditId(null);
-    setName("");
-    setMobile("");
-    setEmail("");
-    setPassword("");
-  };
-
   return (
-    <div className="container mt-4">
+    <div
+      className="container py-5"
+      data-aos="fade-up"
+      style={{
+        background:
+          "linear-gradient(135deg, rgba(255,255,255,0.9), rgba(240,243,249,0.9))",
+        backdropFilter: "blur(10px)",
+        borderRadius: "20px",
+        boxShadow: "0 8px 25px rgba(0,0,0,0.1)",
+      }}
+    >
       {/* Header */}
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <h1 className="h3 m-0">Manage User</h1>
-        <button
-          className="btn btn-primary"
-          onClick={() => {
-            resetForm();
-            setShowModal(true);
-          }}
-        >
-          + Add User
-        </button>
+      <div
+        className="d-flex flex-wrap justify-content-between align-items-center mb-4 border-bottom pb-3"
+        data-aos="fade-down"
+      >
+        <h2 className="fw-bold text-primary d-flex align-items-center gap-2">
+          <FaUserShield /> Role Management
+        </h2>
+
+        <div className="d-flex align-items-center gap-2">
+          <div className="input-group shadow-sm">
+            <span className="input-group-text bg-primary text-white border-0">
+              <FaSearch />
+            </span>
+            <input
+              type="text"
+              placeholder="Search roles..."
+              className="form-control border-0"
+              value={searchTerm}
+              onChange={(e) => handleSearch(e.target.value)}
+            />
+          </div>
+
+          <button
+            className="btn btn-gradient d-flex align-items-center gap-2 shadow-sm px-3"
+            onClick={() => {
+              setEditId(null);
+              setRoleName("");
+              setShowModal(true);
+            }}
+          >
+            <FaPlusCircle /> Add Role
+          </button>
+        </div>
       </div>
 
       {/* Table */}
-      <table className="table table-bordered table-striped">
-        <thead className="table-light">
-          <tr>
-            <th>Id</th>
-            <th>Name</th>
-            <th>Mobile</th>
-            <th>Email</th>
-            <th>Password</th>
-            <th style={{ width: "220px" }}>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {users.length > 0 ? (
-            users.map((user) => (
-              <tr key={user.id}>
-                <td>{user.id}</td>
-                <td>{user.name}</td>
-                <td>{user.mobile}</td>
-                <td>{user.email}</td>
-                <td>{user.password}</td>
-                <td>
-                  <button
-                    className="btn btn-warning me-1"
-                    onClick={() => handleEdit(user)}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    className="btn btn-danger me-1"
-                    onClick={() => handleDelete(user.id)}
-                  >
-                    Delete
-                  </button>
-                  <button
-                    className="btn btn-success"
-                    onClick={() => handleView(user)}
-                  >
-                    View
-                  </button>
+      <div
+        className="table-responsive shadow-sm rounded"
+        data-aos="fade-up"
+        data-aos-delay="100"
+      >
+        <table className="table table-hover align-middle text-center">
+          <thead className="table-primary">
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th style={{ width: "220px" }}>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredRoles.length > 0 ? (
+              filteredRoles.map((role, index) => (
+                <tr
+                  key={role.id}
+                  data-aos="fade-up"
+                  data-aos-delay={index * 100}
+                  className="table-row"
+                >
+                  <td>
+                    <span className="badge bg-light text-dark border px-3 py-2">
+                      {role.id}
+                    </span>
+                  </td>
+                  <td className="fw-semibold text-capitalize">{role.name}</td>
+                  <td>
+                    <button
+                      className="btn btn-warning btn-sm me-2 shadow-sm action-btn"
+                      onClick={() => handleEdit(role)}
+                    >
+                      <FaEdit /> Edit
+                    </button>
+                    <button
+                      className="btn btn-danger btn-sm me-2 shadow-sm action-btn"
+                      onClick={() => handleDelete(role.id)}
+                    >
+                      <FaTrashAlt /> Delete
+                    </button>
+                    <button
+                      className="btn btn-success btn-sm shadow-sm action-btn"
+                      onClick={() => handleView(role)}
+                    >
+                      <FaEye /> View
+                    </button>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="3" className="text-muted py-4">
+                  No roles found.
                 </td>
               </tr>
-            ))
-          ) : (
-            <tr>
-              <td colSpan="6" className="text-center">
-                No users found
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+            )}
+          </tbody>
+        </table>
+      </div>
 
       {/* Modal */}
       {showModal && (
@@ -195,12 +230,14 @@ function Page() {
           tabIndex="-1"
           style={{ background: "rgba(0,0,0,0.5)" }}
         >
-          <div className="modal-dialog">
-            <div className="modal-content">
-              {/* Header */}
+          <div className="modal-dialog modal-dialog-centered">
+            <div
+              className="modal-content border-0 shadow-lg rounded-4 glass-modal"
+              data-aos="zoom-in"
+            >
               <div className="modal-header bg-primary text-white">
-                <h5 className="modal-title">
-                  {editId ? "Edit User" : "Add User"}
+                <h5 className="modal-title fw-semibold">
+                  {editId ? "Edit Role" : "Add New Role"}
                 </h5>
                 <button
                   type="button"
@@ -209,55 +246,27 @@ function Page() {
                 ></button>
               </div>
 
-              {/* Body */}
-              <div className="modal-body">
-                <div className="mb-3">
-                  <input
-                    type="text"
-                    placeholder="Enter Name"
-                    className="form-control"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                  />
-                </div>
-                <div className="mb-3">
-                  <input
-                    type="text"
-                    placeholder="Enter Mobile"
-                    className="form-control"
-                    value={mobile}
-                    onChange={(e) => setMobile(e.target.value)}
-                  />
-                </div>
-                <div className="mb-3">
-                  <input
-                    type="email"
-                    placeholder="Enter Email"
-                    className="form-control"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
-                </div>
-                <div className="mb-3">
-                  <input
-                    type="password"
-                    placeholder="Enter Password"
-                    className="form-control"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
-                </div>
+              <div className="modal-body p-4">
+                <input
+                  type="text"
+                  placeholder="Enter Role Name"
+                  className="form-control form-control-lg shadow-sm"
+                  value={roleName}
+                  onChange={(e) => setRoleName(e.target.value)}
+                />
               </div>
 
-              {/* Footer */}
-              <div className="modal-footer">
+              <div className="modal-footer border-0">
                 <button
-                  className="btn btn-secondary"
+                  className="btn btn-outline-secondary rounded-pill px-4"
                   onClick={() => setShowModal(false)}
                 >
                   Close
                 </button>
-                <button className="btn btn-primary" onClick={handleSave}>
+                <button
+                  className="btn btn-gradient rounded-pill px-4 shadow-sm"
+                  onClick={handleSave}
+                >
                   {editId ? "Update" : "Save"}
                 </button>
               </div>
@@ -265,8 +274,38 @@ function Page() {
           </div>
         </div>
       )}
+
+      {/* Custom Styles */}
+      <style jsx global>{`
+        .table-row:hover {
+          background: linear-gradient(90deg, #f8f9fa, #eef2f9);
+          transform: scale(1.01);
+          transition: all 0.25s ease;
+        }
+        .btn-gradient {
+          background: linear-gradient(135deg, #007bff, #00b4d8);
+          color: white !important;
+          border: none;
+          transition: all 0.3s ease;
+        }
+        .btn-gradient:hover {
+          background: linear-gradient(135deg, #0069d9, #0096c7);
+          transform: translateY(-2px);
+          box-shadow: 0 6px 12px rgba(0, 123, 255, 0.3);
+        }
+        .action-btn {
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .action-btn:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 5px 10px rgba(0, 0, 0, 0.15);
+        }
+        .glass-modal {
+          background: rgba(255, 255, 255, 0.9);
+          backdrop-filter: blur(10px);
+          border: 2px solid rgba(13, 110, 253, 0.2);
+        }
+      `}</style>
     </div>
   );
 }
-
-export default Page;
