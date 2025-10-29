@@ -55,7 +55,9 @@ const HotelCustomerProfileForm: React.FC = () => {
   });
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -70,10 +72,11 @@ const HotelCustomerProfileForm: React.FC = () => {
     <div className="container mt-4">
       <h2 className="text-center mb-4">🏨 Hotel Customer Profile</h2>
       <form onSubmit={handleSubmit}>
-
         {/* Basic Info */}
         <div className="card shadow-sm mb-4">
-          <div className="card-header bg-primary text-white">Basic Information</div>
+          <div className="card-header bg-primary text-white">
+            Basic Information
+          </div>
           <div className="card-body row g-3">
             <div className="col-md-6">
               <input
@@ -152,7 +155,9 @@ const HotelCustomerProfileForm: React.FC = () => {
 
         {/* Address Info */}
         <div className="card shadow-sm mb-4">
-          <div className="card-header bg-primary text-white">Address Information</div>
+          <div className="card-header bg-primary text-white">
+            Address Information
+          </div>
           <div className="card-body row g-3">
             <div className="col-md-12">
               <textarea
@@ -209,7 +214,9 @@ const HotelCustomerProfileForm: React.FC = () => {
 
         {/* Booking Info */}
         <div className="card shadow-sm mb-4">
-          <div className="card-header bg-primary text-white">Booking Information</div>
+          <div className="card-header bg-primary text-white">
+            Booking Information
+          </div>
           <div className="card-body row g-3">
             <div className="col-md-3">
               <select
@@ -280,7 +287,9 @@ const HotelCustomerProfileForm: React.FC = () => {
 
         {/* Payment Info */}
         <div className="card shadow-sm mb-4">
-          <div className="card-header bg-primary text-white">Payment Information</div>
+          <div className="card-header bg-primary text-white">
+            Payment Information
+          </div>
           <div className="card-body row g-3">
             <div className="col-md-6">
               <input
@@ -342,7 +351,9 @@ const HotelCustomerProfileForm: React.FC = () => {
 
         {/* Loyalty & Rewards */}
         <div className="card shadow-sm mb-4">
-          <div className="card-header bg-primary text-white">Loyalty & Rewards</div>
+          <div className="card-header bg-primary text-white">
+            Loyalty & Rewards
+          </div>
           <div className="card-body row g-3">
             <div className="col-md-4">
               <input
@@ -418,7 +429,9 @@ const HotelCustomerProfileForm: React.FC = () => {
 
         {/* Feedback & Preferences */}
         <div className="card shadow-sm mb-4">
-          <div className="card-header bg-primary text-white">Feedback & Preferences</div>
+          <div className="card-header bg-primary text-white">
+            Feedback & Preferences
+          </div>
           <div className="card-body row g-3">
             <div className="col-md-6">
               <textarea

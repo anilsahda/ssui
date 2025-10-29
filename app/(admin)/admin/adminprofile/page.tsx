@@ -1,10 +1,19 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import AOS from "aos";
+import "aos/dist/aos.css";
+import "bootstrap/dist/css/bootstrap.min.css";
+import {
+  FaHotel,
+  FaUserCog,
+  FaChartLine,
+  FaTools,
+  FaSave,
+} from "react-icons/fa";
 
 const HotelAdminProfileForm: React.FC = () => {
   const [formData, setFormData] = useState({
-    // Basic Info
     fullName: "",
     adminId: "",
     email: "",
@@ -13,7 +22,6 @@ const HotelAdminProfileForm: React.FC = () => {
     gender: "",
     profilePhoto: "",
 
-    // Hotel Info
     hotelName: "",
     hotelAddress: "",
     city: "",
@@ -23,7 +31,6 @@ const HotelAdminProfileForm: React.FC = () => {
     website: "",
     contactNumber: "",
 
-    // Admin Permissions
     canManageBookings: "",
     canManageRooms: "",
     canManageStaff: "",
@@ -32,7 +39,6 @@ const HotelAdminProfileForm: React.FC = () => {
     canManagePayments: "",
     canManageOffers: "",
 
-    // Hotel Metrics
     totalRooms: "",
     occupiedRooms: "",
     availableRooms: "",
@@ -40,18 +46,15 @@ const HotelAdminProfileForm: React.FC = () => {
     monthlyRevenue: "",
     monthlyBookings: "",
 
-    // Staff Info
     totalStaff: "",
     staffOnDuty: "",
 
-    // Services Info
     roomService: "",
     laundryService: "",
     spaService: "",
     gymService: "",
     restaurantService: "",
 
-    // Additional Info
     skills: "",
     notes: "",
     achievements: "",
@@ -60,8 +63,15 @@ const HotelAdminProfileForm: React.FC = () => {
     hobbies: "",
   });
 
+  // Initialize AOS
+  useEffect(() => {
+    AOS.init({ duration: 800, once: true });
+  }, []);
+
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -69,62 +79,73 @@ const HotelAdminProfileForm: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     console.log("Hotel Admin Profile Submitted:", formData);
-    alert("Hotel Admin profile submitted ✅. Check console for values.");
+    alert("Hotel Admin profile submitted ✅ Check console for details.");
   };
 
   return (
-    <div className="container mt-4">
-      <h2 className="text-center mb-4">🏨 Hotel Admin Profile</h2>
-      <form onSubmit={handleSubmit}>
+    <div className="container py-5">
+      <div className="text-center mb-5" data-aos="zoom-in">
+        <h1 className="fw-bold text-primary mb-3">
+          <FaUserCog className="me-2" />
+          Hotel Admin Profile
+        </h1>
+        <p className="text-muted fs-5">
+          Manage hotel details, permissions, and performance metrics.
+        </p>
+      </div>
 
-        {/* Basic Info */}
-        <div className="card shadow-sm mb-4">
-          <div className="card-header bg-primary text-white">Basic Information</div>
+      <form onSubmit={handleSubmit}>
+        {/* Profile Preview */}
+        <div className="text-center mb-5" data-aos="fade-up">
+          <div className="position-relative d-inline-block">
+            <img
+              src={
+                formData.profilePhoto ||
+                "https://cdn-icons-png.flaticon.com/512/149/149071.png"
+              }
+              alt="Profile"
+              className="rounded-circle shadow"
+              width="120"
+              height="120"
+            />
+            <div
+              className="position-absolute bottom-0 end-0 bg-primary text-white rounded-circle p-2 shadow-sm"
+              style={{ cursor: "pointer" }}
+              title="Change Profile Photo"
+            >
+              <i className="bi bi-camera"></i>
+            </div>
+          </div>
+        </div>
+
+        {/* Basic Information */}
+        <div className="card shadow-lg mb-4 border-0" data-aos="fade-right">
+          <div className="card-header bg-primary text-white fw-bold">
+            <FaUserCog className="me-2" />
+            Basic Information
+          </div>
           <div className="card-body row g-3">
-            <div className="col-md-6">
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Full Name"
-                name="fullName"
-                value={formData.fullName}
-                onChange={handleChange}
-              />
-            </div>
-            <div className="col-md-6">
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Admin ID"
-                name="adminId"
-                value={formData.adminId}
-                onChange={handleChange}
-              />
-            </div>
-            <div className="col-md-6">
-              <input
-                type="email"
-                className="form-control"
-                placeholder="Email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-              />
-            </div>
-            <div className="col-md-6">
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Phone"
-                name="phone"
-                value={formData.phone}
-                onChange={handleChange}
-              />
-            </div>
+            {[
+              { label: "Full Name", name: "fullName" },
+              { label: "Admin ID", name: "adminId" },
+              { label: "Email", name: "email", type: "email" },
+              { label: "Phone", name: "phone" },
+            ].map((field, i) => (
+              <div className="col-md-6" key={i}>
+                <input
+                  type={field.type || "text"}
+                  className="form-control form-control-lg"
+                  placeholder={field.label}
+                  name={field.name}
+                  value={formData[field.name as keyof typeof formData]}
+                  onChange={handleChange}
+                />
+              </div>
+            ))}
             <div className="col-md-4">
               <input
                 type="date"
-                className="form-control"
+                className="form-control form-control-lg"
                 name="dob"
                 value={formData.dob}
                 onChange={handleChange}
@@ -132,7 +153,7 @@ const HotelAdminProfileForm: React.FC = () => {
             </div>
             <div className="col-md-4">
               <select
-                className="form-select"
+                className="form-select form-select-lg"
                 name="gender"
                 value={formData.gender}
                 onChange={handleChange}
@@ -146,7 +167,7 @@ const HotelAdminProfileForm: React.FC = () => {
             <div className="col-md-4">
               <input
                 type="text"
-                className="form-control"
+                className="form-control form-control-lg"
                 placeholder="Profile Photo URL"
                 name="profilePhoto"
                 value={formData.profilePhoto}
@@ -157,13 +178,16 @@ const HotelAdminProfileForm: React.FC = () => {
         </div>
 
         {/* Hotel Info */}
-        <div className="card shadow-sm mb-4">
-          <div className="card-header bg-primary text-white">Hotel Information</div>
+        <div className="card shadow-lg mb-4 border-0" data-aos="fade-left">
+          <div className="card-header bg-success text-white fw-bold">
+            <FaHotel className="me-2" />
+            Hotel Information
+          </div>
           <div className="card-body row g-3">
             <div className="col-md-6">
               <input
                 type="text"
-                className="form-control"
+                className="form-control form-control-lg"
                 placeholder="Hotel Name"
                 name="hotelName"
                 value={formData.hotelName}
@@ -172,7 +196,7 @@ const HotelAdminProfileForm: React.FC = () => {
             </div>
             <div className="col-md-6">
               <textarea
-                className="form-control"
+                className="form-control form-control-lg"
                 rows={2}
                 placeholder="Hotel Address"
                 name="hotelAddress"
@@ -180,90 +204,59 @@ const HotelAdminProfileForm: React.FC = () => {
                 onChange={handleChange}
               ></textarea>
             </div>
-            <div className="col-md-3">
-              <input
-                type="text"
-                className="form-control"
-                placeholder="City"
-                name="city"
-                value={formData.city}
-                onChange={handleChange}
-              />
-            </div>
-            <div className="col-md-3">
-              <input
-                type="text"
-                className="form-control"
-                placeholder="State"
-                name="state"
-                value={formData.state}
-                onChange={handleChange}
-              />
-            </div>
-            <div className="col-md-2">
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Pincode"
-                name="pincode"
-                value={formData.pincode}
-                onChange={handleChange}
-              />
-            </div>
-            <div className="col-md-2">
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Country"
-                name="country"
-                value={formData.country}
-                onChange={handleChange}
-              />
-            </div>
-            <div className="col-md-3">
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Website"
-                name="website"
-                value={formData.website}
-                onChange={handleChange}
-              />
-            </div>
-            <div className="col-md-3">
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Hotel Contact Number"
-                name="contactNumber"
-                value={formData.contactNumber}
-                onChange={handleChange}
-              />
-            </div>
+            {[
+              "city",
+              "state",
+              "pincode",
+              "country",
+              "website",
+              "contactNumber",
+            ].map((field, i) => (
+              <div className="col-md-4" key={i}>
+                <input
+                  type="text"
+                  className="form-control form-control-lg"
+                  placeholder={
+                    field.charAt(0).toUpperCase() +
+                    field.slice(1).replace(/([A-Z])/g, " $1")
+                  }
+                  name={field}
+                  value={formData[field as keyof typeof formData]}
+                  onChange={handleChange}
+                />
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* Admin Permissions */}
-        <div className="card shadow-sm mb-4">
-          <div className="card-header bg-primary text-white">Admin Permissions</div>
+        {/* Permissions */}
+        <div className="card shadow-lg mb-4 border-0" data-aos="fade-right">
+          <div className="card-header bg-warning text-dark fw-bold">
+            <FaTools className="me-2" />
+            Admin Permissions
+          </div>
           <div className="card-body row g-3">
             {[
-              { name: "canManageBookings", label: "Manage Bookings" },
-              { name: "canManageRooms", label: "Manage Rooms" },
-              { name: "canManageStaff", label: "Manage Staff" },
-              { name: "canManageServices", label: "Manage Services" },
-              { name: "canViewReports", label: "View Reports" },
-              { name: "canManagePayments", label: "Manage Payments" },
-              { name: "canManageOffers", label: "Manage Offers" },
+              "canManageBookings",
+              "canManageRooms",
+              "canManageStaff",
+              "canManageServices",
+              "canViewReports",
+              "canManagePayments",
+              "canManageOffers",
             ].map((perm, idx) => (
               <div className="col-md-3" key={idx}>
                 <select
-                  className="form-select"
-                  name={perm.name}
-                  value={formData[perm.name as keyof typeof formData]}
+                  className="form-select form-select-lg"
+                  name={perm}
+                  value={formData[perm as keyof typeof formData]}
                   onChange={handleChange}
                 >
-                  <option value="">{perm.label}</option>
+                  <option value="">
+                    {perm
+                      .replace("canManage", "Manage ")
+                      .replace("canView", "View ")}
+                  </option>
                   <option>Yes</option>
                   <option>No</option>
                 </select>
@@ -273,24 +266,27 @@ const HotelAdminProfileForm: React.FC = () => {
         </div>
 
         {/* Hotel Metrics */}
-        <div className="card shadow-sm mb-4">
-          <div className="card-header bg-primary text-white">Hotel Metrics</div>
+        <div className="card shadow-lg mb-4 border-0" data-aos="fade-left">
+          <div className="card-header bg-info text-white fw-bold">
+            <FaChartLine className="me-2" />
+            Hotel Metrics
+          </div>
           <div className="card-body row g-3">
             {[
-              { name: "totalRooms", label: "Total Rooms" },
-              { name: "occupiedRooms", label: "Occupied Rooms" },
-              { name: "availableRooms", label: "Available Rooms" },
-              { name: "totalBookings", label: "Total Bookings" },
-              { name: "monthlyRevenue", label: "Monthly Revenue" },
-              { name: "monthlyBookings", label: "Monthly Bookings" },
+              "totalRooms",
+              "occupiedRooms",
+              "availableRooms",
+              "totalBookings",
+              "monthlyRevenue",
+              "monthlyBookings",
             ].map((metric, idx) => (
-              <div className="col-md-3" key={idx}>
+              <div className="col-md-4" key={idx}>
                 <input
                   type="number"
-                  className="form-control"
-                  placeholder={metric.label}
-                  name={metric.name}
-                  value={formData[metric.name as keyof typeof formData]}
+                  className="form-control form-control-lg"
+                  placeholder={metric.replace(/([A-Z])/g, " $1")}
+                  name={metric}
+                  value={formData[metric as keyof typeof formData]}
                   onChange={handleChange}
                 />
               </div>
@@ -299,13 +295,15 @@ const HotelAdminProfileForm: React.FC = () => {
         </div>
 
         {/* Staff Info */}
-        <div className="card shadow-sm mb-4">
-          <div className="card-header bg-primary text-white">Staff Information</div>
+        <div className="card shadow-lg mb-4 border-0" data-aos="fade-right">
+          <div className="card-header bg-dark text-white fw-bold">
+            Staff Information
+          </div>
           <div className="card-body row g-3">
             <div className="col-md-6">
               <input
                 type="number"
-                className="form-control"
+                className="form-control form-control-lg"
                 placeholder="Total Staff"
                 name="totalStaff"
                 value={formData.totalStaff}
@@ -315,7 +313,7 @@ const HotelAdminProfileForm: React.FC = () => {
             <div className="col-md-6">
               <input
                 type="number"
-                className="form-control"
+                className="form-control form-control-lg"
                 placeholder="Staff on Duty"
                 name="staffOnDuty"
                 value={formData.staffOnDuty}
@@ -325,103 +323,41 @@ const HotelAdminProfileForm: React.FC = () => {
           </div>
         </div>
 
-        {/* Services Info */}
-        <div className="card shadow-sm mb-4">
-          <div className="card-header bg-primary text-white">Services Information</div>
+        {/* Additional Info */}
+        <div className="card shadow-lg mb-5 border-0" data-aos="fade-up">
+          <div className="card-header bg-secondary text-white fw-bold">
+            Additional Information
+          </div>
           <div className="card-body row g-3">
             {[
-              { name: "roomService", label: "Room Service" },
-              { name: "laundryService", label: "Laundry Service" },
-              { name: "spaService", label: "Spa Service" },
-              { name: "gymService", label: "Gym Service" },
-              { name: "restaurantService", label: "Restaurant Service" },
-            ].map((service, idx) => (
-              <div className="col-md-3" key={idx}>
-                <select
-                  className="form-select"
-                  name={service.name}
-                  value={formData[service.name as keyof typeof formData]}
+              "skills",
+              "hobbies",
+              "certifications",
+              "languagesKnown",
+              "achievements",
+              "notes",
+            ].map((field, idx) => (
+              <div className="col-md-6" key={idx}>
+                <input
+                  type="text"
+                  className="form-control form-control-lg"
+                  placeholder={field.replace(/([A-Z])/g, " $1")}
+                  name={field}
+                  value={formData[field as keyof typeof formData]}
                   onChange={handleChange}
-                >
-                  <option value="">{service.label}</option>
-                  <option>Yes</option>
-                  <option>No</option>
-                </select>
+                />
               </div>
             ))}
           </div>
         </div>
 
-        {/* Additional Info */}
-        <div className="card shadow-sm mb-4">
-          <div className="card-header bg-primary text-white">Additional Information</div>
-          <div className="card-body row g-3">
-            <div className="col-md-6">
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Skills"
-                name="skills"
-                value={formData.skills}
-                onChange={handleChange}
-              />
-            </div>
-            <div className="col-md-6">
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Hobbies"
-                name="hobbies"
-                value={formData.hobbies}
-                onChange={handleChange}
-              />
-            </div>
-            <div className="col-md-6">
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Certifications"
-                name="certifications"
-                value={formData.certifications}
-                onChange={handleChange}
-              />
-            </div>
-            <div className="col-md-6">
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Languages Known"
-                name="languagesKnown"
-                value={formData.languagesKnown}
-                onChange={handleChange}
-              />
-            </div>
-            <div className="col-md-6">
-              <textarea
-                className="form-control"
-                placeholder="Achievements"
-                name="achievements"
-                value={formData.achievements}
-                onChange={handleChange}
-                rows={2}
-              ></textarea>
-            </div>
-            <div className="col-md-6">
-              <textarea
-                className="form-control"
-                placeholder="Notes"
-                name="notes"
-                value={formData.notes}
-                onChange={handleChange}
-                rows={2}
-              ></textarea>
-            </div>
-          </div>
-        </div>
-
         {/* Submit */}
-        <div className="text-center mb-4">
-          <button type="submit" className="btn btn-success px-5">
+        <div className="text-center" data-aos="zoom-in-up">
+          <button
+            type="submit"
+            className="btn btn-lg btn-success px-5 shadow-sm rounded-pill"
+          >
+            <FaSave className="me-2" />
             Save Profile
           </button>
         </div>
